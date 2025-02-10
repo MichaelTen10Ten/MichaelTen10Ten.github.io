@@ -1,24 +1,87 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Block-Based JSON Builder</title>
+  <script src="https://unpkg.com/blockly/blockly.min.js"></script>
   <style>
-    button {
-      background-color: blue;
-      color: white;
-      padding: 10px;
+    #blocklyDiv {
+      height: 400px;
+      width: 100%;
+    }
+    #output {
+      margin-top: 20px;
+      font-family: monospace;
+      white-space: pre-wrap;
     }
   </style>
 </head>
 <body>
-  <p>What is 2 + 2?</p>
-  <button onclick="calculate()">Calculate</button>
-  <p id="answer"></p>
+  <h1>Block-Based JSON Builder</h1>
+  <div id="blocklyDiv"></div>
+  <button onclick="generateJSON()">Generate JSON</button>
+  <pre id="output"></pre>
 
   <script>
-    function calculate() {
-      let result = 2 + 2; // This is the calculation
-      document.getElementById("answer").innerText = "The answer is: " + result;
+    // Initialize Blockly
+    const workspace = Blockly.inject('blocklyDiv', {
+      toolbox: `
+        <xml>
+          <block type="json_object"></block>
+          <block type="json_key_value"></block>
+          <block type="text"></block>
+          <block type="math_number"></block>
+          <block type="logic_boolean"></block>
+        </xml>
+      `,
+    });
+
+    // Define custom blocks
+    Blockly.Blocks['json_object'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField('JSON Object');
+        this.appendStatementInput('FIELDS')
+            .setCheck('json_key_value');
+        this.setColour(230);
+        this.setTooltip('Create a JSON object with key-value pairs.');
+      }
+    };
+
+    Blockly.Blocks['json_key_value'] = {
+      init: function() {
+        this.appendValueInput('KEY')
+            .setCheck('String')
+            .appendField('Key');
+        this.appendValueInput('VALUE')
+            .setCheck(null)
+            .appendField('Value');
+        this.setPreviousStatement(true, 'json_key_value');
+        this.setNextStatement(true, 'json_key_value');
+        this.setColour(160);
+        this.setTooltip('Add a key-value pair to the JSON object.');
+      }
+    };
+
+    // Generate JSON from blocks
+    function generateJSON() {
+      const code = Blockly.JavaScript.workspaceToCode(workspace);
+      const json = eval(`(() => { ${code} })()`); // Execute the generated code
+      document.getElementById('output').textContent = JSON.stringify(json, null, 2);
     }
+
+    // JavaScript code generator for custom blocks
+    Blockly.JavaScript['json_object'] = function(block) {
+      const fields = Blockly.JavaScript.statementToCode(block, 'FIELDS');
+      return `{ ${fields} }`;
+    };
+
+    Blockly.JavaScript['json_key_value'] = function(block) {
+      const key = Blockly.JavaScript.valueToCode(block, 'KEY', Blockly.JavaScript.ORDER_NONE) || '""';
+      const value = Blockly.JavaScript.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE) || 'null';
+      return `${key}: ${value},\n`;
+    };
   </script>
 </body>
 </html>
