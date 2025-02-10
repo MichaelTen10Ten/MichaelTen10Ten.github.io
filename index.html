@@ -1,9 +1,24 @@
 <!DOCTYPE html>
 <html>
-
+<head>
+  <style>
+    button {
+      background-color: blue;
+      color: white;
+      padding: 10px;
+    }
+  </style>
+</head>
 <body>
-    <h1>Hello World</h1>
-    <p>I'm hosted with GitHub Pages.</p>
-</body>
+  <p>What is 2 + 2?</p>
+  <button onclick="calculate()">Calculate</button>
+  <p id="answer"></p>
 
+  <script>
+    function calculate() {
+      let result = 2 + 2; // This is the calculation
+      document.getElementById("answer").innerText = "The answer is: " + result;
+    }
+  </script>
+</body>
 </html>
