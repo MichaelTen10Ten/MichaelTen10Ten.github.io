@@ -1,87 +1,201 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Block-Based JSON Builder</title>
-  <script src="https://unpkg.com/blockly/blockly.min.js"></script>
-  <style>
-    #blocklyDiv {
-      height: 400px;
-      width: 100%;
-    }
-    #output {
-      margin-top: 20px;
-      font-family: monospace;
-      white-space: pre-wrap;
-    }
-  </style>
-</head>
+    <title>Block-Based JSON Generator</title>
+    <script src="https://unpkg.com/blockly@9.1.0/blockly.min.js"></script>
+    <style>
+        #blocklyDiv {
+            height: 480px;
+            width: 600px;
+        }
+
+        #jsonOutput {
+            width: 580px;
+            height: 200px;
+            border: 1px solid #ccc;
+            overflow: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+
 <body>
-  <h1>Block-Based JSON Builder</h1>
-  <div id="blocklyDiv"></div>
-  <button onclick="generateJSON()">Generate JSON</button>
-  <pre id="output"></pre>
 
-  <script>
-    // Initialize Blockly
-    const workspace = Blockly.inject('blocklyDiv', {
-      toolbox: `
-        <xml>
-          <block type="json_object"></block>
-          <block type="json_key_value"></block>
-          <block type="text"></block>
-          <block type="math_number"></block>
-          <block type="logic_boolean"></block>
-        </xml>
-      `,
-    });
+    <h1>Block-Based JSON Generator</h1>
 
-    // Define custom blocks
-    Blockly.Blocks['json_object'] = {
-      init: function() {
-        this.appendDummyInput()
-            .appendField('JSON Object');
-        this.appendStatementInput('FIELDS')
-            .setCheck('json_key_value');
-        this.setColour(230);
-        this.setTooltip('Create a JSON object with key-value pairs.');
-      }
-    };
+    <div id="blocklyDiv"></div>
 
-    Blockly.Blocks['json_key_value'] = {
-      init: function() {
-        this.appendValueInput('KEY')
-            .setCheck('String')
-            .appendField('Key');
-        this.appendValueInput('VALUE')
-            .setCheck(null)
-            .appendField('Value');
-        this.setPreviousStatement(true, 'json_key_value');
-        this.setNextStatement(true, 'json_key_value');
-        this.setColour(160);
-        this.setTooltip('Add a key-value pair to the JSON object.');
-      }
-    };
+    <h2>JSON Output:</h2>
+    <pre id="jsonOutput"></pre>
 
-    // Generate JSON from blocks
-    function generateJSON() {
-      const code = Blockly.JavaScript.workspaceToCode(workspace);
-      const json = eval(`(() => { ${code} })()`); // Execute the generated code
-      document.getElementById('output').textContent = JSON.stringify(json, null, 2);
+    <script>
+
+        // Template Block (modified to accept JSON inputs)
+        Blockly.Blocks['template_block'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Template Block");
+                this.appendValueInput("NAME")
+                    .setCheck("String")
+                    .appendField("Name");
+                this.appendValueInput("VALUE")
+                    .setCheck(["String", "Number", "Boolean", "Array", "JSON"]) // Accept JSON
+                    .appendField("Value");
+                this.setOutput(true, "JSON");
+                this.setColour(160);
+                this.setTooltip("Template block for JSON generation.");
+                this.setHelpUrl("");
+            }
+        };
+
+        Blockly.JavaScript['template_block'] = function (block) {
+            var name = Blockly.JavaScript.valueToCode(block, 'NAME', Blockly.JavaScript.ORDER_ATOMIC) || '""';
+            var value = Blockly.JavaScript.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_ATOMIC) || 'null'; // Default to null
+
+            const isNumber = /^-?\d+(\.\d+)?$/.test(value);
+            const isBoolean = value === 'true' || value === 'false';
+
+            //if(!isNumber && !isBoolean && !value.startsWith('[') && !value.startsWith('{')){ //check if the value is not a number, boolean, array, or JSON
+            //    value = `"${value.replace(/"/g, '\\"')}"`; //Escape double quotes in the value
+            //}
+            //if (!value.startsWith('"') && !value.endsWith('"') && !value.startsWith('[') && !value.startsWith('{') && !/^-?\d+(\.\d+)?$/.test(value) && value !== 'true' && value !== 'false' && value !== 'null') {
+            //  value = `"${value.replace(/"/g, '\\"')}"`; // Only add quotes if necessary
+            //}
+            if (value.startsWith('(') && value.endsWith(')')) { // Check if it's wrapped
+                value = value.slice(1, -1); // Remove parentheses
+                if (value.startsWith('"') && value.endsWith('"')) {
+                    value = value.slice(1, -1); // Remove quotes if present
+                }
+            } else if (!value.startsWith('"') && !value.endsWith('"') && !value.startsWith('[') && !value.startsWith('{') && !/^-?\d+(\.\d+)?$/.test(value) && value !== 'true' && value !== 'false' && value !== 'null') {
+                value = `"${value.replace(/"/g, '\\"')}"`; // Only add quotes if necessary
+            }
+
+            var jsonString = `{${name}:${value}}`;
+            return [jsonString, Blockly.JavaScript.ORDER_NONE];
+        };
+
+        // String Block
+        Blockly.Blocks['string_block'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("String")
+                    .appendField(new Blockly.FieldTextInput(""), "TEXT");
+                this.setOutput(true, "String");
+                this.setColour(200);
+            }
+        };
+
+        Blockly.JavaScript['string_block'] = function (block) {
+            var text = block.getFieldValue('TEXT');
+            return [`"${text.replace(/"/g, '\\"')}"`, Blockly.JavaScript.ORDER_ATOMIC]; // Escape quotes
+        };
+
+        // Boolean Block
+        Blockly.Blocks['boolean_block'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField(new Blockly.FieldDropdown([["true", "true"], ["false", "false"]]), "BOOL");
+                this.setOutput(true, "Boolean");
+                this.setColour(220);
+            }
+        };
+
+        Blockly.JavaScript['boolean_block'] = function (block) {
+            var bool = block.getFieldValue('BOOL');
+            return [bool, Blockly.JavaScript.ORDER_ATOMIC];
+        };
+
+        // Array Block
+        Blockly.Blocks['array_block'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("Array");
+                this.appendStatementInput("ITEMS")
+                    .setCheck(["String", "Number", "Boolean", "Array", "JSON"]);
+                this.setOutput(true, "Array");
+                this.setColour(240);
+            }
+        };
+
+        Blockly.JavaScript['array_block'] = function(block) {
+    var itemsCode = Blockly.JavaScript.statementToCode(block, 'ITEMS');
+
+    if (!itemsCode) {
+      return ['[]', Blockly.JavaScript.ORDER_ATOMIC]; // Return empty array if no items
     }
 
-    // JavaScript code generator for custom blocks
-    Blockly.JavaScript['json_object'] = function(block) {
-      const fields = Blockly.JavaScript.statementToCode(block, 'FIELDS');
-      return `{ ${fields} }`;
-    };
+    // *** KEY CHANGE: Correctly handle multiple items and nested blocks ***
+    var items = itemsCode.split('\n').filter(item => item !== '').map(item => {
+        if (item.startsWith('(') && item.endsWith(')')) {
+            return item.slice(1, -1); // Remove parentheses if present
+        }
+        return item;
+    }).join(',');
 
-    Blockly.JavaScript['json_key_value'] = function(block) {
-      const key = Blockly.JavaScript.valueToCode(block, 'KEY', Blockly.JavaScript.ORDER_NONE) || '""';
-      const value = Blockly.JavaScript.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_NONE) || 'null';
-      return `${key}: ${value},\n`;
-    };
-  </script>
+    return `[${items}]`, Blockly.JavaScript.ORDER_ATOMIC;
+  };
+
+        // Array Item Block (helper block for arrays)
+        Blockly.Blocks['array_item'] = {
+            init: function () {
+                this.appendValueInput("VALUE")
+                    .setCheck(["String", "Number", "Boolean", "Array", "JSON"])
+                    .appendField("Item");
+                this.setPreviousStatement(true, ["String", "Number", "Boolean", "Array", "JSON"]);
+                this.setNextStatement(true, ["String", "Number", "Boolean", "Array", "JSON"]);
+                this.setColour(260);
+            }
+        };
+
+        Blockly.JavaScript['array_item'] = function (block) {
+            var value = Blockly.JavaScript.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_ATOMIC) || 'null';
+
+            // *** KEY CHANGE: Remove extra parentheses and quotes for nested blocks ***
+            if (value.startsWith('(') && value.endsWith(')')) { // Check if it's wrapped
+                value = value.slice(1, -1); // Remove parentheses
+                if (value.startsWith('"') && value.endsWith('"')) {
+                    value = value.slice(1, -1); // Remove quotes if present
+                }
+            } else if (!value.startsWith('"') && !value.endsWith('"') && !value.startsWith('[') && !value.startsWith('{') && !/^-?\d+(\.\d+)?$/.test(value) && value !== 'true' && value !== 'false' && value !== 'null') {
+                value = `"${value.replace(/"/g, '\\"')}"`; // Only add quotes if necessary
+            }
+
+            return value;
+        };
+
+        var workspace = Blockly.inject('blocklyDiv',
+            {
+                toolbox: `
+        <xml id="toolbox" style="display: none">
+          <block type="template_block"></block>
+          <block type="string_block"></block>
+          <block type="boolean_block"></block>
+          <block type="array_block"></block>
+          <block type="array_item"></block>
+        </xml>`});
+
+        // ... (rest of the code for updateJsonOutput remains the same)
+        function updateJsonOutput() {
+            var code = Blockly.JavaScript.workspaceToCode(workspace);
+            var jsonOutput = document.getElementById('jsonOutput');
+
+            try {
+                // Evaluate the generated code (which should create a JSON string)
+                const evalResult = eval(code);
+                // Parse to check if it's valid JSON. If not, stringify it
+                const parsedJson = JSON.parse(evalResult);
+                jsonOutput.textContent = JSON.stringify(parsedJson, null, 2); // Pretty print
+
+            } catch (error) {
+                // Handle cases where the generated code is not valid JSON
+                jsonOutput.textContent = "Error generating JSON: " + error.message + "\nGenerated Code:\n" + code; // Display error and the code
+            }
+        }
+
+        workspace.addChangeListener(updateJsonOutput); // Update on every change
+        updateJsonOutput(); // Initial update
+    </script>
+
 </body>
+
 </html>
