@@ -1,3 +1,4 @@
+//POWER
 Blockly.Blocks['multiple'] = {
     init: function () {
         this.appendDummyInput()
@@ -19,6 +20,30 @@ Blockly.Blocks['multiple'] = {
     }
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//DATA
 Blockly.Blocks['string'] = {
     init: function () {
         this.appendDummyInput()
@@ -52,6 +77,18 @@ Blockly.Blocks['boolean'] = {
     }
 };
 
+Blockly.Blocks['array'] = {
+    init: function () {
+        this.appendDummyInput()
+            .appendField("Array:")
+        this.appendStatementInput("ITEMS")
+            .setCheck(null)
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(160);
+    }
+};
+
 var workspace = Blockly.inject('blocklyDiv', {
     toolbox: `
       <xml id="toolbox" style="display: none;">
@@ -62,8 +99,8 @@ var workspace = Blockly.inject('blocklyDiv', {
           <block type="string"></block>
           <block type="boolean"></block>
           <block type="number"></block>
+          <block type="array"></block>
         </category>
-        
       </xml>`,
 });
 function placeInitialContainer() {
@@ -82,11 +119,15 @@ function updateOutput() {
         let output = "";
         while (block) {
             if (block.type === 'string') {
-                output += block.getFieldValue('TEXT') + " ";
+                output += `"`+block.getFieldValue('TEXT')+`"` + " ";
             } else if (block.type === 'boolean') {
                 output += block.getFieldValue('BOOL') + " ";
             } else if (block.type === 'number') {
                 output += block.getFieldValue('NUMBER') + " ";
+            } else if (block.type === 'array') {
+                let containerpower = block.getInputTargetBlock('ITEMS');
+                console.log(containerpower)
+                output += `[${buildOutput(containerpower)}] `; // Include name and description
             } else if (block.type === 'multiple') {
                 let containerName = block.getFieldValue('NAME');        // Get name
                 let containerDescription = block.getFieldValue('DESCRIPTION'); // Get description
