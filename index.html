@@ -1,35 +1,39 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-    <title>Block-Based JSON Generator</title>
-    <script src="https://unpkg.com/blockly@9.1.0/blockly.min.js"></script>
-    <style>
-        #blocklyDiv {
-            height: 480px;
-            width: 600px;
-        }
+  <title>Sentence Generator</title>
+  <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+  <style>
+    #container {
+      display: flex; /* Use flexbox for layout */
+    }
 
-        #jsonOutput {
-            width: 580px;
-            height: 200px;
-            border: 1px solid #ccc;
-            overflow: auto;
-            white-space: pre-wrap;
-        }
-    </style>
+    #blocklyDiv {
+      height: 400px;
+      width: 600px;
+      flex: 1; /* Allow Blockly to take up available space */
+    }
 
+    #outputAreaContainer {
+      flex: 1; /* Allow output area to take up available space */
+      padding: 10px; /* Add some padding */
+    }
+
+    #outputArea {
+      width: 100%;
+      height: 300px; /* Adjust height as needed */
+      resize: vertical; /* Allow vertical resizing */
+    }
+  </style>
+</head>
 <body>
+  <div id="container">  <div id="blocklyDiv"></div>
+    <div id="outputAreaContainer">
+      <textarea id="outputArea" rows="4" cols="50" readonly></textarea>
+      <button onclick="copyOutput()">Copy</button>
+    </div>
+  </div>
 
-    <h1>Block-Based JSON Generator</h1>
-
-    <div id="blocklyDiv"></div>
-
-    <h2>JSON Output:</h2>
-    <pre id="jsonOutput"></pre>
-
-    <script src="script.js"></script>
-
+  <script src="script.js"></script>
 </body>
-
 </html>

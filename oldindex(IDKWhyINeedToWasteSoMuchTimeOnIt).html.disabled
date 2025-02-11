@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Block-Based JSON Generator</title>
+    <script src="https://unpkg.com/blockly@9.1.0/blockly.min.js"></script>
+    <style>
+        #blocklyDiv {
+            height: 480px;
+            width: 600px;
+        }
+
+        #jsonOutput {
+            width: 580px;
+            height: 200px;
+            border: 1px solid #ccc;
+            overflow: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+
+<body>
+
+    <h1>Block-Based JSON Generator</h1>
+
+    <div id="blocklyDiv"></div>
+
+    <h2>JSON Output:</h2>
+    <pre id="jsonOutput"></pre>
+
+    <script src="script2.js"></script>
+
+</body>
+
+</html>
