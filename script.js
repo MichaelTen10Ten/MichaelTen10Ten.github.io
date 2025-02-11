@@ -1,53 +1,98 @@
-Blockly.Blocks['sentence_part'] = {
+Blockly.Blocks['multiple'] = {
     init: function () {
         this.appendDummyInput()
-            .appendField("Part of Sentence:")
+            .appendField("Multiple")
+        this.appendDummyInput()
+            .appendField("Name:")
+            .appendField(new Blockly.FieldTextInput("NAME"), "NAME") // Name input
+        this.appendDummyInput()
+            .appendField("Description:")
+            .appendField(new Blockly.FieldTextInput("DESCRIPTION"), "DESCRIPTION") // Name input
+        this.appendStatementInput("POWER")
+            .setCheck(null)
+        this.appendStatementInput("CONDITIONS")
+            .setCheck(null)
+            .appendField("Conditions:")
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(230);
+    }
+};
+
+Blockly.Blocks['string'] = {
+    init: function () {
+        this.appendDummyInput()
+            .appendField("String:")
             .appendField(new Blockly.FieldTextInput("Enter text here"), "TEXT");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setOutput(true, 'String');
         this.setColour(160);
     }
 };
 
-Blockly.Blocks['sentence_container'] = {
+Blockly.Blocks['number'] = {
     init: function () {
-        this.appendStatementInput("ITEMS")
-            .setCheck(null)
-            .appendField("Sentence Parts");
-        this.setPreviousStatement(true, null); // Container can connect above
-        this.setNextStatement(true, null);     // Container can connect below
-        this.setColour(230);
+        this.appendDummyInput()
+            .appendField("Int/Float:")
+            .appendField(new Blockly.FieldNumber(0), "NUMBER"); // Use FieldNumber
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(100); // Example color
+    }
+};
+
+Blockly.Blocks['boolean'] = {
+    init: function () {
+        this.appendDummyInput()
+            .appendField("Boolean:")
+            .appendField(new Blockly.FieldDropdown([["true", "true"], ["false", "false"]]), "BOOL");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(160);
     }
 };
 
 var workspace = Blockly.inject('blocklyDiv', {
     toolbox: `
       <xml id="toolbox" style="display: none;">
-        <category name="Sentence Parts" colour="160">
-          <block type="sentence_part"></block>
+        <category name="Power Types" colour="230">
+          <block type="multiple"></block>
         </category>
-        <category name="Containers" colour="230">
-          <block type="sentence_container">
-            <statement name="ITEMS">
-              <block type="sentence_part"></block> 
-            </statement>
-          </block>
+        <category name="DataType" colour="160">
+          <block type="string"></block>
+          <block type="boolean"></block>
+          <block type="number"></block>
         </category>
+        
       </xml>`,
 });
+function placeInitialContainer() {
+    var containerBlock = workspace.newBlock('multiple'); // Create the block
+    containerBlock.initSvg(); // Initialize rendering (very important!)
+    containerBlock.render();   // Actually render the block
+}
+
+// Call the function when the page loads
+window.addEventListener('load', placeInitialContainer);
 
 function updateOutput() {
-    var topBlock = workspace.getTopBlocks(true)[0]; // Start at the top
+    let topBlock = workspace.getTopBlocks(true)[0];
 
     function buildOutput(block) {
         let output = "";
         while (block) {
-            if (block.type === 'sentence_part') {
+            if (block.type === 'string') {
                 output += block.getFieldValue('TEXT') + " ";
-            } else if (block.type === 'sentence_container') {
-                let itemsBlock = block.getInputTargetBlock('ITEMS');
-                output += buildOutput(itemsBlock); // Recursively handle nested containers
+            } else if (block.type === 'boolean') {
+                output += block.getFieldValue('BOOL') + " ";
+            } else if (block.type === 'number') {
+                output += block.getFieldValue('NUMBER') + " ";
+            } else if (block.type === 'multiple') {
+                let containerName = block.getFieldValue('NAME');        // Get name
+                let containerDescription = block.getFieldValue('DESCRIPTION'); // Get description
+                let containerpower = block.getInputTargetBlock('POWER');
+                let containercondition = block.getInputTargetBlock('CONDITIONS');
+                output += `[Container: ${containerName} (${containerDescription}): ${buildOutput(containerpower)}, ${buildOutput(containercondition)}] `; // Include name and description
             }
             block = block.getNextBlock();
         }
