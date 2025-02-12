@@ -59,12 +59,11 @@
 
       return randomNumberInRange;
     }
-
     //POWER
-    Blockly.Blocks['multiple'] = {
+    Blockly.Blocks['power/multiple'] = {
       init: function () {
         this.appendDummyInput()
-          .appendField("Power(Multiple)")
+          .appendField("Power( Multiple)")
         this.appendDummyInput()
           .appendField("Name:")
           .appendField(new Blockly.FieldTextInput("NAME"), "NAME") // Name input
@@ -79,10 +78,10 @@
         this.setDeletable(false);
       }
     };
-    Blockly.Blocks['attribute_modify_transfer'] = {
+    Blockly.Blocks['power/Regular types/attribute_modify_transfer'] = {
       init: function () {
         this.appendDummyInput()
-          .appendField("Power(Attribute Modify Transfer)")
+          .appendField("Power( Attribute Modify Transfer)")
         this.appendDummyInput()
           .appendField("Power Name:")
           .appendField(new Blockly.FieldTextInput("attribute_modify_transfer"), "NAME") // Name input
@@ -118,7 +117,7 @@
         this.setColour(randomnumber());
       }
     };
-    Blockly.Blocks['attribute'] = {
+    Blockly.Blocks['power/Regular types/attribute'] = {
       init: function () {
         this.appendDummyInput()
           .appendField("Power(Attribute)")
@@ -127,7 +126,7 @@
           .appendField(new Blockly.FieldTextInput("attribute"), "NAME") // Name input
         this.appendStatementInput("MODIFIERS")
           .setCheck(null)
-          .appendField("modifiers:")
+          .appendField("Attributed Attribute Modifier( Attributed Attribute Modifier):")
         this.appendDummyInput()
           .appendField("update_health:")
           .appendField(new Blockly.FieldDropdown([["true", "true"], ["false", "false"]]), "UPDATE_HEALTH") // Name input
@@ -142,55 +141,10 @@
 
 
     //DATA
-    Blockly.Blocks['string'] = {
+    Blockly.Blocks['data/attributed_attribute_modifier'] = {
       init: function () {
         this.appendDummyInput()
-          .appendField("String:")
-          .appendField(new Blockly.FieldTextInput("Enter text here"), "TEXT");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(randomnumber());
-      }
-    };
-
-    Blockly.Blocks['boolean'] = {
-      init: function () {
-        this.appendDummyInput()
-          .appendField("Boolean:")
-          .appendField(new Blockly.FieldDropdown([["true", "true"], ["false", "false"]]), "BOOL");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(randomnumber());
-      }
-    };
-
-    Blockly.Blocks['number'] = {
-      init: function () {
-        this.appendDummyInput()
-          .appendField("Int/Float:")
-          .appendField(new Blockly.FieldNumber(0), "NUMBER"); // Use FieldNumber
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(randomnumber()); // Example color
-      }
-    };
-
-    Blockly.Blocks['array'] = {
-      init: function () {
-        this.appendDummyInput()
-          .appendField("Array:")
-        this.appendStatementInput("ITEMS")
-          .setCheck(null)
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(randomnumber());
-      }
-    };
-
-    Blockly.Blocks['attributed_attribute_modifier'] = {
-      init: function () {
-        this.appendDummyInput()
-          .appendField("Power(Attributed Attribute Modifier)")
+          .appendField("Data( Attributed Attribute Modifier)")
         this.appendDummyInput()
           .appendField("Operation:")
           .appendField(new Blockly.FieldDropdown([["addition", "addition"], ["multiply_base", "multiply_base"], ["multiply_total", "multiply_total"]]), "OPERATION")
@@ -205,34 +159,72 @@
         this.setColour(randomnumber());
       }
     };
+    Blockly.Blocks['data/string'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Data( String)")
+          .appendField(new Blockly.FieldTextInput("Enter text here"), "TEXT");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+
+    Blockly.Blocks['data/boolean'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Boolean:")
+          .appendField(new Blockly.FieldDropdown([["true", "true"], ["false", "false"]]), "BOOL");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+
+    Blockly.Blocks['data/number'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Int/Float:")
+          .appendField(new Blockly.FieldNumber(0), "NUMBER"); // Use FieldNumber
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber()); // Example color
+      }
+    };
 
     //CONDITIONS
-    Blockly.Blocks['conditions_and'] = {
+    Blockly.Blocks['conditions/Meta Condition Types/and'] = {
       init: function () {
         this.appendDummyInput()
-          .appendField("Conditions(And):")
+          .appendField("Conditions( And):")
         this.appendStatementInput("ITEMS")
           .setCheck(null)
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(randomnumber());
       }
     };
-    Blockly.Blocks['conditions_or'] = {
+    Blockly.Blocks['conditions/Meta Condition Types/or'] = {
       init: function () {
         this.appendDummyInput()
-          .appendField("Conditions(Or):")
+          .appendField("Conditions( Or):")
         this.appendStatementInput("ITEMS")
           .setCheck(null)
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(randomnumber());
       }
     };
-    Blockly.Blocks['conditions_ability'] = {
+    Blockly.Blocks['conditions/Entity Condition Types/ability'] = {
       init: function () {
         this.appendDummyInput()
-          .appendField("Conditions(Ability):")
+          .appendField("Conditions( Ability):")
         this.appendDummyInput()
           .appendField("Ability:")
           .appendField(new Blockly.FieldDropdown([
@@ -241,68 +233,238 @@
             ["minecraft:invulnerable", "minecraft:invulnerable"],
             ["minecraft:mayBuild", "minecraft:mayBuild"],
             ["minecraft:mayfly", "minecraft:mayfly"]
-          ]), "ABILITY")
+          ]), "CONDITION")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(randomnumber());
       }
     };
-
+    Blockly.Blocks['conditions/Entity Condition Types/advancement'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Conditions( Advancement):")
+        this.appendDummyInput()
+          .appendField("Advancement:")
+          .appendField(new Blockly.FieldTextInput("minecraft:story/smelt_iron"), "CONDITION")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Meta Condition Types/chance'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Conditions( Chance):")
+        this.appendDummyInput()
+          .appendField("Chance:")
+          .appendField(new Blockly.FieldNumber(1), "CONDITION")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Entity Condition Types/air'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Conditions(Air):")
+        this.appendDummyInput()
+          .appendField("Comparison:")
+          .appendField(new Blockly.FieldDropdown([["<", "<"], ["<=", "<="], [">", ">"], [">=", ">="], ["==", "=="], ["!=", "!="]]), "COMPARISON")
+        this.appendDummyInput()
+          .appendField("Compare to:")
+          .appendField(new Blockly.FieldNumber(1), "CONDITION")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Entity Condition Types/attribute'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Conditions(Attribute):")
+        this.appendDummyInput()
+          .appendField("Attribute:")
+          .appendField(new Blockly.FieldTextInput("minecraft:generic.movement_speed"), "ATTRIBUTE")
+        this.appendDummyInput()
+          .appendField("Comparison:")
+          .appendField(new Blockly.FieldDropdown([["<", "<"], ["<=", "<="], [">", ">"], [">=", ">="], ["==", "=="], ["!=", "!="]]), "COMPARISON")
+        this.appendDummyInput()
+          .appendField("Compare to:")
+          .appendField(new Blockly.FieldNumber(1), "CONDITION")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Entity Condition Types/biome'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Conditions(Biome):")
+        this.appendStatementInput("CONDITION")
+          .appendField("Biomes(String):")
+          .setCheck(null)
+        this.appendStatementInput("BIOMECONDITION")
+          .setCheck(null)
+          .appendField("Biome Condition( Biome Condition):")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Biome Condition Types/high_humidity'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Biome Conditions( High Humidity):")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Biome Condition Types/temperature'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Biome Conditions(Temperature):")
+        this.appendDummyInput()
+          .appendField("Comparison:")
+          .appendField(new Blockly.FieldDropdown([["<", "<"], ["<=", "<="], [">", ">"], [">=", ">="], ["==", "=="], ["!=", "!="]]), "COMPARISON")
+        this.appendDummyInput()
+          .appendField("Compare to:")
+          .appendField(new Blockly.FieldNumber(1), "CONDITION")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Biome Condition Types/in_tag'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Biome Conditions( In Tag):")
+        this.appendDummyInput()
+          .appendField("tag:")
+          .appendField(new Blockly.FieldTextInput("minecraft:allows_surface_slime_spawn"), "CONDITION")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Biome Condition Types/precipitation'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Biome Conditions( Precipitation):")
+        this.appendDummyInput()
+          .appendField("precipitation:")
+          .appendField(new Blockly.FieldDropdown([["none", "none"], ["rain", "rain"], ["snow", "snow"]]), "CONDITION")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
     //CONTAINER
+    function generateXML(data) {
+      let xml = "";
+      function generateCategoryXML(categoryName, categoryData) {
+        let categoryXML = `<category name="${categoryName}" colour="${randomnumber()}">\n`;
+        if (Array.isArray(categoryData)) {
+          categoryData.forEach(item => {
+            if (typeof item === 'string') { // Check if it's a string (for "Data" case)
+              categoryXML += `          <block type="${item}"></block>\n`;
+            } else { // Handle nested category objects
+              for (const subCategory in item) {
+                categoryXML += `          <category name="${subCategory}">\n`;
+                item[subCategory].forEach(blockType => {
+                  categoryXML += `            <block type="${blockType}"></block>\n`;
+                });
+                categoryXML += `          </category>\n`;
+              }
+            }
+          });
+        } else { //This is for the "data" part which is an array of string
+          categoryData.forEach(item => {
+            categoryXML += `          <block type="${item}"></block>\n`;
+          });
+        }
+        categoryXML += `        </category>\n`;
+        return categoryXML;
+      }
+      for (const category in data) {
+        xml += generateCategoryXML(category, data[category]);
+      }
+      return xml;
+    }
+    function getblock(category) {
+      let powerlist = [];
+      for (const i in Blockly.Blocks) {
+        if (i.startsWith(category)) {
+          powerlist.push(i);
+        }
+      }
+      return powerlist;
+    }
+    let menulist = {
+      "Power Types": [
+        {
+          "Regular types": getblock("power/Regular types/")
+        },
+        { "Action-related": getblock("power/Action-related/") },
+        { "Modifying types": getblock("power/Modifying types/") },
+        { "Preventing types": getblock("power/Preventing types/") }],
+      "Condition": [
+        {
+          "Meta Condition Types": getblock("conditions/Meta Condition Types/")
+        },
+        {
+          "Entity Condition Types": getblock("conditions/Entity Condition Types/")
+        },
+        { "Bi-entity Condition Types": getblock("conditions/Bi-entity Condition Types/") },
+        {
+          "Biome Condition Types": getblock("conditions/Biome Condition Types/")
+        },
+        { "Block Condition Types": getblock("conditions/Block Condition Types/") },
+        { "Damage Condition Types": getblock("conditions/Damage Condition Types/") },
+        { "Fluid Condition Types": getblock("conditions/Fluid Condition Types/") },
+        { "Item Condition Types": getblock("conditions/Item Condition Types/") }],
+      "Data": getblock("data/")
+    }
     var workspace = Blockly.inject('blocklyDiv', {
       toolbox: `
       <xml id="toolbox" style="display: none;">
-        <category name="Power Types" colour="${randomnumber()}">
-          <category name="Regular types" colour="${randomnumber()}">
-            <block type="attribute_modify_transfer"></block>
-            <block type="attribute"></block>
-          </category>
-          <category name="Action-related" colour="${randomnumber()}">
-            
-          </category>
-          <category name="Modifying types" colour="${randomnumber()}">
-            
-          </category>
-          <category name="Preventing types" colour="${randomnumber()}">
-            
-          </category>
-        </category>
-        <category name="Conditions" colour="${randomnumber()}">
-          <category name="Meta Condition Types" colour="${randomnumber()}">
-            <block type="conditions_and"></block>
-            <block type="conditions_or"></block>
-          </category>
-          <category name="Entity Condition Types" colour="${randomnumber()}">
-            <block type="conditions_ability"></block>
-          </category>
-          <category name="Bi-entity Condition Types" colour="${randomnumber()}">
-            
-          </category>
-          <category name="Biome Condition Types" colour="${randomnumber()}">
-            
-          </category>
-          <category name="Block Condition Types" colour="${randomnumber()}">
-            
-          </category>
-          <category name="Damage Condition Types" colour="${randomnumber()}">
-            
-          </category>
-          <category name="Fluid Condition Types" colour="${randomnumber()}">
-            
-          </category>
-          <category name="Item Condition Types" colour="${randomnumber()}">
-            
-          </category>
-        </category>
-        <category name="Data Types" colour="${randomnumber()}">
-          <block type="attributed_attribute_modifier"></block>
-        </category>
+        ${generateXML(menulist)}
       </xml>`,
     });
 
     //FUNCTIONS
     function placeInitialContainer() {
-      var containerBlock = workspace.newBlock('multiple');
+      var containerBlock = workspace.newBlock('power/multiple');
       containerBlock.initSvg();
       containerBlock.render();
     }
@@ -317,103 +479,190 @@
         let POWERoutput = "";
         let CONDITIONSoutput = "";
         while (block) {
-          if (block.type === 'string') {
+          if (block.type === 'data/string') {
             output += `"${block.getFieldValue('TEXT')}" `;
           }
-          else if (block.type === 'boolean') {
+          else if (block.type === 'data/boolean') {
             output += block.getFieldValue('BOOL') + " ";
           }
-          else if (block.type === 'number') {
+          else if (block.type === 'data/number') {
             output += block.getFieldValue('NUMBER') + " ";
           }
-          else if (block.type === 'array') {
-            let containerpower = block.getInputTargetBlock('ITEMS');
-            output += `[${buildOutput(containerpower)}] `;
-          }
           //CONDITION
-          else if (block.type === 'conditions_and') {
-            let containerpower = block.getInputTargetBlock('ITEMS');
-            let items = buildOutput(containerpower);
-            if (items) {
-              if (items) {
-                items = items.split(`}{`).filter(item => item !== "").join(`},{`);
+          else if (block.type === 'conditions/Meta Condition Types/and') {
+            let ITEMS = block.getInputTargetBlock('ITEMS');
+            ITEMS = buildOutput(ITEMS);
+            if (ITEMS) {
+              if (ITEMS) {
+                ITEMS = ITEMS.split(`}{`).filter(item => item !== "").join(`},{`);
               }
-              output += `{"type": "origins:and","conditions": [${items}]}`;
-            } else { output += `{"type": "origins:and","conditions": []}`; }
+              ITEMS = `,"conditions": [${ITEMS}]`;
+            } else { ITEMS = `,"conditions": []`; }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            output += `{"type": "origins:and"${ITEMS}${INVERTED}}`;
           }
-          else if (block.type === 'conditions_or') {
-            let containerpower = block.getInputTargetBlock('ITEMS');
-            let items = buildOutput(containerpower);
-            if (items) {
-              if (items) {
-                items = items.split(`}{`).filter(item => item !== "").join(`},{`);
+          else if (block.type === 'conditions/Meta Condition Types/or') {
+            let ITEMS = block.getInputTargetBlock('ITEMS');
+            ITEMS = buildOutput(ITEMS);
+            if (ITEMS) {
+              if (ITEMS) {
+                ITEMS = ITEMS.split(`}{`).filter(item => item !== "").join(`},{`);
               }
-              output += `{"type": "origins:or","conditions": [${items}]}`;
-            } else { output += `{"type": "origins:or","conditions": []}`; }
+              ITEMS = `,"conditions": [${ITEMS}]`;
+            } else { ITEMS = `,"conditions": []`; }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            output += `{"type": "origins:or"${ITEMS}${INVERTED}}`;
           }
-          else if (block.type === 'conditions_ability') {
-            let ABILITY = block.getFieldValue('ABILITY');
-            if (ABILITY) { ABILITY = `,"ability": "` + ABILITY + `"`; } else { ABILITY = "" }
-            output += `{"type": "origins:ability"${ABILITY}}`;
+          else if (block.type === 'conditions/Entity Condition Types/ability') {
+            let CONDITION = block.getFieldValue('CONDITION');
+            if (CONDITION) { CONDITION = `,"ability": "${CONDITION}"`; } else { CONDITION = "" }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            output += `{"type": "origins:ability"${CONDITION}${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Entity Condition Types/advancement') {
+            let CONDITION = block.getFieldValue('CONDITION');
+            if (CONDITION) { CONDITION = `,"advancement": "${CONDITION}"`; } else { CONDITION = "" }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            output += `{"type": "origins:advancement"${CONDITION}${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Meta Condition Types/chance') {
+            let CONDITION = block.getFieldValue('CONDITION');
+            if (CONDITION) { CONDITION = `,"chance": "${CONDITION}"`; } else { CONDITION = "" }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            output += `{"type": "origins:chance"${CONDITION}${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Entity Condition Types/air') {
+            let COMPARISON = block.getFieldValue('COMPARISON');
+            if (COMPARISON) { COMPARISON = `,"comparison": "${COMPARISON}"`; } else { COMPARISON = "" }
+            let CONDITION = block.getFieldValue('CONDITION');
+            if (CONDITION) { CONDITION = `,"compare_to": "${CONDITION}"`; } else { CONDITION = "" }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            output += `{"type": "origins:air"${COMPARISON}${CONDITION}${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Entity Condition Types/attribute') {
+            let ATTRUBUTE = block.getFieldValue('ATTRUBUTE');
+            if (ATTRUBUTE) { ATTRUBUTE = `,"attribute": "${ATTRUBUTE}"`; } else { ATTRUBUTE = "" }
+            let COMPARISON = block.getFieldValue('COMPARISON');
+            if (COMPARISON) { COMPARISON = `,"comparison": "${COMPARISON}"`; } else { COMPARISON = "" }
+            let CONDITION = block.getFieldValue('CONDITION');
+            if (CONDITION) { CONDITION = `,"compare_to": "${CONDITION}"`; } else { CONDITION = "" }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            output += `{"type": "origins:attribute"${COMPARISON}${CONDITION}${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Entity Condition Types/biome') {
+            let CONDITION = block.getInputTargetBlock('CONDITION');
+            CONDITION = buildOutput(CONDITION);
+            if (CONDITION) {
+              if (CONDITION) {
+                CONDITION = CONDITION.split(`" "`).filter(item => item !== "").join(`", "`);
+              }
+              CONDITION = `,"biomes": [${CONDITION}]`;
+            } else { CONDITION = `,"biomes": []`; }
+            let BIOMECONDITION = block.getInputTargetBlock('BIOMECONDITION');
+            BIOMECONDITION = buildOutput(BIOMECONDITION);
+            if (BIOMECONDITION) {
+              if (BIOMECONDITION) {
+                BIOMECONDITION = BIOMECONDITION.split(`}"`).filter(item => item !== "").join(`},"`);
+              }
+              BIOMECONDITION = `,"condition": ${BIOMECONDITION}`;
+            }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            output += `{"type": "origins:biome"${CONDITION}${BIOMECONDITION}${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Biome Condition Types/high_humidity') {
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            output += `{"type": "origins:high_humidity"${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Biome Condition Types/temperature') {
+            let COMPARISON = block.getFieldValue('COMPARISON');
+            if (COMPARISON) { COMPARISON = `,"comparison": "${COMPARISON}"`; } else { COMPARISON = "" }
+            let CONDITION = block.getFieldValue('CONDITION');
+            if (CONDITION) { CONDITION = `,"compare_to": "${CONDITION}"`; } else { CONDITION = "" }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            output += `{"type": "origins:temperature"${COMPARISON}${CONDITION}${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Biome Condition Types/in_tag') {
+            let CONDITION = block.getFieldValue('CONDITION');
+            if (CONDITION) { CONDITION = `,"tag": "${CONDITION}"`; } else { CONDITION = "" }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            output += `{"type": "origins:in_tag"${CONDITION}${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Biome Condition Types/precipitation') {
+            let CONDITION = block.getFieldValue('CONDITION');
+            if (CONDITION) { CONDITION = `,"tag": "${CONDITION}"`; } else { CONDITION = "" }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            output += `{"type": "origins:precipitation"${CONDITION}${INVERTED}}`;
           }
           //DATA
-          else if (block.type === 'attributed_attribute_modifier') {
+          else if (block.type === 'data/attributed_attribute_modifier') {
             let OPERATION = block.getFieldValue('OPERATION');
-            if (OPERATION) { OPERATION = `"operation": "` + OPERATION + `"`; } else { OPERATION = "" }
+            if (OPERATION) { OPERATION = `"operation": "${OPERATION}"`; } else { OPERATION = "" }
             let ATTRIBUTE = block.getFieldValue('ATTRIBUTE');
-            if (ATTRIBUTE) { ATTRIBUTE = `,"attribute": "` + ATTRIBUTE + `"`; } else { ATTRIBUTE = "" }
+            if (ATTRIBUTE) { ATTRIBUTE = `,"attribute": "${ATTRIBUTE}"`; } else { ATTRIBUTE = "" }
             let VALUE = block.getFieldValue('VALUE');
-            if (VALUE) { VALUE = `,"value": ` + VALUE + ``; } else { VALUE = "" }
+            if (VALUE) { VALUE = `,"value": ${VALUE}`; } else { VALUE = "" }
             output += `{${OPERATION}${ATTRIBUTE}${VALUE}}`;
           }
           //POWER
-          else if (block.type === 'multiple') {
+          else if (block.type === 'power/multiple') {
             let NAME = block.getFieldValue('NAME');
-            if (NAME) { NAME = `,"name": "` + NAME + `"`; } else { NAME = "" }
+            if (NAME) { NAME = `,"name": "${NAME}"`; } else { NAME = "" }
             let DESCRIPTION = block.getFieldValue('DESCRIPTION');
-            if (DESCRIPTION) { DESCRIPTION = `,"description": "` + DESCRIPTION + `"`; } else { DESCRIPTION = "" }
+            if (DESCRIPTION) { DESCRIPTION = `,"description": "${DESCRIPTION}"`; } else { DESCRIPTION = "" }
             let POWER = block.getInputTargetBlock('POWER');
-            POWERoutput = buildOutput(POWER);
-            if (POWERoutput) {
-              //console.log(POWERoutput)
-              POWERoutput = POWERoutput.split(`}"`).filter(item => item !== "").join(`},"`);
-              //console.log(POWERoutput)
+            POWER = buildOutput(POWER);
+            if (POWER) {
+              //console.log(POWER)
+              POWER = POWER.split(`}"`).filter(item => item !== "").join(`},"`);
+              //console.log(POWER)
             }
-            output += `{"type": "origins:multiple"${NAME}${DESCRIPTION}, ${POWERoutput}}`;
+            output += `{"type": "origins:multiple"${NAME}${DESCRIPTION}, ${POWER}}`;
           }
 
-          else if (block.type === 'attribute_modify_transfer') {
+          else if (block.type === 'power/Regular types/attribute_modify_transfer') {
             let NAME = block.getFieldValue('NAME');
             if (NAME == null) { NAME = `youneedaname`; }
             let CLASS = block.getFieldValue('CLASS');
-            if (CLASS) { CLASS = `,"class": "` + CLASS + `"`; } else { CLASS = "" }
+            if (CLASS) { CLASS = `,"class": "${CLASS}"`; } else { CLASS = "" }
             let ATTRIBUTE = block.getFieldValue('ATTRIBUTE');
-            if (ATTRIBUTE) { ATTRIBUTE = `,"attribute": "` + ATTRIBUTE + `"`; } else { ATTRIBUTE = "" }
+            if (ATTRIBUTE) { ATTRIBUTE = `,"attribute": "${ATTRIBUTE}"`; } else { ATTRIBUTE = "" }
             let MULTIPLIER = block.getFieldValue('MULTIPLIER');
-            if (MULTIPLIER) { MULTIPLIER = `,"multiplier": "` + MULTIPLIER + `"`; } else { MULTIPLIER = "" }
+            if (MULTIPLIER) { MULTIPLIER = `,"multiplier": "${MULTIPLIER}"`; } else { MULTIPLIER = "" }
             let CONDITIONS = block.getInputTargetBlock('CONDITIONS');
             if (CONDITIONS) {
               CONDITIONS = buildOutput(CONDITIONS);
               if (CONDITIONS) {
                 CONDITIONS = CONDITIONS.split(`}"`).filter(item => item !== "").join(`},"`);
               }
-              CONDITIONS = `,"condition": ` + CONDITIONS + ``;
+              CONDITIONS = `,"condition": ${CONDITIONS}`;
             } else { CONDITIONS = "" }
             output += `"${NAME}":{"type": "origins:attribute_modify_transfer"${CLASS}${ATTRIBUTE}${MULTIPLIER}${CONDITIONS}}`; // Include name and description
           }
 
-          else if (block.type === 'attribute') {
+          else if (block.type === 'power/Regular types/attribute') {
             let NAME = block.getFieldValue('NAME');
             if (NAME == null) { NAME = `youneedaname`; }
             let UPDATE_HEALTH = block.getFieldValue('UPDATE_HEALTH');
-            if (UPDATE_HEALTH) { UPDATE_HEALTH = `,"update_health":"` + UPDATE_HEALTH + `"`; } else { UPDATE_HEALTH = "" }
+            if (UPDATE_HEALTH) { UPDATE_HEALTH = `,"update_health":"${UPDATE_HEALTH}"`; } else { UPDATE_HEALTH = "" }
             let MODIFIERS = block.getInputTargetBlock('MODIFIERS');
             if (MODIFIERS) {
               MODIFIERS = buildOutput(MODIFIERS);
               if (MODIFIERS) {
                 MODIFIERS = MODIFIERS.split(`}"`).filter(item => item !== "").join(`},"`);
               }
-              MODIFIERS = `,"modifiers": [` + MODIFIERS + `]`;
+              MODIFIERS = `,"modifiers": [${MODIFIERS}]`;
             } else { MODIFIERS = "" }
             let CONDITIONS = block.getInputTargetBlock('CONDITIONS');
             if (CONDITIONS) {
@@ -421,7 +670,7 @@
               if (CONDITIONS) {
                 CONDITIONS = CONDITIONS.split(`}"`).filter(item => item !== "").join(`},"`);
               }
-              CONDITIONS = `,"condition": ` + CONDITIONS + ``;
+              CONDITIONS = `,"condition": ${CONDITIONS}`;
             } else { CONDITIONS = "" }
 
             output += `"${NAME}":{"type": "origins:attribute"${MODIFIERS}${UPDATE_HEALTH}${CONDITIONS}}`;
@@ -432,7 +681,7 @@
       }
 
       output = buildOutput(topBlock).trim()
-      console.log(output)
+      //console.log(output)
       try {
         if (output) {
           output = eval("(" + output + ")");
