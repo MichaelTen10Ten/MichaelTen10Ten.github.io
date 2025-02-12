@@ -42,11 +42,29 @@
   </div>
 
   <script>
+
+    function randomnumber() {
+      let min = 200;
+      let max = 350;
+      // Check if the inputs are valid numbers and if min is less than or equal to max.
+      if (typeof min !== 'number' || typeof max !== 'number' || min > max) {
+        return "Invalid input. Please provide numbers where min <= max.";
+      }
+
+      // Generate a random number between 0 (inclusive) and 1 (exclusive).
+      const randomNumber = Math.random();
+
+      // Scale and shift the random number to the desired range.
+      const randomNumberInRange = Math.floor(randomNumber * (max - min + 1)) + min;
+
+      return randomNumberInRange;
+    }
+
     //POWER
     Blockly.Blocks['multiple'] = {
       init: function () {
         this.appendDummyInput()
-          .appendField("Multiple")
+          .appendField("Power(Multiple)")
         this.appendDummyInput()
           .appendField("Name:")
           .appendField(new Blockly.FieldTextInput("NAME"), "NAME") // Name input
@@ -57,56 +75,70 @@
           .setCheck(null)
           .appendField("Powers:")
         this.setNextStatement(true, null);
-        this.setColour(100);
+        this.setColour(randomnumber());
         this.setDeletable(false);
       }
     };
     Blockly.Blocks['attribute_modify_transfer'] = {
       init: function () {
         this.appendDummyInput()
-          .appendField("Attribute Modify Transfer")
+          .appendField("Power(Attribute Modify Transfer)")
         this.appendDummyInput()
           .appendField("Power Name:")
-          .appendField(new Blockly.FieldTextInput("name"), "NAME") // Name input
+          .appendField(new Blockly.FieldTextInput("attribute_modify_transfer"), "NAME") // Name input
         this.appendDummyInput()
           .appendField("Class:")
-          .appendField(new Blockly.FieldTextInput("CLASS"), "CLASS") // Name input
+          .appendField(new Blockly.FieldDropdown([
+            ["modify_air_speed", "modify_air_speed"],
+            ["modify_break_speed", "modify_break_speed"],
+            ["modify_crafting", "modify_crafting"],
+            ["modify_damage_dealt", "modify_damage_dealt"],
+            ["modify_damage_taken", "modify_damage_taken"],
+            ["modify_exhaustion", "modify_exhaustion"],
+            ["modify_xp_gain", "modify_xp_gain"],
+            ["modify_jump", "modify_jump"],
+            ["modify_lava_speed", "modify_lava_speed"],
+            ["modify_projectile_damage", "modify_projectile_damage"],
+            ["modify_slipperiness", "modify_slipperiness"],
+            ["modify_status_effect_amplifier", "modify_status_effect_amplifier"],
+            ["modify_status_effect_duration", "modify_status_effect_duration"],
+            ["modify_swim_speed", "modify_swim_speed"]
+          ]), "CLASS") // Name input
         this.appendDummyInput()
           .appendField("Attribute:")
-          .appendField(new Blockly.FieldTextInput("ATTRIBUTE"), "ATTRIBUTE") // Name input
+          .appendField(new Blockly.FieldTextInput("minecraft:generic.movement_speed"), "ATTRIBUTE") // Name input
         this.appendDummyInput()
           .appendField("Multiplier:")
-          .appendField(new Blockly.FieldNumber(1.0), "MULTIPLIER") // Name input
+          .appendField(new Blockly.FieldNumber(1.25), "MULTIPLIER") // Name input
         this.appendStatementInput("CONDITIONS")
           .setCheck(null)
-          .appendField("Conditions:")
+          .appendField("Condition:")
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(100);
+        this.setColour(randomnumber());
       }
     };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    Blockly.Blocks['attribute'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Power(Attribute)")
+        this.appendDummyInput()
+          .appendField("Power Name:")
+          .appendField(new Blockly.FieldTextInput("attribute"), "NAME") // Name input
+        this.appendStatementInput("MODIFIERS")
+          .setCheck(null)
+          .appendField("modifiers:")
+        this.appendDummyInput()
+          .appendField("update_health:")
+          .appendField(new Blockly.FieldDropdown([["true", "true"], ["false", "false"]]), "UPDATE_HEALTH") // Name input
+        this.appendStatementInput("CONDITIONS")
+          .setCheck(null)
+          .appendField("Condition:")
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
 
 
     //DATA
@@ -117,7 +149,7 @@
           .appendField(new Blockly.FieldTextInput("Enter text here"), "TEXT");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(100);
+        this.setColour(randomnumber());
       }
     };
 
@@ -128,7 +160,7 @@
           .appendField(new Blockly.FieldDropdown([["true", "true"], ["false", "false"]]), "BOOL");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(200);
+        this.setColour(randomnumber());
       }
     };
 
@@ -139,7 +171,7 @@
           .appendField(new Blockly.FieldNumber(0), "NUMBER"); // Use FieldNumber
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(300); // Example color
+        this.setColour(randomnumber()); // Example color
       }
     };
 
@@ -151,7 +183,68 @@
           .setCheck(null)
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(400);
+        this.setColour(randomnumber());
+      }
+    };
+
+    Blockly.Blocks['attributed_attribute_modifier'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Power(Attributed Attribute Modifier)")
+        this.appendDummyInput()
+          .appendField("Operation:")
+          .appendField(new Blockly.FieldDropdown([["addition", "addition"], ["multiply_base", "multiply_base"], ["multiply_total", "multiply_total"]]), "OPERATION")
+        this.appendDummyInput()
+          .appendField("Attribute:")
+          .appendField(new Blockly.FieldTextInput("minecraft:generic.movement_speed"), "ATTRIBUTE")
+        this.appendDummyInput()
+          .appendField("Value:")
+          .appendField(new Blockly.FieldNumber(9), "VALUE")
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+
+    //CONDITIONS
+    Blockly.Blocks['conditions_and'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Conditions(And):")
+        this.appendStatementInput("ITEMS")
+          .setCheck(null)
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions_or'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Conditions(Or):")
+        this.appendStatementInput("ITEMS")
+          .setCheck(null)
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions_ability'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Conditions(Ability):")
+        this.appendDummyInput()
+          .appendField("Ability:")
+          .appendField(new Blockly.FieldDropdown([
+            ["minecraft:flying", "minecraft:flying"],
+            ["minecraft:instabuild", "minecraft:instabuild"],
+            ["minecraft:invulnerable", "minecraft:invulnerable"],
+            ["minecraft:mayBuild", "minecraft:mayBuild"],
+            ["minecraft:mayfly", "minecraft:mayfly"]
+          ]), "ABILITY")
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
       }
     };
 
@@ -159,49 +252,61 @@
     var workspace = Blockly.inject('blocklyDiv', {
       toolbox: `
       <xml id="toolbox" style="display: none;">
-        <category name="Power Types" colour="100">
-          <block type="attribute_modify_transfer"></block>
+        <category name="Power Types" colour="${randomnumber()}">
+          <category name="Regular types" colour="${randomnumber()}">
+            <block type="attribute_modify_transfer"></block>
+            <block type="attribute"></block>
+          </category>
+          <category name="Action-related" colour="${randomnumber()}">
+            
+          </category>
+          <category name="Modifying types" colour="${randomnumber()}">
+            
+          </category>
+          <category name="Preventing types" colour="${randomnumber()}">
+            
+          </category>
         </category>
-        <category name="Data Types" colour="200">
-          <block type="string"></block>
-          <block type="boolean"></block>
-          <block type="number"></block>
-          <block type="array"></block>
+        <category name="Conditions" colour="${randomnumber()}">
+          <category name="Meta Condition Types" colour="${randomnumber()}">
+            <block type="conditions_and"></block>
+            <block type="conditions_or"></block>
+          </category>
+          <category name="Entity Condition Types" colour="${randomnumber()}">
+            <block type="conditions_ability"></block>
+          </category>
+          <category name="Bi-entity Condition Types" colour="${randomnumber()}">
+            
+          </category>
+          <category name="Biome Condition Types" colour="${randomnumber()}">
+            
+          </category>
+          <category name="Block Condition Types" colour="${randomnumber()}">
+            
+          </category>
+          <category name="Damage Condition Types" colour="${randomnumber()}">
+            
+          </category>
+          <category name="Fluid Condition Types" colour="${randomnumber()}">
+            
+          </category>
+          <category name="Item Condition Types" colour="${randomnumber()}">
+            
+          </category>
         </category>
-        <category name="Conditions" colour="300">
-
+        <category name="Data Types" colour="${randomnumber()}">
+          <block type="attributed_attribute_modifier"></block>
         </category>
       </xml>`,
     });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     //FUNCTIONS
     function placeInitialContainer() {
-      var containerBlock = workspace.newBlock('multiple'); // Create the block
-      containerBlock.initSvg(); // Initialize rendering (very important!)
-      containerBlock.render();   // Actually render the block
+      var containerBlock = workspace.newBlock('multiple');
+      containerBlock.initSvg();
+      containerBlock.render();
     }
 
-    // Call the function when the page loads
     window.addEventListener('load', placeInitialContainer);
 
     function updateOutput() {
@@ -210,48 +315,116 @@
       function buildOutput(block) {
         let output = "";
         let POWERoutput = "";
-        let CONDITIONSoutput = ""; // Store the output of items within a container
+        let CONDITIONSoutput = "";
         while (block) {
           if (block.type === 'string') {
-            output += `"` + block.getFieldValue('TEXT') + `"` + " ";
-          } else if (block.type === 'boolean') {
-            output += block.getFieldValue('BOOL') + " ";
-          } else if (block.type === 'number') {
-            output += block.getFieldValue('NUMBER') + " ";
-          } else if (block.type === 'array') {
-            let containerpower = block.getInputTargetBlock('ITEMS');
-            console.log(containerpower)
-            output += `[${buildOutput(containerpower)}] `; // Include name and description
+            output += `"${block.getFieldValue('TEXT')}" `;
           }
-
-
-
-
+          else if (block.type === 'boolean') {
+            output += block.getFieldValue('BOOL') + " ";
+          }
+          else if (block.type === 'number') {
+            output += block.getFieldValue('NUMBER') + " ";
+          }
+          else if (block.type === 'array') {
+            let containerpower = block.getInputTargetBlock('ITEMS');
+            output += `[${buildOutput(containerpower)}] `;
+          }
+          //CONDITION
+          else if (block.type === 'conditions_and') {
+            let containerpower = block.getInputTargetBlock('ITEMS');
+            let items = buildOutput(containerpower);
+            if (items) {
+              if (items) {
+                items = items.split(`}{`).filter(item => item !== "").join(`},{`);
+              }
+              output += `{"type": "origins:and","conditions": [${items}]}`;
+            } else { output += `{"type": "origins:and","conditions": []}`; }
+          }
+          else if (block.type === 'conditions_or') {
+            let containerpower = block.getInputTargetBlock('ITEMS');
+            let items = buildOutput(containerpower);
+            if (items) {
+              if (items) {
+                items = items.split(`}{`).filter(item => item !== "").join(`},{`);
+              }
+              output += `{"type": "origins:or","conditions": [${items}]}`;
+            } else { output += `{"type": "origins:or","conditions": []}`; }
+          }
+          else if (block.type === 'conditions_ability') {
+            let ABILITY = block.getFieldValue('ABILITY');
+            if (ABILITY) { ABILITY = `,"ability": "` + ABILITY + `"`; } else { ABILITY = "" }
+            output += `{"type": "origins:ability"${ABILITY}}`;
+          }
+          //DATA
+          else if (block.type === 'attributed_attribute_modifier') {
+            let OPERATION = block.getFieldValue('OPERATION');
+            if (OPERATION) { OPERATION = `"operation": "` + OPERATION + `"`; } else { OPERATION = "" }
+            let ATTRIBUTE = block.getFieldValue('ATTRIBUTE');
+            if (ATTRIBUTE) { ATTRIBUTE = `,"attribute": "` + ATTRIBUTE + `"`; } else { ATTRIBUTE = "" }
+            let VALUE = block.getFieldValue('VALUE');
+            if (VALUE) { VALUE = `,"value": ` + VALUE + ``; } else { VALUE = "" }
+            output += `{${OPERATION}${ATTRIBUTE}${VALUE}}`;
+          }
+          //POWER
           else if (block.type === 'multiple') {
-            let NAME = block.getFieldValue('NAME');        // Get name
-            let DESCRIPTION = block.getFieldValue('DESCRIPTION'); // Get description
+            let NAME = block.getFieldValue('NAME');
+            if (NAME) { NAME = `,"name": "` + NAME + `"`; } else { NAME = "" }
+            let DESCRIPTION = block.getFieldValue('DESCRIPTION');
+            if (DESCRIPTION) { DESCRIPTION = `,"description": "` + DESCRIPTION + `"`; } else { DESCRIPTION = "" }
             let POWER = block.getInputTargetBlock('POWER');
             POWERoutput = buildOutput(POWER);
             if (POWERoutput) {
-              console.log(POWERoutput)
-              POWERoutput = POWERoutput.split(`}"`).filter(item => item !== "").join(`},"`); // Split by space, remove empty strings, join with slash
-              console.log(POWERoutput)
+              //console.log(POWERoutput)
+              POWERoutput = POWERoutput.split(`}"`).filter(item => item !== "").join(`},"`);
+              //console.log(POWERoutput)
             }
+            output += `{"type": "origins:multiple"${NAME}${DESCRIPTION}, ${POWERoutput}}`;
+          }
 
-            output += `{"type": "origins:multiple","name": "${NAME}","description": "${DESCRIPTION}", ${POWERoutput}}`; // Include name and description
-          } else if (block.type === 'attribute_modify_transfer') {
-            let NAME = block.getFieldValue('NAME');        // Get name
-            let CLASS = block.getFieldValue('CLASS'); // Get description
-            let ATTRIBUTE = block.getFieldValue('ATTRIBUTE'); // Get description
-            let MULTIPLIER = block.getFieldValue('MULTIPLIER'); // Get description
+          else if (block.type === 'attribute_modify_transfer') {
+            let NAME = block.getFieldValue('NAME');
+            if (NAME == null) { NAME = `youneedaname`; }
+            let CLASS = block.getFieldValue('CLASS');
+            if (CLASS) { CLASS = `,"class": "` + CLASS + `"`; } else { CLASS = "" }
+            let ATTRIBUTE = block.getFieldValue('ATTRIBUTE');
+            if (ATTRIBUTE) { ATTRIBUTE = `,"attribute": "` + ATTRIBUTE + `"`; } else { ATTRIBUTE = "" }
+            let MULTIPLIER = block.getFieldValue('MULTIPLIER');
+            if (MULTIPLIER) { MULTIPLIER = `,"multiplier": "` + MULTIPLIER + `"`; } else { MULTIPLIER = "" }
             let CONDITIONS = block.getInputTargetBlock('CONDITIONS');
-            CONDITIONSoutput = buildOutput(CONDITIONS);
-            if (CONDITIONSoutput) {
-              //console.log(CONDITIONSoutput)
-              CONDITIONSoutput = CONDITIONSoutput.split(`}"`).filter(item => item !== "").join(`},"`); // Split by space, remove empty strings, join with slash
-              //console.log(CONDITIONSoutput)
-            }
-            output += `"${NAME}":{"type": "origins:attribute_modify_transfer","class": "${CLASS}","attribute": "${ATTRIBUTE}","multiplier":${MULTIPLIER},"condition":{"type": "origins:and","conditions": [${CONDITIONSoutput}]}}`; // Include name and description
+            if (CONDITIONS) {
+              CONDITIONS = buildOutput(CONDITIONS);
+              if (CONDITIONS) {
+                CONDITIONS = CONDITIONS.split(`}"`).filter(item => item !== "").join(`},"`);
+              }
+              CONDITIONS = `,"condition": ` + CONDITIONS + ``;
+            } else { CONDITIONS = "" }
+            output += `"${NAME}":{"type": "origins:attribute_modify_transfer"${CLASS}${ATTRIBUTE}${MULTIPLIER}${CONDITIONS}}`; // Include name and description
+          }
+
+          else if (block.type === 'attribute') {
+            let NAME = block.getFieldValue('NAME');
+            if (NAME == null) { NAME = `youneedaname`; }
+            let UPDATE_HEALTH = block.getFieldValue('UPDATE_HEALTH');
+            if (UPDATE_HEALTH) { UPDATE_HEALTH = `,"update_health":"` + UPDATE_HEALTH + `"`; } else { UPDATE_HEALTH = "" }
+            let MODIFIERS = block.getInputTargetBlock('MODIFIERS');
+            if (MODIFIERS) {
+              MODIFIERS = buildOutput(MODIFIERS);
+              if (MODIFIERS) {
+                MODIFIERS = MODIFIERS.split(`}"`).filter(item => item !== "").join(`},"`);
+              }
+              MODIFIERS = `,"modifiers": [` + MODIFIERS + `]`;
+            } else { MODIFIERS = "" }
+            let CONDITIONS = block.getInputTargetBlock('CONDITIONS');
+            if (CONDITIONS) {
+              CONDITIONS = buildOutput(CONDITIONS);
+              if (CONDITIONS) {
+                CONDITIONS = CONDITIONS.split(`}"`).filter(item => item !== "").join(`},"`);
+              }
+              CONDITIONS = `,"condition": ` + CONDITIONS + ``;
+            } else { CONDITIONS = "" }
+
+            output += `"${NAME}":{"type": "origins:attribute"${MODIFIERS}${UPDATE_HEALTH}${CONDITIONS}}`;
           }
           block = block.getNextBlock();
         }
@@ -259,13 +432,17 @@
       }
 
       output = buildOutput(topBlock).trim()
-      //console.log(output)
-      if (output) {
-        output = eval("(" + output + ")");
-        output = JSON.stringify(output, null, 2)
+      console.log(output)
+      try {
+        if (output) {
+          output = eval("(" + output + ")");
+          output = JSON.stringify(output, null, 2)
+        }
+        //console.log(output)
+        document.getElementById('outputArea').value = output;
+      } catch (error) {
+        document.getElementById('outputArea').value = `Meet Error: ${error}\nOutput:\n${output}`;
       }
-      //console.log(output)
-      document.getElementById('outputArea').value = output;
     }
 
 
