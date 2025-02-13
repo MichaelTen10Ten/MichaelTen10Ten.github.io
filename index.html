@@ -11,8 +11,8 @@
     }
 
     #blocklyDiv {
-      height: 900px;
-      width: 1000px;
+      height: 100%px;
+      width: 100%px;
       flex: 1;
       /* Allow Blockly to take up available space */
     }
@@ -120,7 +120,7 @@
     Blockly.Blocks['power/Regular types/attribute'] = {
       init: function () {
         this.appendDummyInput()
-          .appendField("Power(Attribute)")
+          .appendField("Power( Attribute)")
         this.appendDummyInput()
           .appendField("Power Name:")
           .appendField(new Blockly.FieldTextInput("attribute"), "NAME") // Name input
@@ -128,7 +128,7 @@
           .setCheck(null)
           .appendField("Attributed Attribute Modifier( Attributed Attribute Modifier):")
         this.appendDummyInput()
-          .appendField("update_health:")
+          .appendField("Update Health:")
           .appendField(new Blockly.FieldDropdown([["true", "true"], ["false", "false"]]), "UPDATE_HEALTH") // Name input
         this.appendStatementInput("CONDITIONS")
           .setCheck(null)
@@ -275,7 +275,7 @@
     Blockly.Blocks['conditions/Entity Condition Types/air'] = {
       init: function () {
         this.appendDummyInput()
-          .appendField("Conditions(Air):")
+          .appendField("Conditions( Air):")
         this.appendDummyInput()
           .appendField("Comparison:")
           .appendField(new Blockly.FieldDropdown([["<", "<"], ["<=", "<="], [">", ">"], [">=", ">="], ["==", "=="], ["!=", "!="]]), "COMPARISON")
@@ -293,7 +293,7 @@
     Blockly.Blocks['conditions/Entity Condition Types/attribute'] = {
       init: function () {
         this.appendDummyInput()
-          .appendField("Conditions(Attribute):")
+          .appendField("Conditions( Attribute):")
         this.appendDummyInput()
           .appendField("Attribute:")
           .appendField(new Blockly.FieldTextInput("minecraft:generic.movement_speed"), "ATTRIBUTE")
@@ -344,7 +344,7 @@
     Blockly.Blocks['conditions/Biome Condition Types/temperature'] = {
       init: function () {
         this.appendDummyInput()
-          .appendField("Biome Conditions(Temperature):")
+          .appendField("Biome Conditions( Temperature):")
         this.appendDummyInput()
           .appendField("Comparison:")
           .appendField(new Blockly.FieldDropdown([["<", "<"], ["<=", "<="], [">", ">"], [">=", ">="], ["==", "=="], ["!=", "!="]]), "COMPARISON")
@@ -381,6 +381,219 @@
         this.appendDummyInput()
           .appendField("precipitation:")
           .appendField(new Blockly.FieldDropdown([["none", "none"], ["rain", "rain"], ["snow", "snow"]]), "CONDITION")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Entity Condition Types/block_collision'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Conditions( Block Collision):")
+        this.appendStatementInput("CONDITION")
+          .setCheck(null)
+          .appendField("Block Condition( Block Condition):")
+        this.appendDummyInput()
+          .appendField("Offset X:")
+          .appendField(new Blockly.FieldNumber(1), "OFFSETX")
+        this.appendDummyInput()
+          .appendField("Offset Y:")
+          .appendField(new Blockly.FieldNumber(1), "OFFSETY")
+        this.appendDummyInput()
+          .appendField("Offset Z:")
+          .appendField(new Blockly.FieldNumber(1), "OFFSETZ")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Block Condition Types/adjacent'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Block Conditions( Adjacent):")
+        this.appendStatementInput("BLOCKCONDITION")
+          .setCheck(null)
+          .appendField("Adjacent Block Condition( Block Condition):")
+        this.appendDummyInput()
+          .appendField("Comparison:")
+          .appendField(new Blockly.FieldDropdown([["<", "<"], ["<=", "<="], [">", ">"], [">=", ">="], ["==", "=="], ["!=", "!="]]), "COMPARISON")
+        this.appendDummyInput()
+          .appendField("Compare to:")
+          .appendField(new Blockly.FieldNumber(1), "CONDITION")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Block Condition Types/attachable'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Block Conditions( Attachable):")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Block Condition Types/blast_resistance'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Block Conditions( Blast Resistance):")
+        this.appendDummyInput()
+          .appendField("Comparison:")
+          .appendField(new Blockly.FieldDropdown([["<", "<"], ["<=", "<="], [">", ">"], [">=", ">="], ["==", "=="], ["!=", "!="]]), "COMPARISON")
+        this.appendDummyInput()
+          .appendField("Compare to:")
+          .appendField(new Blockly.FieldNumber(1), "CONDITION")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Block Condition Types/block_entity'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Block Conditions( Block Entity):")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Block Condition Types/block_state'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Block Conditions( Block State):")
+        this.appendDummyInput()
+          .appendField("Property:")
+          .appendField(new Blockly.FieldTextInput("facing"), "PROPERTY")
+        this.appendDummyInput()
+          .appendField("Comparison:")
+          .appendField(new Blockly.FieldDropdown([["<", "<"], ["<=", "<="], [">", ">"], [">=", ">="], ["==", "=="], ["!=", "!="]]), "COMPARISON")
+        this.appendDummyInput()
+          .appendField("Compare to:")
+          .appendField(new Blockly.FieldNumber(1), "CONDITION")
+        this.appendDummyInput()
+          .appendField("Value:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "VALUE");
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.appendDummyInput()
+          .appendField("enum:")
+          .appendField(new Blockly.FieldTextInput("north"), "ENUM")
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Block Condition Types/block'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Block Conditions( Block):")
+        this.appendDummyInput()
+          .appendField("Block:")
+          .appendField(new Blockly.FieldTextInput("minecraft:diamond_block"), "CONDITION")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Block Condition Types/command'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Block Conditions( Command):")
+        this.appendDummyInput()
+          .appendField("Command:")
+          .appendField(new Blockly.FieldTextInput("execute align xyz if entity @e[dy=0,dx=0,dz=0]"), "COMMAND")
+        this.appendDummyInput()
+          .appendField("Comparison:")
+          .appendField(new Blockly.FieldDropdown([["<", "<"], ["<=", "<="], [">", ">"], [">=", ">="], ["==", "=="], ["!=", "!="]]), "COMPARISON")
+        this.appendDummyInput()
+          .appendField("Compare to:")
+          .appendField(new Blockly.FieldNumber(1), "CONDITION")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Block Condition Types/distance_from_coordinates'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Block Conditions( Distance From Coordinates):")
+        this.appendDummyInput()
+          .appendField("Reference:")
+          .appendField(new Blockly.FieldDropdown([["world_origin", "world_origin"], ["world_spawn", "world_spawn"]]), "REFERENCE")
+        this.appendDummyInput()
+          .appendField("Offset X:")
+          .appendField(new Blockly.FieldNumber(0), "OFFSETX")
+        this.appendDummyInput()
+          .appendField("Offset Y:")
+          .appendField(new Blockly.FieldNumber(0), "OFFSETY")
+        this.appendDummyInput()
+          .appendField("Offset Z:")
+          .appendField(new Blockly.FieldNumber(0), "OFFSETZ")
+        this.appendDummyInput()
+          .appendField("Ignore X:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "IGNOREX");
+        this.appendDummyInput()
+          .appendField("Ignore Y:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "IGNOREY");
+        this.appendDummyInput()
+          .appendField("Ignore Z:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "IGNOREZ");
+        this.appendDummyInput()
+          .appendField("Shape:")
+          .appendField(new Blockly.FieldDropdown([["cube", "cube"], ["star", "star"], ["sphere", "sphere"]]), "SHAPE");
+        this.appendDummyInput()
+          .appendField("Scale Reference To Dimension:")
+          .appendField(new Blockly.FieldDropdown([["true", "true"], ["false", "false"]]), "SCALEREFERENCETODIMENSION");
+        this.appendDummyInput()
+          .appendField("Result On The Wrong Dimension:")
+          .appendField(new Blockly.FieldDropdown([["null", "null"], ["true", "true"], ["false", "false"]]), "RESULTONTHEWRONGDIMENSION");
+        this.appendDummyInput()
+          .appendField("Round to digit:")
+          .appendField(new Blockly.FieldNumber(0), "ROUNDTODIGIT")
+        this.appendDummyInput()
+          .appendField("Comparison:")
+          .appendField(new Blockly.FieldDropdown([["<", "<"], ["<=", "<="], [">", ">"], [">=", ">="], ["==", "=="], ["!=", "!="]]), "COMPARISON")
+        this.appendDummyInput()
+          .appendField("Compare to:")
+          .appendField(new Blockly.FieldNumber(1), "COMPARETO")
+        this.appendDummyInput()
+          .appendField("Inverted:")
+          .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(randomnumber());
+      }
+    };
+    Blockly.Blocks['conditions/Block Condition Types/exposed_to_sky'] = {
+      init: function () {
+        this.appendDummyInput()
+          .appendField("Block Conditions( Exposed To Sky):")
         this.appendDummyInput()
           .appendField("Inverted:")
           .appendField(new Blockly.FieldDropdown([["false", "false"], ["true", "true"]]), "INVERTED");
@@ -499,7 +712,7 @@
               ITEMS = `,"conditions": [${ITEMS}]`;
             } else { ITEMS = `,"conditions": []`; }
             let INVERTED = block.getFieldValue('INVERTED');
-            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
             output += `{"type": "origins:and"${ITEMS}${INVERTED}}`;
           }
           else if (block.type === 'conditions/Meta Condition Types/or') {
@@ -512,28 +725,28 @@
               ITEMS = `,"conditions": [${ITEMS}]`;
             } else { ITEMS = `,"conditions": []`; }
             let INVERTED = block.getFieldValue('INVERTED');
-            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
             output += `{"type": "origins:or"${ITEMS}${INVERTED}}`;
           }
           else if (block.type === 'conditions/Entity Condition Types/ability') {
             let CONDITION = block.getFieldValue('CONDITION');
             if (CONDITION) { CONDITION = `,"ability": "${CONDITION}"`; } else { CONDITION = "" }
             let INVERTED = block.getFieldValue('INVERTED');
-            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
             output += `{"type": "origins:ability"${CONDITION}${INVERTED}}`;
           }
           else if (block.type === 'conditions/Entity Condition Types/advancement') {
             let CONDITION = block.getFieldValue('CONDITION');
             if (CONDITION) { CONDITION = `,"advancement": "${CONDITION}"`; } else { CONDITION = "" }
             let INVERTED = block.getFieldValue('INVERTED');
-            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
             output += `{"type": "origins:advancement"${CONDITION}${INVERTED}}`;
           }
           else if (block.type === 'conditions/Meta Condition Types/chance') {
             let CONDITION = block.getFieldValue('CONDITION');
             if (CONDITION) { CONDITION = `,"chance": "${CONDITION}"`; } else { CONDITION = "" }
             let INVERTED = block.getFieldValue('INVERTED');
-            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
             output += `{"type": "origins:chance"${CONDITION}${INVERTED}}`;
           }
           else if (block.type === 'conditions/Entity Condition Types/air') {
@@ -542,7 +755,7 @@
             let CONDITION = block.getFieldValue('CONDITION');
             if (CONDITION) { CONDITION = `,"compare_to": "${CONDITION}"`; } else { CONDITION = "" }
             let INVERTED = block.getFieldValue('INVERTED');
-            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
             output += `{"type": "origins:air"${COMPARISON}${CONDITION}${INVERTED}}`;
           }
           else if (block.type === 'conditions/Entity Condition Types/attribute') {
@@ -553,7 +766,7 @@
             let CONDITION = block.getFieldValue('CONDITION');
             if (CONDITION) { CONDITION = `,"compare_to": "${CONDITION}"`; } else { CONDITION = "" }
             let INVERTED = block.getFieldValue('INVERTED');
-            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
             output += `{"type": "origins:attribute"${COMPARISON}${CONDITION}${INVERTED}}`;
           }
           else if (block.type === 'conditions/Entity Condition Types/biome') {
@@ -574,12 +787,12 @@
               BIOMECONDITION = `,"condition": ${BIOMECONDITION}`;
             }
             let INVERTED = block.getFieldValue('INVERTED');
-            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
             output += `{"type": "origins:biome"${CONDITION}${BIOMECONDITION}${INVERTED}}`;
           }
           else if (block.type === 'conditions/Biome Condition Types/high_humidity') {
             let INVERTED = block.getFieldValue('INVERTED');
-            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
             output += `{"type": "origins:high_humidity"${INVERTED}}`;
           }
           else if (block.type === 'conditions/Biome Condition Types/temperature') {
@@ -588,22 +801,144 @@
             let CONDITION = block.getFieldValue('CONDITION');
             if (CONDITION) { CONDITION = `,"compare_to": "${CONDITION}"`; } else { CONDITION = "" }
             let INVERTED = block.getFieldValue('INVERTED');
-            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
             output += `{"type": "origins:temperature"${COMPARISON}${CONDITION}${INVERTED}}`;
           }
           else if (block.type === 'conditions/Biome Condition Types/in_tag') {
             let CONDITION = block.getFieldValue('CONDITION');
             if (CONDITION) { CONDITION = `,"tag": "${CONDITION}"`; } else { CONDITION = "" }
             let INVERTED = block.getFieldValue('INVERTED');
-            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
             output += `{"type": "origins:in_tag"${CONDITION}${INVERTED}}`;
           }
           else if (block.type === 'conditions/Biome Condition Types/precipitation') {
             let CONDITION = block.getFieldValue('CONDITION');
             if (CONDITION) { CONDITION = `,"tag": "${CONDITION}"`; } else { CONDITION = "" }
             let INVERTED = block.getFieldValue('INVERTED');
-            if (INVERTED) { INVERTED = `,"inverted": "${INVERTED}"`; } else { INVERTED = "" }
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
             output += `{"type": "origins:precipitation"${CONDITION}${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Entity Condition Types/block_collision') {
+            let CONDITION = block.getInputTargetBlock('CONDITION');
+            CONDITION = buildOutput(CONDITION);
+            if (CONDITION) {
+              if (CONDITION) {
+                CONDITION = CONDITION.split(`}"`).filter(item => item !== "").join(`},"`);
+              }
+              CONDITION = `,"condition": ${CONDITION}`;
+            }
+            let OFFSETX = block.getFieldValue('OFFSETX');
+            if (OFFSETX) { OFFSETX = `,"offset_x": "${OFFSETX}"`; } else { OFFSETX = "" }
+            let OFFSETY = block.getFieldValue('OFFSETY');
+            if (OFFSETY) { OFFSETY = `,"offset_y": "${OFFSETY}"`; } else { OFFSETY = "" }
+            let OFFSETZ = block.getFieldValue('OFFSETZ');
+            if (OFFSETZ) { OFFSETZ = `,"offset_z": "${OFFSETZ}"`; } else { OFFSETZ = "" }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
+            output += `{"type": "origins:block_collision"${OFFSETX}${OFFSETZ}${OFFSETZ}${CONDITION}${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Block Condition Types/adjacent') {
+            let BLOCKCONDITION = block.getInputTargetBlock('BLOCKCONDITION');
+            BLOCKCONDITION = buildOutput(BLOCKCONDITION);
+            if (BLOCKCONDITION) {
+              if (BLOCKCONDITION) {
+                BLOCKCONDITION = BLOCKCONDITION.split(`}"`).filter(item => item !== "").join(`},"`);
+              }
+              BLOCKCONDITION = `,"adjacent_condition": ${BLOCKCONDITION}`;
+            }
+            let COMPARISON = block.getFieldValue('COMPARISON');
+            if (COMPARISON) { COMPARISON = `,"comparison": "${COMPARISON}"`; } else { COMPARISON = "" }
+            let CONDITION = block.getFieldValue('CONDITION');
+            if (CONDITION) { CONDITION = `,"compare_to": "${CONDITION}"`; } else { CONDITION = "" }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
+            output += `{"type": "origins:adjacent"${BLOCKCONDITION}${COMPARISON}${CONDITION}${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Block Condition Types/attachable') {
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
+            output += `{"type": "origins:attachable"${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Block Condition Types/blast_resistance') {
+            let COMPARISON = block.getFieldValue('COMPARISON');
+            if (COMPARISON) { COMPARISON = `,"comparison": "${COMPARISON}"`; } else { COMPARISON = "" }
+            let CONDITION = block.getFieldValue('CONDITION');
+            if (CONDITION) { CONDITION = `,"compare_to": "${CONDITION}"`; } else { CONDITION = "" }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
+            output += `{"type": "origins:command"${COMPARISON}${CONDITION}${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Block Condition Types/block_entity') {
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
+            output += `{"type": "origins:block_entity"${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Block Condition Types/block') {
+            let CONDITION = block.getFieldValue('CONDITION');
+            if (CONDITION) { CONDITION = `,"block": "${CONDITION}"`; } else { CONDITION = "" }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
+            output += `{"type": "origins:block"${CONDITION}${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Block Condition Types/block_state') {
+            let PROPERTY = block.getFieldValue('PROPERTY');
+            if (PROPERTY) { PROPERTY = `,"property": "${PROPERTY}"`; } else { PROPERTY = "" }
+            let COMPARISON = block.getFieldValue('COMPARISON');
+            if (COMPARISON) { COMPARISON = `,"comparison": "${COMPARISON}"`; } else { COMPARISON = "" }
+            let CONDITION = block.getFieldValue('CONDITION');
+            if (CONDITION) { CONDITION = `,"compare_to": "${CONDITION}"`; } else { CONDITION = "" }
+            let VALUE = block.getFieldValue('VALUE');
+            if (VALUE) { VALUE = `,"value": ${VALUE}`; } else { VALUE = "" }
+            let ENUM = block.getFieldValue('ENUM');
+            if (ENUM) { ENUM = `,"enum": "${ENUM}"`; } else { ENUM = "" }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
+            output += `{"type": "origins:block_state"${PROPERTY}${COMPARISON}${CONDITION}${VALUE}${ENUM}${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Block Condition Types/command') {
+            let COMMAND = block.getFieldValue('COMMAND');
+            if (COMMAND) { COMMAND = `,"command": "${COMMAND}"`; } else { COMMAND = "" }
+            let COMPARISON = block.getFieldValue('COMPARISON');
+            if (COMPARISON) { COMPARISON = `,"comparison": "${COMPARISON}"`; } else { COMPARISON = "" }
+            let CONDITION = block.getFieldValue('CONDITION');
+            if (CONDITION) { CONDITION = `,"compare_to": "${CONDITION}"`; } else { CONDITION = "" }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
+            output += `{"type": "origins:command"${COMMAND}${COMPARISON}${CONDITION}${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Block Condition Types/distance_from_coordinates') {
+            let REFERENCE = block.getFieldValue('REFERENCE');
+            if (REFERENCE) { REFERENCE = `,"reference": "${REFERENCE}"`; } else { REFERENCE = "" }
+            let OFFSETX = block.getFieldValue('OFFSETX');
+            let OFFSETY = block.getFieldValue('OFFSETY');
+            let OFFSETZ = block.getFieldValue('OFFSETZ');
+            let OFFSET = `,"offset":{"x":${OFFSETX},"y":${OFFSETY},"z":${OFFSETZ}}`;
+            let IGNOREX = block.getFieldValue('IGNOREX');
+            if (IGNOREX) { IGNOREX = `,"ignore_x": ${IGNOREX}`; } else { IGNOREX = "" }
+            let IGNOREY = block.getFieldValue('IGNOREY');
+            if (IGNOREY) { IGNOREY = `,"ignore_y": ${IGNOREY}`; } else { IGNOREY = "" }
+            let IGNOREZ = block.getFieldValue('IGNOREZ');
+            if (IGNOREZ) { IGNOREZ = `,"ignore_z": ${IGNOREZ}`; } else { IGNOREZ = "" }
+            let SHAPE = block.getFieldValue('SHAPE');
+            if (SHAPE) { SHAPE = `,"shape": "${SHAPE}"`; } else { SHAPE = "" }
+            let SCALEREFERENCETODIMENSION = block.getFieldValue('SCALEREFERENCETODIMENSION');
+            if (SCALEREFERENCETODIMENSION) { SCALEREFERENCETODIMENSION = `,"scale_reference_to_dimension": "${SCALEREFERENCETODIMENSION}"`; } else { SCALEREFERENCETODIMENSION = "" }
+            let RESULTONTHEWRONGDIMENSION = block.getFieldValue('RESULTONTHEWRONGDIMENSION');
+            if (RESULTONTHEWRONGDIMENSION != "null") { RESULTONTHEWRONGDIMENSION = `,"result_on_the_wrong_dimension": "${RESULTONTHEWRONGDIMENSION}"`; } else { RESULTONTHEWRONGDIMENSION = "" }
+            let ROUNDTODIGIT = block.getFieldValue('ROUNDTODIGIT');
+            if (ROUNDTODIGIT) { ROUNDTODIGIT = `,"round_to_digit": "${ROUNDTODIGIT}"`; } else { ROUNDTODIGIT = "" }
+            let COMPARISON = block.getFieldValue('COMPARISON');
+            if (COMPARISON) { COMPARISON = `,"comparison": "${COMPARISON}"`; } else { COMPARISON = "" }
+            let COMPARETO = block.getFieldValue('COMPARETO');
+            if (COMPARETO) { COMPARETO = `,"compare_to": "${COMPARETO}"`; } else { COMPARETO = "" }
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
+            output += `{"type": "origins:distance_from_coordinates"${REFERENCE}${OFFSET}${IGNOREX}${IGNOREY}${IGNOREZ}${SHAPE}${SCALEREFERENCETODIMENSION}${RESULTONTHEWRONGDIMENSION}${ROUNDTODIGIT}${COMPARISON}${COMPARETO}${INVERTED}}`;
+          }
+          else if (block.type === 'conditions/Block Condition Types/exposed_to_sky') {
+            let INVERTED = block.getFieldValue('INVERTED');
+            if (INVERTED != "false") { INVERTED = `,"inverted": ${INVERTED}`; } else { INVERTED = "" }
+            output += `{"type": "origins:exposed_to_sky"${INVERTED}}`;
           }
           //DATA
           else if (block.type === 'data/attributed_attribute_modifier') {
@@ -630,7 +965,6 @@
             }
             output += `{"type": "origins:multiple"${NAME}${DESCRIPTION}, ${POWER}}`;
           }
-
           else if (block.type === 'power/Regular types/attribute_modify_transfer') {
             let NAME = block.getFieldValue('NAME');
             if (NAME == null) { NAME = `youneedaname`; }
@@ -650,7 +984,6 @@
             } else { CONDITIONS = "" }
             output += `"${NAME}":{"type": "origins:attribute_modify_transfer"${CLASS}${ATTRIBUTE}${MULTIPLIER}${CONDITIONS}}`; // Include name and description
           }
-
           else if (block.type === 'power/Regular types/attribute') {
             let NAME = block.getFieldValue('NAME');
             if (NAME == null) { NAME = `youneedaname`; }
