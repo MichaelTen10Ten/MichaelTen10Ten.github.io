@@ -1,31 +1,30 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>WebAR QR Code Scanner</title>
+    <title>QR Code AR Overlay</title>
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   </head>
 
   <body style="margin: 0px; overflow: hidden;">
-    <a-scene 
-      embedded 
-      arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-    >
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+      
       <a-assets>
-        <img id="my-image" src="images/minecraft_icon.png" crossorigin="anonymous">
+        <a-asset-item id="myModel" src="https://raw.githack.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb"></a-asset-item>
       </a-assets>
 
-      <a-marker type="pattern" url="source/minecraft_icon.patt">
-        <a-image 
-          src="#my-image"
-          position="0 0.5 0" 
-          rotation="-90 0 0" 
-          width="1" 
-          height="1">
-        </a-image>
+      <a-marker type="pattern" url="source/duck.patt">
+        <a-entity 
+          gltf-model="#myModel" 
+          scale="0.5 0.5 0.5" 
+          position="0 0 0"
+          rotation="0 0 0"
+          animation="property: rotation; to: 0 360 0; loop: true; dur: 10000">
+        </a-entity>
       </a-marker>
 
       <a-entity camera></a-entity>
+      
     </a-scene>
   </body>
 </html>
