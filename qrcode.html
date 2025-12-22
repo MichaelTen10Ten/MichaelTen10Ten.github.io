@@ -1,22 +1,24 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Web AR QR Overlay</title>
+    <title>WebAR QR Code Scanner</title>
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   </head>
 
   <body style="margin: 0px; overflow: hidden;">
-    <a-scene embedded arjs='sourceType: webcam; debugUIEnabled: false;'>
-      
+    <a-scene 
+      embedded 
+      arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    >
       <a-assets>
         <img id="my-image" src="images/minecraft_icon.png" crossorigin="anonymous">
       </a-assets>
 
       <a-marker type="pattern" url="source/pattern-qrcode.patt">
         <a-image 
-          src="#my-image" 
-          position="0 0 0" 
+          src="#my-image"
+          position="0 0.5 0" 
           rotation="-90 0 0" 
           width="1" 
           height="1">
@@ -24,7 +26,6 @@
       </a-marker>
 
       <a-entity camera></a-entity>
-      
     </a-scene>
   </body>
 </html>
