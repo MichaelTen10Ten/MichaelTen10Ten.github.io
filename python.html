@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Michael Ten | Python IDE</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+
+    <style>
+        .ide-container {
+            display: grid;
+            grid-template-rows: 1fr 180px;
+            gap: 15px;
+            height: 550px;
+            margin-top: 20px;
+        }
+
+        #editor {
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 8px;
+            font-size: 16px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        #output {
+            background: rgba(10, 10, 10, 0.95);
+            color: #00ffaa;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            border-top: 2px solid #ff00ff;
+            /* Matches neon-text-sub */
+            border-radius: 0 0 8px 8px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .run-btn {
+            background: transparent;
+            color: #00f3ff;
+            border: 1px solid #00f3ff;
+            padding: 10px 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            border-radius: 4px;
+        }
+
+        .run-btn:hover:not(:disabled) {
+            background: #00f3ff;
+            color: #000;
+            box-shadow: 0 0 20px #00f3ff;
+        }
+
+        .run-btn:disabled {
+            border-color: #444;
+            color: #666;
+            cursor: wait;
+        }
+
+        .status-badge {
+            font-size: 0.85rem;
+            margin-left: 15px;
+        }
+    </style>
+</head>
+
+<body class="index-page">
+    <div class="background-overlay"></div>
+
+    <nav id="main-nav">
+        <div class="logo">
+            <a href="index.html"><span class="neon-text-main">M</span>ichael <span class="neon-text-sub">T</span>en</a>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html" class="">Home</a></li>
+            <li><a href="experience.html" class="">Experience</a></li>
+            <li><a href="education.html" class="">Education</a></li>
+            <li><a href="skills.html" class="">Skills</a></li>
+            <li><a href="extra.html" class="">Extra</a></li>
+            <li><a href="python.html" class="active">PythonIDE</a></li>
+            <li><a href="sitemap.html" class="">Site Map</a></li>
+        </ul>
+    </nav>
+
+    <main id="index-content" class="fade-in" style="max-width: 900px; margin: 0 auto; padding: 100px 20px;">
+        <section class="content-box">
+            <h1>Python <span class="neon-text-sub">Web Runtime</span></h1>
+
+            <div style="margin-bottom: 10px;">
+                <button id="run-btn" class="run-btn" onclick="runCode()" disabled>
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </button>
+                <span id="status" class="status-badge" style="color: #ffaa00;">● Initializing environment...</span>
+            </div>
+
+            <div class="ide-container">
+                <div id="editor"># Here is the installed Package
+import micropip
+#import numpy as np
+#import pandas as pd
+#import matplotlib.pyplot as plt
+#import scipy
+#import sklearn
+#import bs4
+#import PIL
+#import networkx as nx
+#import sympy
+#import requests
+
+print("Hello world!")
+
+# Install extra Package
+await micropip.install("emoji")
+import emoji
+
+print(emoji.emojize("Python in the browser is :thumbs_up:"))
+                </div>
+                <div id="output">Console output will appear here after clicking Run...</div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="content-box">
+            <p>&copy; 2025 Michael Ten. All rights reserved.</p>
+            <div class="social-links">
+
+                <a href="https://modrinth.com/user/Ten_Mic_10" target="_blank" rel="noopener noreferrer"
+                    aria-label="Modrinth"><i class="fab fa-modx"></i></a>
+                <a href="https://www.instagram.com/m_i_c_h_a_e_l_1_0/" target="_blank" rel="noopener noreferrer"
+                    aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="https://www.youtube.com/@Michael10" target="_blank" rel="noopener noreferrer"
+                    aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+            </div>
+        </div>
+    </footer>
+    <script>
+        // Initialize Editor
+        const editor = ace.edit("editor");
+        editor.setTheme("ace/theme/monokai");
+        editor.session.setMode("ace/mode/python");
+        editor.setShowPrintMargin(false);
+
+        let pyodide;
+        const outputDiv = document.getElementById("output");
+        const statusText = document.getElementById("status");
+        const runBtn = document.getElementById("run-btn");
+
+        async function initPyodide() {
+            try {
+                // Explicitly defining indexURL helps fix loading issues in many browsers
+                pyodide = await loadPyodide({
+                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/"
+                });
+                await pyodide.loadPackage("micropip");
+                const micropip = pyodide.pyimport("micropip");
+                await pyodide.loadPackage("numpy");
+                await pyodide.loadPackage("pandas");
+                await pyodide.loadPackage("matplotlib");
+                await pyodide.loadPackage("scipy");
+                await pyodide.loadPackage("scikit-learn");
+                await pyodide.loadPackage("beautifulsoup4");
+                await pyodide.loadPackage("Pillow");
+                await pyodide.loadPackage("networkx");
+                await pyodide.loadPackage("sympy");
+                await pyodide.loadPackage("micropip");
+                await pyodide.loadPackage("requests");
+
+                statusText.innerText = "● System Ready";
+                statusText.style.color = "#00ffaa";
+                runBtn.disabled = false;
+                runBtn.innerHTML = '<i class="fas fa-play"></i> Run Code';
+            } catch (e) {
+                statusText.innerText = "● Error: Check console or run on a local server";
+                statusText.style.color = "#ff4444";
+                console.error(e);
+            }
+        }
+        initPyodide();
+
+        async function runCode() {
+            if (!pyodide) return;
+            const code = editor.getValue();
+            outputDiv.innerText = "";
+
+            try {
+                // Capture Python's print output
+                pyodide.setStdout({ batched: (str) => { outputDiv.innerText += str + "\n"; } });
+                await pyodide.runPythonAsync(code);
+            } catch (err) {
+                outputDiv.innerText = "Python Error:\n" + err.message;
+            }
+        }
+    </script>
+</body>
+
+</html>
