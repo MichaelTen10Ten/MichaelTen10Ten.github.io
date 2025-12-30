@@ -182,10 +182,6 @@
                         <input type="range" id="powerOffset" min="0" max="1000" value="50">
                     </div>
 
-                    <div class="control-group">
-                        <label>Description Width</label>
-                        <input type="number" id="descWidth" value="22">
-                    </div>
 
                     <div class="control-group inline-group">
                         <input type="checkbox" id="autoColor" checked>
@@ -355,7 +351,7 @@
 
             ctx.fillStyle = "black";
             ctx.font = `${iconSize / 15}px MinecraftBold`;
-            let currentY = wrapText(ctx, origin.description, offset, 500, parseInt(document.getElementById('descWidth').value), 35);
+            let currentY = wrapText(ctx, origin.description, offset, 500, parseInt(22), 35);
 
             currentY += parseInt(document.getElementById('powerOffset').value);
 
