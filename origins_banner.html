@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Michael Ten | Toolbox</title>
+    <link rel="icon" type="image/x-icon" href="images/icon.ico">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <link rel="preload" href="source/font/MinecraftTen-VGORe.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="source/font/MinecraftBold-nMK1.otf" as="font" type="font/otf" crossorigin>
+    <link rel="preload" href="source/font/MinecraftRegular-Bmg3.otf" as="font" type="font/otf" crossorigin>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+        /* Generator Specific Overrides to match index.html/python.html */
+        @font-face {
+            font-family: 'MinecraftTen';
+            src: url('source/font/MinecraftTen-VGORe.ttf');
+        }
+
+        @font-face {
+            font-family: 'MinecraftBold';
+            src: url('source/font/MinecraftBold-nMK1.otf');
+        }
+
+        @font-face {
+            font-family: 'MinecraftRegular';
+            src: url('source/font/MinecraftRegular-Bmg3.otf');
+        }
+
+        .generator-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 100px 20px;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #00f3ff;
+            /* Neon Cyan */
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="file"],
+        select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 4px;
+            color: white;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: transparent;
+            color: #00f3ff;
+            border: 1px solid #00f3ff;
+            padding: 12px 30px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            border-radius: 4px;
+            width: 100%;
+            text-transform: uppercase;
+        }
+
+        .btn-primary:hover {
+            background: #00f3ff;
+            color: #000;
+            box-shadow: 0 0 20px #00f3ff;
+        }
+
+        #gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        img {
+            width: 100%;
+            border: 1px solid rgba(255, 0, 255, 0.3);
+            /* Neon Pink Border */
+            border-radius: 10px;
+            transition: transform 0.3s;
+        }
+
+        img:hover {
+            transform: scale(1.02);
+        }
+
+        /* Alignment fix for Checkbox */
+        .inline-group {
+            display: flex;
+            flex-direction: row !important;
+            align-items: center;
+            gap: 10px;
+            justify-content: flex-start;
+        }
+
+        .inline-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin: 0;
+        }
+
+        .inline-group label {
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body class="index-page">
+    <div class="background-overlay"></div>
+
+    <nav id="main-nav">
+        <div class="logo">
+            <a href="index.html"><span class="neon-text-main">M</span>ichael <span class="neon-text-sub">T</span>en</a>
+        </div>
+        <ul class="nav-links">
+
+            <li><a href="index.html" class="">Home</a></li>
+            <li><a href="experience.html" class="">Experience</a></li>
+            <li><a href="education.html" class="">Education</a></li>
+            <li><a href="skills.html" class="">Skills</a></li>
+            <li><a href="extra.html" class="">Extra</a></li>
+            <li><a href="python.html" class="">PythonIDE</a></li>
+            <li><a href="origins_banner.html" class="active">Origin Banner Gen</a></li>
+            <li><a href="sitemap.html" class="">Site Map</a></li>
+        </ul>
+    </nav>
+
+    <main id="index-content" class="fade-in generator-container">
+        <section class="content-box">
+            <h1>Origin Banner <span class="neon-text-sub">Generator</span></h1>
+
+            <div class="control-grid">
+                <div class="column">
+                    <div class="control-group">
+                        <label>Origin Zip File</label>
+                        <input type="file" id="zipInput" accept=".zip">
+                    </div>
+
+                    <div class="control-group">
+                        <label>Background Icon</label>
+                        <input type="text" id="bgIcon" placeholder="e.g. grass_block (no .png needed)">
+                    </div>
+                </div>
+
+                <div class="column">
+                    <div class="control-group">
+                        <label>First Power Offset</label>
+                        <input type="range" id="powerOffset" min="0" max="1000" value="50">
+                    </div>
+
+                    <div class="control-group">
+                        <label>Description Width</label>
+                        <input type="number" id="descWidth" value="22">
+                    </div>
+
+                    <div class="control-group inline-group">
+                        <input type="checkbox" id="autoColor" checked>
+                        <label for="autoColor">Auto Generate Text Color</label>
+                    </div>
+                </div>
+            </div>
+
+            <button id="startBtn" class="btn-primary">Generate Banners</button>
+        </section>
+
+        <div id="gallery"></div>
+    </main>
+
+
+    <footer>
+        <div class="content-box">
+            <p>&copy; 2025 Michael Ten. All rights reserved.</p>
+            <div class="social-links">
+
+                <a href="https://modrinth.com/user/Ten_Mic_10" target="_blank" rel="noopener noreferrer"
+                    aria-label="Modrinth"><i class="fab fa-modx"></i></a>
+                <a href="https://www.instagram.com/m_i_c_h_a_e_l_1_0/" target="_blank" rel="noopener noreferrer"
+                    aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="https://www.youtube.com/@Michael10" target="_blank" rel="noopener noreferrer"
+                    aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                <a href="https://discord.com/invite/KuWNd8av4q" target="_blank" rel="noopener noreferrer"
+                    aria-label="Discord"><i class="fab fa-discord"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const gallery = document.getElementById('gallery');
+
+        startBtn.addEventListener('click', async () => {
+            const fileInput = document.getElementById('zipInput');
+            if (!fileInput.files[0]) return alert("Please upload a zip file");
+
+            gallery.innerHTML = "<p style='color: #00ffaa;'>Initializing system and loading fonts...</p>";
+
+            try {
+                await document.fonts.ready;
+                const zip = await JSZip.loadAsync(fileInput.files[0]);
+                const origins = await parseOrigins(zip);
+
+                gallery.innerHTML = "";
+
+                for (const origin of origins) {
+                    const canvas = await createBanner(origin);
+                    const img = document.createElement('img');
+                    img.src = canvas.toDataURL('image/png');
+                    gallery.appendChild(img);
+                }
+            } catch (err) {
+                console.error(err);
+                gallery.innerHTML = "<p style='color: #ff4444;'>Error: Check console or verify Zip structure.</p>";
+            }
+        });
+
+        // --- Data Parsing ---
+        async function parseOrigins(zip) {
+            const originList = [];
+            const layerFiles = Object.keys(zip.files).filter(path =>
+                path.startsWith('data/origins/origin_layers/') && path.endsWith('.json')
+            );
+
+            for (const path of layerFiles) {
+                const fileData = await zip.files[path].async("string");
+                if (!fileData.trim()) continue;
+                const content = JSON.parse(fileData);
+                if (!content.origins) continue;
+
+                for (const originId of content.origins) {
+                    try {
+                        const [ns, id] = originId.split(':');
+                        const originPath = `data/${ns}/origins/${id}.json`;
+                        if (!zip.files[originPath]) continue;
+
+                        const data = JSON.parse(await zip.files[originPath].async("string"));
+                        const powers = [];
+                        if (data.powers) {
+                            for (const pId of data.powers) {
+                                const [pNs, pKey] = pId.split(':');
+                                const pPath = `data/${pNs}/powers/${pKey}.json`;
+                                if (zip.files[pPath]) {
+                                    const pData = JSON.parse(await zip.files[pPath].async("string"));
+                                    powers.push({ name: pData.name || pKey, description: pData.description || "" });
+                                }
+                            }
+                        }
+
+                        originList.push({
+                            id: originId.replace(':', '_'),
+                            name: data.name || id,
+                            description: data.description || "",
+                            icon: data.icon?.item?.split(':')[1] || data.icon?.split(':')[1] || "grass_block",
+                            powers: powers
+                        });
+                    } catch (e) { console.error(e); }
+                }
+            }
+            return originList;
+        }
+
+        // --- Image Processing Functions ---
+        function getDominantColor(canvas) {
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            let r = 0, g = 0, b = 0, count = 0;
+            for (let i = 0; i < imageData.length; i += 40) {
+                if (imageData[i] + imageData[i + 1] + imageData[i + 2] > 30) {
+                    r += imageData[i]; g += imageData[i + 1]; b += imageData[i + 2];
+                    count++;
+                }
+            }
+            return count === 0 ? { r: 100, g: 100, b: 100 } : { r: r / count, g: g / count, b: b / count };
+        }
+
+        function adjustColor(color, factor) {
+            const r = Math.min(255, Math.max(0, Math.floor(color.r * factor)));
+            const g = Math.min(255, Math.max(0, Math.floor(color.g * factor)));
+            const b = Math.min(255, Math.max(0, Math.floor(color.b * factor)));
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        async function createBanner(origin) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const scale = 4;
+            const iconSize = 120 * scale;
+            canvas.width = (iconSize * 9) / 4;
+            canvas.height = (iconSize * 16) / 4;
+
+            let bgInput = document.getElementById('bgIcon').value.trim();
+            let textureName = bgInput || origin.icon || "grass_block";
+            if (!textureName.toLowerCase().endsWith('.png')) textureName += ".png";
+
+            // Updated Base Resource Path
+            const bgImg = await loadImage(`images/resource/${textureName}`);
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 150;
+            tempCanvas.height = 150 * (bgImg.height / bgImg.width);
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.imageSmoothingEnabled = false;
+            tempCtx.drawImage(bgImg, 0, 0, tempCanvas.width, tempCanvas.height);
+
+            let textColor = "black", outlineColor = "white";
+            if (document.getElementById('autoColor').checked) {
+                const dominant = getDominantColor(tempCanvas);
+                textColor = adjustColor(dominant, 0.5); // Matches app.py
+                outlineColor = adjustColor(dominant, 4.0); // Matches app.py
+            }
+
+            const pattern = ctx.createPattern(tempCanvas, 'repeat');
+            ctx.fillStyle = pattern;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "rgba(255, 255, 255, 0.78)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const offset = 100;
+            ctx.font = `${iconSize / 4}px MinecraftTen`;
+            drawTextWithOutline(ctx, origin.name, offset, (iconSize / 10) + (offset * 2), outlineColor, textColor, 8);
+
+            ctx.fillStyle = "black";
+            ctx.font = `${iconSize / 15}px MinecraftBold`;
+            let currentY = wrapText(ctx, origin.description, offset, 500, parseInt(document.getElementById('descWidth').value), 35);
+
+            currentY += parseInt(document.getElementById('powerOffset').value);
+
+            origin.powers.forEach((p) => {
+                ctx.font = `${iconSize / 15}px MinecraftBold`;
+                drawTextWithOutline(ctx, p.name, offset, currentY, outlineColor, textColor, 5);
+                currentY += 40;
+                ctx.fillStyle = "black";
+                ctx.font = `${iconSize / 18}px MinecraftRegular`;
+                currentY = wrapText(ctx, p.description, offset + 60, currentY, 45, 25);
+                currentY += 30;
+            });
+
+            return applyRoundedCorners(canvas, 100);
+        }
+
+        function loadImage(src) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => resolve(img);
+                img.onerror = () => {
+                    const p = new Image();
+                    p.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
+                    resolve(p);
+                };
+                img.src = src;
+            });
+        }
+
+        function drawTextWithOutline(ctx, text, x, y, outline, fill, thickness) {
+            ctx.strokeStyle = outline;
+            ctx.lineWidth = thickness;
+            ctx.lineJoin = "round";
+            ctx.strokeText(text, x, y);
+            ctx.fillStyle = fill;
+            ctx.fillText(text, x, y);
+        }
+
+        function wrapText(ctx, text, x, y, maxChars, lineHeight) {
+            const words = text.split(' ');
+            let line = '', currentY = y;
+            for (let n = 0; n < words.length; n++) {
+                let testLine = line + words[n] + ' ';
+                if (testLine.length > maxChars && n > 0) {
+                    ctx.fillText(line, x, currentY);
+                    line = words[n] + ' ';
+                    currentY += lineHeight;
+                } else { line = testLine; }
+            }
+            ctx.fillText(line, x, currentY);
+            return currentY + lineHeight;
+        }
+
+        function applyRoundedCorners(canvas, radius) {
+            const target = document.createElement('canvas');
+            target.width = canvas.width; target.height = canvas.height;
+            const tCtx = target.getContext('2d');
+            tCtx.beginPath();
+            tCtx.roundRect(0, 0, canvas.width, canvas.height, radius);
+            tCtx.clip();
+            tCtx.drawImage(canvas, 0, 0);
+            return target;
+        }
+    </script>
+</body>
+
+</html>
