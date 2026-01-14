@@ -215,7 +215,7 @@
 
         let API_KEY = "";
         let CURRENT_LANG = "en";
-        let conversationHistory = []; // Stores the full story history
+        let conversationHistory = [];
 
         document.getElementById('start-btn').onclick = async () => {
             API_KEY = document.getElementById('api-key').value;
@@ -229,8 +229,9 @@
             setupArea.classList.add('hidden');
             gameDisplay.style.display = 'flex';
 
+            // Enhanced System Instruction to force a specific format
             const startText = CURRENT_LANG === 'en' ?
-                `Start a new RPG adventure: ${story}` :
+                `Start a new RPG: ${story}` :
                 `开始一段新的RPG冒险：${story}`;
 
             sendToAI(startText);
@@ -243,8 +244,8 @@
             conversationHistory.push({ role: "user", content: userText });
 
             const systemInst = CURRENT_LANG === 'en' ?
-                "You are an RPG DM. Provide a story paragraph, then 4 numbered choices (1. 2. 3. 4.) at the very end. IMPORTANT: Place the choices on new lines at the bottom." :
-                "你是一位 RPG 地城生成主。提供一段故事情節，並在最後提供 4 個編號選擇（1. 2. 3. 4.）。請確保選擇放在訊息的最底部。";
+                "You are an RPG DM. Act as the narrator. Describe the scene briefly. THEN, provide EXACTLY 4 numbered options. Format: Ensure each option is on a NEW LINE starting with '1.', '2.', '3.', '4.' at the very end of your response." :
+                "你是一位 RPG 地城生成主。请简洁地描述故事情节。然后在回复的最末尾，提供 4 个编号选择。格式要求：每个选择必须另起一行，并以 '1.' '2.' '3.' '4.' 开头。";
 
             try {
                 const response = await fetch('https://api.poe.com/v1/chat/completions', {
@@ -267,8 +268,8 @@
 
             } catch (e) {
                 const fallback = CURRENT_LANG === 'en' ?
-                    "The mist clears. You see a castle.\n1. Enter the gates\n2. Scout the perimeter\n3. Wait for nightfall\n4. Cast a spell" :
-                    "迷雾散去。你看到一座城堡。\n1. 进入大门\n2. 侦查四周\n3. 等待夜幕降临\n4. 施放法术";
+                    "An error occurred. What do you do?\n1. Try again\n2. Wait\n3. Look around\n4. Run" :
+                    "发生错误。你打算怎么办？\n1. 再试一次\n2. 等待\n3. 观察四周\n4. 逃跑";
                 processAIResponse(fallback);
             } finally {
                 setLoading(false);
@@ -276,33 +277,41 @@
         }
 
         function processAIResponse(fullText) {
-            // Regex explanation: Look for lines starting with 1., 2., 3., 4. at the end of the string
-            const optionsRegex = /\n?\d\.\s*(.*)(?=\n|$)/g;
+            // 1. Identify where the choices start (look for the FIRST '1.' near the end)
+            // This regex looks for '1.' followed by text, then potentially '2.', etc.
+            const splitRegex = /\n?\s*1\.\s+/;
+            const parts = fullText.split(splitRegex);
 
-            // Extract the options
-            const matches = [...fullText.matchAll(optionsRegex)];
             let storyText = fullText;
-            let extractedChoices = [];
+            let choicesText = "";
 
-            if (matches.length >= 4) {
-                // We take the LAST 4 matches to ensure we don't grab a list from the middle of the story
-                const lastFour = matches.slice(-4);
-                extractedChoices = lastFour.map(m => m[1]);
-
-                // Remove the choices from the story text by finding the index of the first choice
-                const firstChoiceIndex = lastFour[0].index;
-                storyText = fullText.substring(0, firstChoiceIndex).trim();
+            if (parts.length > 1) {
+                // Everything before '1.' is the story
+                storyText = parts[0].trim();
+                // Everything from '1.' onwards contains the choices
+                choicesText = "1. " + parts.slice(1).join("1. ");
             }
 
-            // 1. Display Story in Chat (Typewriter + Markdown)
-            typeWriter(storyText);
+            // 2. Extract choices 1, 2, 3, 4 even if they are on the same line
+            // Look for numbers followed by dots
+            const choiceMatches = choicesText.match(/\d\.\s*([^0-9\n]+|(?!\d\.)[^\n])*/g);
 
-            // 2. Update Buttons
-            if (extractedChoices.length >= 4) {
-                btns.forEach((btn, idx) => {
-                    btn.innerText = extractedChoices[idx];
+            let finalChoices = ["...", "...", "...", "..."];
+
+            if (choiceMatches) {
+                choiceMatches.forEach((text, index) => {
+                    if (index < 4) {
+                        // Remove the "1. " prefix from the button text
+                        finalChoices[index] = text.replace(/^\d\.\s*/, "").trim();
+                    }
                 });
             }
+
+            // 3. Render
+            typeWriter(storyText);
+            btns.forEach((btn, idx) => {
+                btn.innerText = finalChoices[idx];
+            });
         }
 
         async function typeWriter(text) {
@@ -315,7 +324,7 @@
                 function innerType() {
                     if (i < text.length) {
                         const currentText = text.substring(0, i + 1);
-                        msgDiv.innerHTML = marked.parse(currentText); // Render Markdown while typing
+                        msgDiv.innerHTML = marked.parse(currentText);
                         chatWindow.scrollTop = chatWindow.scrollHeight;
                         i++;
                         setTimeout(innerType, 10);
@@ -341,6 +350,8 @@
 
         function handleChoice(num) {
             const choiceText = btns[num - 1].innerText;
+            // Don't send if button is empty/loading
+            if (choiceText === "...") return;
             sendToAI(choiceText);
         }
     </script>
