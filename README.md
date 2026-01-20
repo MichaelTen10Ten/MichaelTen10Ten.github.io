@@ -40,7 +40,7 @@ If you would like to run this project locally for development or customization:
 
 1. **Clone the repository:**
 ```bash
-git clone [https://github.com/MichaelTen10Ten/MichaelTen10Ten.github.io.git](https://github.com/MichaelTen10Ten/MichaelTen10Ten.github.io.git)
+git clone https://github.com/MichaelTen10Ten/MichaelTen10Ten.github.io.git
 
 ```
 
