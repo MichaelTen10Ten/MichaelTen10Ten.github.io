@@ -1,10 +1,3 @@
-Based on the structure of the repository `MichaelTen10Ten.github.io`, this is a personal portfolio website hosted via GitHub Pages. It features a clean, responsive design showcasing a professional profile, technical skills, and projects.
-
-Below is a comprehensive `README.md` file tailored to the contents of that repository.
-
----
-
-```markdown
 # Michael Ten's Portfolio Website
 
 Welcome to the source code repository for my personal portfolio website. This site serves as a professional hub to showcase my skills, projects, and experience in software development.
@@ -78,7 +71,5 @@ This project is open source. Feel free to use the code as a template for your ow
 ---
 
 Created by [Michael Ten](https://www.google.com/search?q=https://github.com/MichaelTen10Ten)
-
-```
 
 ```
