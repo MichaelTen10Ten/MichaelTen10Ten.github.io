@@ -70,6 +70,4 @@ This project is open source. Feel free to use the code as a template for your ow
 
 ---
 
-Created by [Michael Ten](https://www.google.com/search?q=https://github.com/MichaelTen10Ten)
-
-```
+Created by [Michael Ten](https://www.instagram.com/m_i_c_h_a_e_l_1_0/)
