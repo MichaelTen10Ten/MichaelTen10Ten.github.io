@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Michael Ten | Chord Maker</title>
+    <link rel="icon" type="image/x-icon" href="images/icon.ico">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body .chordbody {
+            font-family: 'Segoe UI', sans-serif;
+            background: #eceff100;
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.329);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            height: 90vh;
+            overflow-y: auto;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .fx-panel {
+            background: #263238;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .visualizer-container {
+            background: #000000;
+            border-radius: 4px;
+            flex-grow: 1;
+            height: 120px;
+            max-width: 500px;
+            border: 1px solid #546e7a;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .fx-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            border-left: 1px solid #546e7a;
+            padding-left: 15px;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.329);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .sheet {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .bar {
+            border: 2px solid #cfd8dc;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.329);
+            border-radius: 8px;
+            min-width: 320px;
+        }
+
+        .part-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+            background: #f9f9f9;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .part-input {
+            width: 45px;
+            padding: 4px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .playing {
+            border-color: #4CAF50 !important;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        }
+
+        button {
+            cursor: pointer;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            background: #2196F3;
+            color: white;
+            font-weight: bold;
+        }
+
+        .tap-btn {
+            background: #ff9800;
+        }
+
+        .preset-btn {
+            background: #673ab7;
+            width: 100%;
+            margin-bottom: 5px;
+            font-size: 0.8em;
+        }
+
+        .play-btn {
+            background: #43a047;
+        }
+
+        .stop-btn {
+            background: #f44336;
+        }
+
+        .knob-label {
+            font-size: 0.85em;
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body class="experience-page">
+
+    <div class="background-overlay"></div>
+
+    <nav id="main-nav">
+        <div class="logo">
+            <a href="index.html" aria-label="Home page logo"><span class="neon-text-main">M</span>ichael <span
+                    class="neon-text-sub">T</span>en</a>
+        </div>
+        <button class="hamburger" aria-label="Toggle navigation menu">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </button>
+        <ul class="nav-links">
+
+            <li><a href="index.html" class="">Home</a></li>
+            <li><a href="experience.html" class="active">Experience</a></li>
+            <li><a href="education.html" class="">Education</a></li>
+            <li><a href="skills.html" class="">Skills</a></li>
+            <li><a href="extra.html" class="">Extra</a></li>
+            <li><a href="sitemap.html" class="">Site Map</a></li>
+        </ul>
+    </nav>
+    <div class="chordbody">
+        <div class="sidebar">
+            <h3>Presets</h3>
+            <button class="preset-btn" onclick="loadPreset('pop')">Preset 1: F-G-Em-Am (1pt)</button>
+            <button class="preset-btn" onclick="loadPreset('canon')">Preset 2: C-G-Am... (2pt)</button>
+            <button onclick="document.getElementById('sheet').innerHTML=''"
+                style="background:#546e7a; width:100%; font-size:0.8em;">Clear Sheet</button>
+
+            <hr>
+            <h3>Master Controls</h3>
+            <label class="knob-label">Swing / Groove (%)</label>
+            <input type="range" id="swingAmount" min="0" max="80" value="0" style="width:100%;">
+
+            <h4>Key Transpose</h4>
+            <div
+                style="text-align: center; background: #f0f4f8; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                <button onclick="changeTranspose(-1)">-</button>
+                <span id="transposeDisplay" style="font-weight:bold; font-size:1.2em; margin:0 10px;">0</span>
+                <button onclick="changeTranspose(1)">+</button>
+            </div>
+
+            <h4>Drum Style</h4>
+            <select id="drumPattern" style="width: 100%; padding: 5px;">
+                <option value="disco">Disco</option>
+                <option value="rock">Rock</option>
+                <option value="off">Mute</option>
+            </select>
+
+            <hr>
+            <h4>Auto-Bass</h4>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <input type="checkbox" id="bassToggle" checked> Bass On
+                <input type="range" id="bassVol" min="0" max="1" step="0.1" value="0.6" style="width:80px">
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="fx-panel">
+                <div class="visualizer-container">
+                    <canvas id="visualizer"></canvas>
+                </div>
+                <div class="fx-group"><label>Echo</label><input type="range" id="delayMix" min="0" max="0.8" step="0.01"
+                        value="0.2"></div>
+                <div class="fx-group"><label>Space</label><input type="range" id="reverbMix" min="0" max="0.9"
+                        step="0.01" value="0.3"></div>
+            </div>
+
+            <div class="controls">
+                <label>BPM: <input type="number" id="bpm" value="120" style="width: 50px;"></label>
+                <button class="tap-btn" id="tapBtn" onclick="tapTempo()">TAP TEMPO</button>
+                <button onclick="addBar()">+ Add Bar</button>
+                <button class="play-btn" id="playBtn" onclick="togglePlayback()">▶ Play</button>
+                <button class="stop-btn" onclick="stopPlayback()">■ Stop</button>
+                <input type="checkbox" id="loopToggle" checked> <label>Loop</label>
+            </div>
+
+            <div id="sheet" class="sheet"></div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="content-box">
+            <p>&copy; 2025 Michael Ten. All rights reserved.</p>
+            <div class="social-links">
+
+                <a href="https://modrinth.com/user/Ten_Mic_10" target="_blank" rel="noopener noreferrer"
+                    aria-label="Modrinth"><i class="fab fa-modx"></i></a>
+                <a href="https://www.instagram.com/m_i_c_h_a_e_l_1_0/" target="_blank" rel="noopener noreferrer"
+                    aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="https://www.youtube.com/@Michael10" target="_blank" rel="noopener noreferrer"
+                    aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                <a href="https://discord.com/invite/KuWNd8av4q" target="_blank" rel="noopener noreferrer"
+                    aria-label="Discord"><i class="fab fa-discord"></i></a>
+            </div>
+        </div>
+    </footer>
+    <script>
+        let isPlaying = false;
+        let audioCtx = null;
+        let masterBus, analyser, delayMix, reverbMix, compressor;
+        let globalTranspose = 0;
+        let tapTimes = [];
+
+        const notesScale = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+        const notesFreq = { 'C': 261.63, 'C#': 277.18, 'Db': 277.18, 'D': 293.66, 'D#': 311.13, 'Eb': 311.13, 'E': 329.63, 'F': 349.23, 'F#': 369.99, 'Gb': 369.99, 'G': 392.00, 'G#': 415.30, 'Ab': 415.30, 'A': 440.00, 'A#': 466.16, 'Bb': 466.16, 'B': 493.88 };
+
+        function tapTempo() {
+            const now = Date.now();
+            if (tapTimes.length > 0 && now - tapTimes[tapTimes.length - 1] > 2000) tapTimes = [];
+            tapTimes.push(now);
+            if (tapTimes.length > 1) {
+                if (tapTimes.length > 4) tapTimes.shift();
+                let totalInterval = 0;
+                for (let i = 1; i < tapTimes.length; i++) totalInterval += (tapTimes[i] - tapTimes[i - 1]);
+                const avgInterval = totalInterval / (tapTimes.length - 1);
+                document.getElementById('bpm').value = Math.round(60000 / avgInterval);
+            }
+            const btn = document.getElementById('tapBtn');
+            btn.style.opacity = '0.5'; setTimeout(() => btn.style.opacity = '1', 100);
+        }
+
+        function changeTranspose(val) {
+            globalTranspose += val;
+            document.getElementById('transposeDisplay').innerText = (globalTranspose > 0 ? "+" : "") + globalTranspose;
+        }
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            masterBus = audioCtx.createGain();
+            compressor = audioCtx.createDynamicsCompressor();
+            analyser = audioCtx.createAnalyser();
+
+            compressor.threshold.setValueAtTime(-24, audioCtx.currentTime);
+            compressor.knee.setValueAtTime(30, audioCtx.currentTime);
+            compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+            compressor.attack.setValueAtTime(0.003, audioCtx.currentTime);
+            compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+
+            masterBus.connect(compressor);
+            compressor.connect(analyser);
+            analyser.connect(audioCtx.destination);
+
+            setupFX();
+            drawVisualizer();
+        }
+
+        function setupFX() {
+            let dNode = audioCtx.createDelay(); dNode.delayTime.value = 0.4;
+            let dFeed = audioCtx.createGain(); dFeed.gain.value = 0.2;
+            delayMix = audioCtx.createGain();
+            masterBus.connect(dNode); dNode.connect(dFeed); dFeed.connect(dNode); dNode.connect(delayMix); delayMix.connect(compressor);
+
+            let rNode = audioCtx.createDelay(); rNode.delayTime.value = 0.05;
+            let rFeed = audioCtx.createGain(); rFeed.gain.value = 0.4;
+            reverbMix = audioCtx.createGain();
+            masterBus.connect(rNode); rNode.connect(rFeed); rFeed.connect(rNode); rNode.connect(reverbMix); reverbMix.connect(compressor);
+        }
+
+        // --- INSTRUMENTS ---
+        function playKick(t, vol) {
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.frequency.setValueAtTime(150, t); osc.frequency.exponentialRampToValueAtTime(0.01, t + 0.5);
+            gain.gain.setValueAtTime(vol * 0.8, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+            osc.connect(gain); gain.connect(compressor);
+            osc.start(t); osc.stop(t + 0.5);
+        }
+
+        function playSnare(t, vol) {
+            const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.2, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0); for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+            const source = audioCtx.createBufferSource(); source.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter(); filter.type = "lowpass"; filter.frequency.value = 5000;
+            const gain = audioCtx.createGain(); gain.gain.setValueAtTime(vol * 0.4, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+            source.connect(filter); filter.connect(gain); gain.connect(compressor);
+            source.start(t); source.stop(t + 0.2);
+        }
+
+        function playHat(t, vol, dur = 0.05) {
+            const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * dur, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0); for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+            const source = audioCtx.createBufferSource(); source.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter(); filter.type = "highpass"; filter.frequency.value = 7000;
+            const gain = audioCtx.createGain(); gain.gain.setValueAtTime(vol * 0.2, t); gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+            source.connect(filter); filter.connect(gain); gain.connect(compressor);
+            source.start(t); source.stop(t + dur);
+        }
+
+        function playBass(f, t, d, v) {
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(f / 2, t);
+            gain.gain.setValueAtTime(v * 0.2, t); gain.gain.exponentialRampToValueAtTime(0.001, t + d);
+            osc.connect(gain); gain.connect(masterBus);
+            osc.start(t); osc.stop(t + d);
+        }
+
+        function playChordNote(f, start, dur, vel, type) {
+            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            o.type = type; o.frequency.setValueAtTime(f, start);
+            g.gain.setValueAtTime((vel / 100) * 0.08, start); g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+            o.connect(g); g.connect(masterBus); o.start(start); o.stop(start + dur);
+        }
+
+        // --- SEQUENCER ENGINE ---
+        async function togglePlayback() {
+            if (isPlaying) return;
+            initAudio(); if (audioCtx.state === 'suspended') audioCtx.resume();
+            isPlaying = true; document.getElementById('playBtn').disabled = true;
+
+            do {
+                const bars = document.querySelectorAll('.bar');
+                for (let bar of bars) {
+                    if (!isPlaying) break;
+                    bar.classList.add('playing');
+                    const bpm = document.getElementById('bpm').value;
+                    const swing = document.getElementById('swingAmount').value / 100;
+                    const secPerBar = (60 / bpm) * 4;
+                    const rows = bar.querySelectorAll('.part-row');
+                    const durPerPart = secPerBar / rows.length;
+
+                    delayMix.gain.value = document.getElementById('delayMix').value;
+                    reverbMix.gain.value = document.getElementById('reverbMix').value;
+
+                    for (let i = 0; i < rows.length; i++) {
+                        if (!isPlaying) break;
+
+                        // Swing Calculation: Delay even-numbered steps (off-beats)
+                        let swingDelay = (i % 2 === 1) ? (durPerPart * swing * 0.5) : 0;
+                        const now = audioCtx.currentTime + swingDelay;
+
+                        const style = document.getElementById('drumPattern').value;
+                        if (style === 'disco') {
+                            playKick(now, 0.5);
+                            playHat(now + (durPerPart * 0.5), 0.4, 0.1); // Hat on the 'and'
+                            if (i % 2 === 1) playSnare(now, 0.4);
+                        } else if (style === 'rock') {
+                            if (i % 2 === 0) playKick(now, 0.5); else playSnare(now, 0.4);
+                            playHat(now, 0.3);
+                        }
+
+                        const row = rows[i];
+                        const freqs = getTransposedFrequencies(row.querySelector('.part-input').value.toUpperCase());
+                        if (freqs.length > 0) {
+                            const pat = bar.querySelector('.pattern-select').value;
+                            const type = row.querySelector('.sound-select').value;
+                            const vel = row.querySelector('.velocity-slider').value;
+                            if (pat === 'sustain') freqs.forEach(f => playChordNote(f, now, durPerPart, vel, type));
+                            else if (pat === 'pulse') {
+                                const s = durPerPart / 4;
+                                for (let j = 0; j < 4; j++) freqs.forEach(f => playChordNote(f, now + (j * s), s * 0.8, vel, type));
+                            }
+                            if (document.getElementById('bassToggle').checked) playBass(freqs[0], now, durPerPart, document.getElementById('bassVol').value);
+                        }
+                        await new Promise(r => setTimeout(r, durPerPart * 1000));
+                    }
+                    bar.classList.remove('playing');
+                }
+            } while (isPlaying && document.getElementById('loopToggle').checked);
+            stopPlayback();
+        }
+
+        // --- UTILS & PRESETS ---
+        function drawVisualizer() {
+            const canvas = document.getElementById('visualizer');
+            const ctx = canvas.getContext('2d');
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            function draw() {
+                requestAnimationFrame(draw);
+                analyser.getByteFrequencyData(dataArray);
+                ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                const barWidth = (canvas.width / bufferLength) * 2;
+                let x = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = dataArray[i] / 2;
+                    ctx.fillStyle = `hsl(${220 - barHeight}, 80%, 50%)`;
+                    ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                    x += barWidth + 1;
+                }
+            }
+            draw();
+        }
+
+        function loadPreset(type) {
+            const sheet = document.getElementById('sheet'); sheet.innerHTML = '';
+            if (type === 'pop') ['F', 'G', 'Em', 'Am'].forEach(c => addBar(1, c));
+            else if (type === 'canon') [['C', 'G'], ['Am', 'Em'], ['F', 'C'], ['D', 'G']].forEach(p => addBar(2, p));
+        }
+
+        function addBar(pts = 4, chordVal = 'C') {
+            const barDiv = document.createElement('div');
+            barDiv.className = 'bar';
+            barDiv.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:10px;"><b>Bar</b><select class="pts-select" onchange="updateParts(this)"><option value="1" ${pts == 1 ? 'selected' : ''}>1 pt</option><option value="2" ${pts == 2 ? 'selected' : ''}>2 pts</option><option value="4" ${pts == 4 ? 'selected' : ''}>4 pts</option></select><span onclick="this.parentElement.parentElement.remove()" style="color:red; cursor:pointer;">&times;</span></div><select class="pattern-select" style="width:100%; margin-bottom:10px;"><option value="sustain">Sustain</option><option value="pulse">Pulse</option></select><div class="parts-container"></div>`;
+            document.getElementById('sheet').appendChild(barDiv);
+            updateParts(barDiv.querySelector('.pts-select'), chordVal);
+        }
+
+        function updateParts(select, chordVal) {
+            const container = select.closest('.bar').querySelector('.parts-container');
+            const count = parseInt(select.value); container.innerHTML = '';
+            const chords = Array.isArray(chordVal) ? chordVal : [chordVal];
+            for (let i = 0; i < count; i++) {
+                let val = chords[i] || chords[0] || 'C';
+                container.innerHTML += `<div class="part-row"><input class="part-input" value="${val}"><select class="sound-select" style="font-size:0.7em"><option value="triangle" selected>Tri</option><option value="sine">Sine</option></select><input type="range" class="velocity-slider" style="width:40px" min="0" max="100" value="70"></div>`;
+            }
+        }
+
+        function getTransposedFrequencies(name) {
+            if (!name) return [];
+            let root = name.replace('M', ''); let isMinor = name.includes('M');
+            if (root === 'DB') root = 'C#'; if (root === 'EB') root = 'D#'; if (root === 'GB') root = 'F#'; if (root === 'AB') root = 'G#'; if (root === 'BB') root = 'A#';
+            let idx = notesScale.indexOf(root); if (idx === -1) return [];
+            let tIdx = (idx + globalTranspose) % 12; if (tIdx < 0) tIdx += 12;
+            return [notesFreq[notesScale[tIdx]], notesFreq[notesScale[(tIdx + (isMinor ? 3 : 4)) % 12]], notesFreq[notesScale[(tIdx + 7) % 12]]];
+        }
+
+        function stopPlayback() { isPlaying = false; document.getElementById('playBtn').disabled = false; document.querySelectorAll('.bar').forEach(b => b.classList.remove('playing')); }
+        addBar();
+    </script>
+</body>
+
+</html>
