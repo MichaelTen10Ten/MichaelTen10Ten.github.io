@@ -5,6 +5,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     body { margin: 0; font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #111; color: white; text-align: center; }
     #video-container { position: relative; width: 100vw; height: 100vh; background: #000; }
@@ -32,6 +33,27 @@
     .correct { color: #00ff00; }
     .wrong { color: #ff3333; }
     .hidden { display: none !important; }
+
+    /* Scorecard for download (initially hidden) */
+    #scorecard-capture { 
+      position: absolute; 
+      left: -9999px; /* Off-screen */
+      top: -9999px;
+      width: 600px; /* Define a fixed size for the image */
+      padding: 40px;
+      background: linear-gradient(45deg, #1a1a2e, #16213e);
+      color: white;
+      text-align: center;
+      font-family: 'Segoe UI', sans-serif;
+      box-shadow: 0 0 20px rgba(0,0,0,0.8);
+      border-radius: 15px;
+      line-height: 1.4;
+      display: block; /* Important for html2canvas */
+    }
+    #scorecard-capture h2 { font-size: 2.8rem; margin-bottom: 20px; color: #e0e0ff; }
+    #scorecard-capture p { font-size: 1.6rem; margin: 10px 0; }
+    #scorecard-capture .score-label { color: #99ccff; }
+    #scorecard-capture .score-value { font-weight: bold; color: #00ffcc; }
   </style>
 </head>
 <body>
@@ -52,6 +74,7 @@
     <div id="final-score" class="stat-val">Score: 0</div>
     <div id="final-accuracy" class="stat-val">Accuracy: 0%</div>
     <button class="action-btn" onclick="resetGame()">PLAY AGAIN (Same Level)</button>
+    <button class="action-btn" onclick="downloadScorecard()">DOWNLOAD SCORECARD</button>
     <button class="action-btn" style="border-color: #777;" onclick="location.reload()">CHANGE LEVEL</button>
   </div>
 
@@ -75,6 +98,14 @@
     </div>
   </div>
 
+  <div id="scorecard-capture">
+    <h2>PALM MATH RESULTS</h2>
+    <p><span class="score-label">LEVEL:</span> <span class="score-value" id="dl-level">1</span></p>
+    <p><span class="score-label">CORRECT ANSWERS:</span> <span class="score-value" id="dl-correct">0</span></p>
+    <p><span class="score-label">ACCURACY RATE:</span> <span class="score-value" id="dl-accuracy">0%</span></p>
+    <p style="font-size: 1rem; margin-top: 30px; opacity: 0.7;">Play more to improve!</p>
+  </div>
+
   <script>
     const videoElement = document.getElementById('input_video');
     const canvasElement = document.getElementById('output_canvas');
@@ -96,13 +127,11 @@
       osc.start(); osc.stop(audioCtx.currentTime + 0.15);
     }
 
-    // First time start
     function initGame(level) {
       currentLevel = level;
       resetGame();
     }
 
-    // Reset logic used for "Play Again"
     function resetGame() {
       score = 0;
       totalAnswered = 0;
@@ -218,9 +247,28 @@
     function showResults() {
       document.getElementById('ui-layer').classList.add('hidden');
       document.getElementById('result-overlay').classList.remove('hidden');
+      
       const accuracy = totalAnswered > 0 ? Math.round((score / totalAnswered) * 100) : 0;
       document.getElementById('final-score').innerText = `Score: ${score}`;
       document.getElementById('final-accuracy').innerText = `Accuracy: ${accuracy}%`;
+
+      // Update the hidden scorecard div
+      document.getElementById('dl-level').innerText = currentLevel;
+      document.getElementById('dl-correct').innerText = score;
+      document.getElementById('dl-accuracy').innerText = `${accuracy}%`;
+    }
+
+    function downloadScorecard() {
+      const scorecard = document.getElementById('scorecard-capture');
+      html2canvas(scorecard, { 
+        backgroundColor: null, // Allow CSS background to render
+        scale: 2 // Higher scale for better resolution
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `PalmMath_Level${currentLevel}_Score_${score}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
     }
 
     const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
