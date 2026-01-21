@@ -213,21 +213,31 @@
                 <input type="checkbox" id="bassToggle" checked> Bass On
                 <input type="range" id="bassVol" min="0" max="1" step="0.1" value="0.6" style="width:80px">
             </div>
-            <h4>C:       Major</h4>
-            <h4>Cm:      Minor</h4>
-            <h4>Cmin:    Minor</h4>
-            <h4>C7:      Dominant 7</h4>
-            <h4>C5:      Power chord</h4>
-            <h4>Cdim:    Diminished</h4>
-            <h4>Cdim7:   Diminished 7</h4>
-            <h4>Caug:    Augmented</h4>
-            <h4>Csus2:   Suspended 2</h4>
-            <h4>Csus4:   Suspended 4</h4>
-            <h4>Cmaj7:   Major 7</h4>
-            <h4>Cm7:     Minor 7</h4>
-            <h4>C7sus4:  7 suspended 4</h4>
+            <hr>
+            <h3>Save & Load</h3>
+            <button onclick="exportToFile()" style="background:#009688; width:100%; margin-bottom:5px;">
+                <i class="fas fa-save"></i> Export Project (.json)
+            </button>
+            <button onclick="document.getElementById('fileInput').click()" style="background:#607d8b; width:100%;">
+                <i class="fas fa-folder-open"></i> Load Project
+            </button>
+
+            <h4>C: Major</h4>
+            <h4>Cm: Minor</h4>
+            <h4>Cmin: Minor</h4>
+            <h4>C7: Dominant 7</h4>
+            <h4>C5: Power chord</h4>
+            <h4>Cdim: Diminished</h4>
+            <h4>Cdim7: Diminished 7</h4>
+            <h4>Caug: Augmented</h4>
+            <h4>Csus2: Suspended 2</h4>
+            <h4>Csus4: Suspended 4</h4>
+            <h4>Cmaj7: Major 7</h4>
+            <h4>Cm7: Minor 7</h4>
+            <h4>C7sus4: 7 suspended 4</h4>
         </div>
 
+        <input type="file" id="fileInput" style="display:none" onchange="importFromFile(event)">
         <div class="main-content">
             <div class="fx-panel">
                 <div class="visualizer-container">
@@ -540,6 +550,106 @@
 
         function stopPlayback() { isPlaying = false; document.getElementById('playBtn').disabled = false; document.querySelectorAll('.bar').forEach(b => b.classList.remove('playing')); }
         addBar();
+        // --- FIXED SAVE & LOAD SYSTEM ---
+
+        function exportToFile() {
+            try {
+                const projectData = {
+                    bpm: document.getElementById('bpm').value,
+                    swing: document.getElementById('swingAmount').value,
+                    transpose: globalTranspose,
+                    drumPattern: document.getElementById('drumPattern').value,
+                    bassOn: document.getElementById('bassToggle').checked,
+                    bassVol: document.getElementById('bassVol').value,
+                    bars: []
+                };
+
+                // Select all bar elements
+                const barElements = document.querySelectorAll('.bar');
+
+                barElements.forEach(bar => {
+                    // Safety check: only process divs that are actual sequencer bars
+                    if (bar.querySelector('.parts-container')) {
+                        const barData = {
+                            pts: bar.querySelector('.pts-select').value,
+                            pattern: bar.querySelector('.pattern-select').value,
+                            parts: []
+                        };
+
+                        bar.querySelectorAll('.part-row').forEach(row => {
+                            barData.parts.push({
+                                chord: row.querySelector('.part-input').value,
+                                sound: row.querySelector('.sound-select').value,
+                                velocity: row.querySelector('.velocity-slider').value
+                            });
+                        });
+                        projectData.bars.push(barData);
+                    }
+                });
+
+                const dataStr = JSON.stringify(projectData, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = "my-beat-project.json";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error("Save failed:", error);
+                alert("Could not save project. Check console for details.");
+            }
+        }
+
+        function importFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+
+                    // Restore Global Settings
+                    document.getElementById('bpm').value = data.bpm;
+                    document.getElementById('swingAmount').value = data.swing;
+                    document.getElementById('drumPattern').value = data.drumPattern;
+                    document.getElementById('bassToggle').checked = data.bassOn;
+                    document.getElementById('bassVol').value = data.bassVol;
+                    globalTranspose = parseInt(data.transpose) || 0;
+                    document.getElementById('transposeDisplay').innerText = (globalTranspose > 0 ? "+" : "") + globalTranspose;
+
+                    // Clear current sheet
+                    document.getElementById('sheet').innerHTML = '';
+
+                    // Rebuild bars using your existing addBar function
+                    data.bars.forEach(bData => {
+                        addBar(bData.pts);
+                        const allBars = document.querySelectorAll('.bar');
+                        const lastBar = allBars[allBars.length - 1];
+
+                        lastBar.querySelector('.pattern-select').value = bData.pattern;
+
+                        const rows = lastBar.querySelectorAll('.part-row');
+                        bData.parts.forEach((pData, idx) => {
+                            if (rows[idx]) {
+                                rows[idx].querySelector('.part-input').value = pData.chord;
+                                rows[idx].querySelector('.sound-select').value = pData.sound;
+                                rows[idx].querySelector('.velocity-slider').value = pData.velocity;
+                            }
+                        });
+                    });
+                } catch (err) {
+                    alert("Error loading file. Make sure it is a valid beat project JSON.");
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reset for next upload
+        }
     </script>
 </body>
 
