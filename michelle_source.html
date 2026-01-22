@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Live2D Michelle with VITS Umamusume TTS + Poe Chat</title>
+    <style>
+        body { display: flex; height: 95vh; margin: 0; font-family: Arial, sans-serif; }
+        #live2d-container { flex: 1; background: #f0f8ff00; position: relative; }
+        #canvas { width: 100%; height: 100%;}
+        #chat-container { width: 380px; display: flex; flex-direction: column; padding: 15px; background: #fff; border-left: 1px solid #ccc; }
+        #chat-history { flex: 1; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; background: #fafafa; border-radius: 6px; }
+        .message { margin: 8px 0; padding: 8px 12px; border-radius: 12px; max-width: 85%; }
+        .user { background: #007bff; color: white; align-self: flex-end; }
+        .bot { background: #e9ecef; color: #333; align-self: flex-start; }
+        input, button { width: 100%; padding: 10px; margin: 6px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background: #28a745; color: white; border: none; cursor: pointer; }
+        button:hover { background: #218838; }
+        #status { color: #555; font-size: 0.9em; margin-top: 5px; text-align: center; }
+        #model-error { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); color: red; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 8px; display: none; }
+    </style>
+
+    <!-- Live2D scripts -->
+    <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/RaSan147/pixi-live2d-display@v0.5.0-ls-8/dist/cubism4.min.js"></script>
+</head>
+<body>
+    <div id="live2d-container">
+        <canvas id="canvas"></canvas>
+        <div id="model-error">Live2D model failed to load. Check console & file path.</div>
+    </div>
+    <div id="chat-container">
+        <div id="chat-history"></div>
+        <input id="api-key" type="password" placeholder="Paste your Poe API Key here">
+        <input id="question" type="text" placeholder="Ask a question... (Enter to send)">
+        <button onclick="sendQuestion()">Send</button>
+        <div id="status">TTS: Using Plachta VITS Umamusume (cute female Japanese voice)</div>
+    </div>
+
+    <script>
+        // ────────────────────────────────────────────────
+        // Live2D Setup
+        // ────────────────────────────────────────────────
+        let model;
+        async function initLive2D() {
+            const canvas = document.getElementById('canvas');
+            const app = new PIXI.Application({
+                view: canvas,
+                autoStart: true,
+                resizeTo: window,
+                backgroundColor: 0xf0f8ff,
+                antialias: true
+            });
+
+            await new Promise(r => setTimeout(r, 100));
+
+            const modelPath = 'source/michelle_source/simple.model3.json';
+            console.log("Trying to load Live2D model from:", modelPath);
+
+            try {
+                model = await PIXI.live2d.Live2DModel.from(modelPath);
+                app.stage.addChild(model);
+
+                model.scale.set(1, 0.7);
+                model.anchor.set(0.5, 0.5);
+                model.position.set(app.screen.width / 2, app.screen.height * 0.7);
+
+                model.autoInteract = true;
+                console.log("Live2D model loaded successfully");
+            } catch (err) {
+                console.error("Live2D load failed:", err);
+                document.getElementById('model-error').style.display = 'block';
+                document.getElementById('model-error').textContent = `Live2D failed: ${err.message}. Check path: ${modelPath}`;
+            }
+        }
+        initLive2D().catch(err => console.error(err));
+
+        // ────────────────────────────────────────────────
+        // Chat & System prompt (force English output)
+        // ────────────────────────────────────────────────
+        const messages = [{
+            role: "system",
+            content: `You are a cute girl named Michelle.
+You are Created by Michael Ten.
+Always reply in English only, no matter what language the user uses.
+Be natural, friendly, and a little playful.
+Always start your reply with [lang:en-US] followed by the content.`
+        }];
+
+        const chatHistory = document.getElementById('chat-history');
+
+        function addMessage(role, content) {
+            const div = document.createElement('div');
+            div.classList.add('message', role);
+            div.textContent = content;
+            chatHistory.appendChild(div);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        // ────────────────────────────────────────────────
+        // Mouth animation
+        // ────────────────────────────────────────────────
+        let mouthInterval = null;
+
+        function startMouthAnimation() {
+            if (mouthInterval) clearInterval(mouthInterval);
+            let phase = 0;
+            mouthInterval = setInterval(() => {
+                if (!model?.internalModel?.coreModel) return;
+                const value = 0.2 + Math.abs(Math.sin(phase)) * 0.9;
+                model.internalModel.coreModel.setParameterValueById('PARAM_MOUTH_OPEN_Y', value);
+                phase += 0.65;
+            }, 45);
+        }
+
+        function stopMouthAnimation() {
+            if (mouthInterval) {
+                clearInterval(mouthInterval);
+                mouthInterval = null;
+            }
+            if (model?.internalModel?.coreModel) {
+                model.internalModel.coreModel.setParameterValueById('PARAM_MOUTH_OPEN_Y', 0);
+            }
+        }
+
+        // ────────────────────────────────────────────────
+        // TTS using Plachta VITS Umamusume (Gradio API)
+        // ────────────────────────────────────────────────
+        async function speak(text) {
+            if (typeof text !== 'string' || !text.trim()) {
+                console.warn("TTS skipped - empty text");
+                return;
+            }
+
+            console.log("VITS Umamusume TTS →", text.substring(0, 80) + (text.length > 80 ? "..." : ""));
+
+            try {
+                const base_url = "https://plachta-vits-umamusume-voice-synthesizer.hf.space/gradio_api/call/tts_fn";
+                const headers = { "Content-Type": "application/json" };
+
+                const payload = {
+                    data: [
+                        text,
+                        "特别周 Special Week (Umamusume Pretty Derby)",  // cute female voice
+                        "English",  // Japanese
+                        0.75,        // speed/preset
+                        false      // some flag (emotion?)
+                    ]
+                };
+
+                // Step 1: Submit request → get event_id
+                const submitRes = await fetch(base_url, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(payload)
+                });
+
+                const submitData = await submitRes.json();
+                const event_id = submitData?.event_id;
+
+                if (!event_id) {
+                    throw new Error("No event_id received: " + JSON.stringify(submitData));
+                }
+
+                console.log("Event ID:", event_id);
+                // addMessage('bot', `(Event ID: ${event_id})`);  // show event id in chat
+
+                // Step 2: Poll the result using event_id
+                const status_url = `${base_url}/${event_id}`;
+
+                let audioUrl = null;
+                const pollRes = await fetch(status_url, { method: 'GET' });
+
+                // Gradio often returns JSON chunks or final result
+                const pollText = await pollRes.text();
+                console.log("Poll response:", pollText);
+
+                // Try to parse final result (adjust if format changes)
+                const lines = pollText.split('\n');
+                for (const line of lines) {
+                    if (line.startsWith("data:")) {
+                        const dataStr = line.replace("data: ", "");
+                        try {
+                            const result = JSON.parse(dataStr);
+                            if (Array.isArray(result) && result[1] && result[1].url) {
+                                audioUrl = result[1].url;
+                                break;
+                            }
+                        } catch (e) {}
+                    }
+                }
+
+                if (!audioUrl) {
+                    throw new Error("No audio URL found in response");
+                }
+
+                console.log("Audio URL:", audioUrl);
+
+                // Play audio
+                const audio = new Audio(audioUrl);
+                audio.crossOrigin = "anonymous";
+                audio.onplay = startMouthAnimation;
+                audio.onended = stopMouthAnimation;
+                audio.onerror = (e) => {
+                    console.error("Audio play error:", e);
+                    stopMouthAnimation();
+                };
+
+                await audio.play();
+
+            } catch (err) {
+                console.error("VITS Umamusume TTS failed:", err);
+                addMessage('bot', `(TTS error: ${err.message})`);
+
+                // Fallback to browser TTS (Tracy female + high pitch)
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = "zh-HK";
+
+                const voices = speechSynthesis.getVoices();
+                const tracy = voices.find(v => v.name.includes("Tracy"));
+                if (tracy) utterance.voice = tracy;
+
+                utterance.pitch = 1.85;
+                utterance.rate = 1.15;
+
+                utterance.onstart = startMouthAnimation;
+                utterance.onend = stopMouthAnimation;
+
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        // ────────────────────────────────────────────────
+        // Send question
+        // ────────────────────────────────────────────────
+        async function sendQuestion() {
+            const apiKey = document.getElementById('api-key').value.trim();
+            if (!apiKey) { alert('請輸入 Poe API Key'); return; }
+
+            const question = document.getElementById('question').value.trim();
+            if (!question) return;
+
+            addMessage('user', question);
+            document.getElementById('question').value = '';
+
+            messages.push({ role: 'user', content: question });
+
+            try {
+                const res = await fetch('https://api.poe.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                    body: JSON.stringify({ model: 'gpt-4o-mini', messages, stream: false })
+                });
+
+                if (!res.ok) throw new Error(`Poe API ${res.status}`);
+
+                const data = await res.json();
+                let fullReply = data?.choices?.[0]?.message?.content?.trim?.() || '';
+
+                let replyText = fullReply;
+                const langMatch = fullReply.match(/^\[lang:([a-zA-Z-]+)\]/i);
+                if (langMatch) replyText = fullReply.replace(langMatch[0], '').trim();
+
+                addMessage('bot', replyText);
+                messages.push({ role: 'assistant', content: fullReply });
+
+                await speak(replyText);
+
+            } catch (err) {
+                console.error(err);
+                addMessage('bot', '出咗問題…請檢查 API key 或網絡');
+            }
+        }
+
+        window.sendQuestion = sendQuestion;
+        document.getElementById('question').addEventListener('keypress', e => {
+            if (e.key === 'Enter') { e.preventDefault(); sendQuestion(); }
+        });
+
+        // Debug voices
+        speechSynthesis.onvoiceschanged = () => {
+            const voices = speechSynthesis.getVoices();
+            const cantonese = voices.filter(v => v.lang === "zh-HK");
+            if (cantonese.length) console.log("Browser zh-HK voices:", cantonese.map(v => v.name));
+        };
+        speechSynthesis.getVoices();
+    </script>
+</body>
+</html>
