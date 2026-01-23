@@ -1,109 +1,130 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Palm Math Pro</title>
+  <title>Palm Math Pro - Precision Edition</title>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     body { margin: 0; font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #111; color: white; text-align: center; }
-    #video-container { position: relative; width: 100vw; height: 100vh; background: #000; }
-    canvas { position: absolute; left: 0; top: 0; transform: rotateY(180deg); width: 100%; height: 100%; opacity: 0.7; }
+    #video-container { position: relative; width: 100vw; height: 100vh; background: #000; transition: background 0.3s; }
+    canvas { position: absolute; left: 0; top: 0; transform: rotateY(180deg); width: 100%; height: 100%; opacity: 0.7; z-index: 1; }
     video { display: none; }
     
-    #ui-layer { position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+    /* Fever Mode */
+    @keyframes fever-glow {
+      0% { box-shadow: inset 0 0 50px rgba(255, 204, 0, 0.5); }
+      50% { box-shadow: inset 0 0 100px rgba(255, 100, 0, 0.8); }
+      100% { box-shadow: inset 0 0 50px rgba(255, 204, 0, 0.5); }
+    }
+    .fever-active #video-container { animation: fever-glow 1s infinite; }
     
-    .zone { position: absolute; top: 0; width: 25%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 5rem; font-weight: 900; }
-    #left-zone { left: 0; background: rgba(100, 0, 0, 0.8); border-right: 4px solid white; }
-    #right-zone { right: 0; background: rgba(0, 0, 100, 0.8); border-left: 4px solid white; }
-    #center-zone { left: 37.5%; width: 25%; border: 2px dashed rgba(255,255,255,0.4); background: rgba(0,0,0,0.2); }
+    /* Freeze Time */
+    .time-frozen { color: #00e5ff !important; text-shadow: 0 0 20px #00e5ff !important; animation: freeze-pulse 1s infinite; }
+    @keyframes freeze-pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-    .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.92); z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: all; }
-    .level-btn, .action-btn { background: #333; color: white; border: 2px solid #fff; padding: 15px 30px; margin: 8px; cursor: pointer; width: 320px; font-size: 1.2rem; transition: 0.2s; border-radius: 8px; }
+    /* UI Components */
+    .zone { position: absolute; top: 0; width: 22%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 7rem; font-weight: 900; z-index: 5; }
+    #left-zone { left: 0; background: rgba(100, 0, 0, 0.9); border-right: 4px solid white; }
+    #right-zone { right: 0; background: rgba(0, 0, 100, 0.9); border-left: 4px solid white; }
+    
+    #ui-layer { position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+    #stats { position: absolute; top: 20px; width: 100%; display: flex; justify-content: center; gap: 20px; }
+    .stat-pill { background: rgba(0,0,0,0.8); padding: 10px 15px; border-radius: 50px; border: 2px solid rgba(255,255,255,0.2); font-size: 1.6rem; font-weight: 800; min-width: 140px; }
+    
+    #display-area { position: absolute; top: 140px; width: 100%; }
+    #feedback { font-size: 3.5rem; font-weight: bold; height: 4rem; text-shadow: 2px 2px 20px #000; }
+    #question-box { font-size: 8rem; font-weight: bold; text-shadow: 0 0 30px black; }
+    
+    #message { position: absolute; bottom: 60px; width: 100%; font-size: 2.2rem; color: #00ffcc; font-weight: bold; text-shadow: 2px 2px 10px black; }
+    #reset-box { position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%); background: black; color: white; padding: 10px 20px; font-size: 1.2rem; border: 2px solid white; z-index: 10; opacity: 0.2; }
+
+    /* Menu & Instructions */
+    .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: all; padding: 20px; }
+    .main-container { display: flex; flex-direction: row; gap: 40px; align-items: flex-start; max-width: 1100px; }
+    .info-panel { background: rgba(255,255,255,0.05); padding: 30px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); text-align: left; width: 400px; }
+    .info-panel h2 { color: #00ffcc; margin-top: 0; }
+    .info-panel ul { list-style: none; padding: 0; }
+    .info-panel li { margin-bottom: 20px; font-size: 1.1rem; line-height: 1.4; }
+    .highlight { font-weight: bold; color: #ffcc00; }
+
+    .level-btn, .action-btn { background: #222; color: white; border: 2px solid #fff; padding: 15px 30px; margin: 8px; cursor: pointer; width: 350px; font-size: 1.4rem; border-radius: 12px; transition: 0.2s; }
     .level-btn:hover, .action-btn:hover { background: #fff; color: #000; transform: scale(1.05); }
 
-    #display-area { position: absolute; top: 100px; width: 100%; }
-    #feedback { font-size: 3.5rem; font-weight: bold; height: 4rem; text-shadow: 2px 2px 10px #000; }
-    #question-box { font-size: 6rem; font-weight: bold; }
-    #stats { position: absolute; top: 20px; width: 100%; font-size: 1.5rem; display: flex; justify-content: space-around; }
-    #message { position: absolute; bottom: 60px; width: 100%; font-size: 2rem; color: #00ffcc; background: rgba(0,0,0,0.5); padding: 10px 0; }
-
-    .stat-val { font-size: 3rem; color: #00ffcc; margin-bottom: 10px; }
+    .hidden { display: none !important; }
     .correct { color: #00ff00; }
     .wrong { color: #ff3333; }
-    .hidden { display: none !important; }
-
-    /* Scorecard for download (initially hidden) */
-    #scorecard-capture { 
-      position: absolute; 
-      left: -9999px; /* Off-screen */
-      top: -9999px;
-      width: 600px; /* Define a fixed size for the image */
-      padding: 40px;
-      background: linear-gradient(45deg, #1a1a2e, #16213e);
-      color: white;
-      text-align: center;
-      font-family: 'Segoe UI', sans-serif;
-      box-shadow: 0 0 20px rgba(0,0,0,0.8);
-      border-radius: 15px;
-      line-height: 1.4;
-      display: block; /* Important for html2canvas */
-    }
-    #scorecard-capture h2 { font-size: 2.8rem; margin-bottom: 20px; color: #e0e0ff; }
-    #scorecard-capture p { font-size: 1.6rem; margin: 10px 0; }
-    #scorecard-capture .score-label { color: #99ccff; }
-    #scorecard-capture .score-value { font-weight: bold; color: #00ffcc; }
   </style>
 </head>
-<body>
+<body id="game-body">
 
   <div id="menu-overlay" class="overlay">
-    <h1>PALM MATH CHALLENGE</h1>
-    <p>Select a Level to Start</p>
-    <button class="level-btn" onclick="initGame(1)">1. +/- (1 Digit)</button>
-    <button class="level-btn" onclick="initGame(2)">2. +/- (2 Digits)</button>
-    <button class="level-btn" onclick="initGame(3)">3. Multiply (1 Digit)</button>
-    <button class="level-btn" onclick="initGame(4)">4. Fractions (Simplify)</button>
-    <button class="level-btn" onclick="initGame(5)">5. +/- (3 Digits)</button>
-    <button class="level-btn" onclick="initGame(6)">6. Multiply (2 Digits)</button>
+    <h1 style="font-size: 4rem; margin-bottom: 10px; color: #fff;">PALM MATH PRO</h1>
+    
+    <div class="main-container">
+      <div class="info-panel">
+        <h2>HOW TO PLAY</h2>
+        <ul>
+          <li>🔥 <span class="highlight">Combo System:</span> Answer 3 questions within 5 seconds to start a Multiplier. Every fast answer after that stacks the bonus!</li>
+          <li>❄️ <span class="highlight">Freeze Time:</span> Reach a <span class="highlight">10-Question Streak</span> to freeze the timer for 5 seconds.</li>
+          <li>🌈 <span class="highlight">Fever Mode:</span> Hit a x4 combo or higher to enter Fever Mode for maximum points.</li>
+          <li>✋ <span class="highlight">Controls:</span> Move hand left/right to select. Return to center to confirm next question.</li>
+        </ul>
+      </div>
+
+      <div id="level-selection">
+        <h2 style="text-align: center;">SELECT LEVEL</h2>
+        <button class="level-btn" onclick="selectLevel(1)">1. +/- (1 Digit)</button>
+        <button class="level-btn" onclick="selectLevel(2)">2. +/- (2 Digits)</button>
+        <button class="level-btn" onclick="selectLevel(3)">3. Multiply (1 Digit)</button>
+        <button class="level-btn" onclick="selectLevel(4)">4. Fractions (Simplify)</button>
+        <button class="level-btn" onclick="selectLevel(5)">5. +/- (3 Digits)</button>
+        <button class="level-btn" onclick="selectLevel(6)">6. Multiply (2 Digits)</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="countdown-overlay" class="overlay hidden">
+    <div id="start-countdown" style="font-size: 15rem; font-weight: 900;">3</div>
   </div>
 
   <div id="result-overlay" class="overlay hidden">
-    <h1 id="result-title">TIME'S UP!</h1>
-    <div id="final-score" class="stat-val">Score: 0</div>
-    <div id="final-accuracy" class="stat-val">Accuracy: 0%</div>
-    <button class="action-btn" onclick="resetGame()">PLAY AGAIN (Same Level)</button>
+    <h1 style="font-size: 4rem;">SESSION ENDED</h1>
+    <div style="font-size: 3rem; color: #ffcc00;" id="final-score">Score: 0</div>
+    <div style="font-size: 2.5rem; margin-bottom: 30px;" id="final-accuracy">Accuracy: 0%</div>
+    <button class="action-btn" onclick="runPreGameCountdown()">PLAY AGAIN</button>
     <button class="action-btn" onclick="downloadScorecard()">DOWNLOAD SCORECARD</button>
-    <button class="action-btn" style="border-color: #777;" onclick="location.reload()">CHANGE LEVEL</button>
+    <button class="action-btn" onclick="location.reload()">MAIN MENU</button>
   </div>
 
   <div id="video-container">
     <video id="input_video"></video>
     <canvas id="output_canvas"></canvas>
-    
     <div id="ui-layer" class="hidden">
       <div id="stats">
-        <div>SCORE: <span id="score">0</span></div>
-        <div>TIME: <span id="timer">60</span>s</div>
+        <div class="stat-pill">STREAK: <span id="streak">0</span></div>
+        <div class="stat-pill">SCORE: <span id="score">0</span></div>
+        <div class="stat-pill" id="combo-pill">COMBO: <span id="combo-mult">1</span>x</div>
+        <div class="stat-pill">TIME: <span id="timer">60</span>s</div>
       </div>
       <div id="display-area">
         <div id="feedback"></div>
         <div id="question-box"></div>
       </div>
       <div id="left-zone" class="zone"></div>
-      <div id="center-zone" class="zone"><span style="font-size: 1rem; opacity: 0.5;">RESET HERE</span></div>
       <div id="right-zone" class="zone"></div>
+      <div id="reset-box">RESET</div>
       <div id="message">Show Full Palm</div>
     </div>
   </div>
 
-  <div id="scorecard-capture">
-    <h2>PALM MATH RESULTS</h2>
-    <p><span class="score-label">LEVEL:</span> <span class="score-value" id="dl-level">1</span></p>
-    <p><span class="score-label">CORRECT ANSWERS:</span> <span class="score-value" id="dl-correct">0</span></p>
-    <p><span class="score-label">ACCURACY RATE:</span> <span class="score-value" id="dl-accuracy">0%</span></p>
-    <p style="font-size: 1rem; margin-top: 30px; opacity: 0.7;">Play more to improve!</p>
+  <div id="scorecard-capture" style="position: absolute; left: -9999px; top: -9999px; width: 600px; padding: 50px; background: #111; color: white; border-radius: 20px; text-align: center;">
+    <h1 style="color: #ffcc00;">MATH PRO SCORECARD</h1>
+    <p style="font-size: 2rem;">Level: <span id="dl-level"></span></p>
+    <p style="font-size: 2rem;">Total Points: <span id="dl-score"></span></p>
+    <p style="font-size: 2rem;">Correct: <span id="dl-correct"></span></p>
+    <p style="font-size: 2rem;">Accuracy: <span id="dl-accuracy"></span></p>
   </div>
 
   <script>
@@ -111,102 +132,113 @@
     const canvasElement = document.getElementById('output_canvas');
     const canvasCtx = canvasElement.getContext('2d');
     
-    let score = 0, totalAnswered = 0, timeLeft = 60, currentLevel = 1;
+    let score = 0, rawCorrect = 0, totalAttempted = 0, timeLeft = 60, currentLevel = 1;
+    let streak = 0, isTimeFrozen = false, freezeTimer = null;
     let currentQuestion = { ans: null, options: [] };
     let needsReset = false, gameActive = false, timerInterval = null;
+    let answerHistory = [], multiplier = 1;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
     function playSound(type) {
       if (audioCtx.state === 'suspended') audioCtx.resume();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.connect(gain); gain.connect(audioCtx.destination);
-      if(type === 'correct') { osc.frequency.setValueAtTime(880, audioCtx.currentTime); gain.gain.fadeOutAtTime = 0.2; } 
-      else if(type === 'wrong') { osc.frequency.setValueAtTime(220, audioCtx.currentTime); } 
-      else if(type === 'tick') { osc.frequency.setValueAtTime(440, audioCtx.currentTime); gain.gain.setValueAtTime(0.05, audioCtx.currentTime); }
+      if(type === 'correct') {
+        osc.frequency.setValueAtTime(800 + (multiplier * 150), audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1400, audioCtx.currentTime + 0.1);
+      } else if(type === 'freeze') {
+        osc.type = 'square'; osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+      } else if(type === 'wrong') {
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+      } else if(type === 'countdown') {
+        osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+      }
       osc.start(); osc.stop(audioCtx.currentTime + 0.15);
     }
 
-    function initGame(level) {
+    function selectLevel(level) {
       currentLevel = level;
-      resetGame();
+      document.getElementById('menu-overlay').classList.add('hidden');
+      runPreGameCountdown();
+    }
+
+    function runPreGameCountdown() {
+      document.getElementById('result-overlay').classList.add('hidden');
+      document.getElementById('ui-layer').classList.add('hidden');
+      const overlay = document.getElementById('countdown-overlay');
+      const text = document.getElementById('start-countdown');
+      overlay.classList.remove('hidden');
+      let count = 3;
+      text.innerText = count;
+      playSound('countdown');
+      const cdInterval = setInterval(() => {
+        count--;
+        if (count > 0) { text.innerText = count; playSound('countdown'); }
+        else if (count === 0) { text.innerText = "GO!"; playSound('correct'); }
+        else { clearInterval(cdInterval); overlay.classList.add('hidden'); resetGame(); }
+      }, 1000);
     }
 
     function resetGame() {
-      score = 0;
-      totalAnswered = 0;
-      timeLeft = 60;
-      gameActive = true;
-      needsReset = false;
-      
+      score = 0; rawCorrect = 0; totalAttempted = 0; timeLeft = 60; multiplier = 1; answerHistory = []; streak = 0; isTimeFrozen = false;
+      gameActive = true; needsReset = false;
       document.getElementById('score').innerText = "0";
+      document.getElementById('streak').innerText = "0";
+      document.getElementById('combo-mult').innerText = "1";
       document.getElementById('timer').innerText = "60";
-      document.getElementById('feedback').innerText = "";
-      
-      document.getElementById('menu-overlay').classList.add('hidden');
-      document.getElementById('result-overlay').classList.add('hidden');
+      document.getElementById('timer').className = "";
       document.getElementById('ui-layer').classList.remove('hidden');
-      
+      document.body.classList.remove('fever-active');
       generateQuestion();
       startTimer();
     }
 
     function generateQuestion() {
-      let a, b, qText, ans, isPlus;
-      const randRange = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-
+      let a, b, q, ans, wrong;
+      const r = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
       switch(currentLevel) {
-        case 1: a = randRange(1, 9); b = randRange(1, 9); isPlus = Math.random() > 0.5; if (!isPlus && a < b) [a, b] = [b, a]; ans = isPlus ? a + b : a - b; qText = `${a} ${isPlus ? '+' : '-'} ${b}`; break;
-        case 2: a = randRange(10, 99); b = randRange(10, 99); isPlus = Math.random() > 0.5; if (!isPlus && a < b) [a, b] = [b, a]; ans = isPlus ? a + b : a - b; qText = `${a} ${isPlus ? '+' : '-'} ${b}`; break;
-        case 3: a = randRange(2, 9); b = randRange(2, 9); ans = a * b; qText = `${a} × ${b}`; break;
-        case 4: let common = randRange(2, 5); let finalA = randRange(1, 4); let finalB = randRange(finalA + 1, 6); qText = `${finalA * common}/${finalB * common}`; ans = `${finalA}/${finalB}`; break;
-        case 5: a = randRange(100, 999); b = randRange(100, 999); isPlus = Math.random() > 0.5; if (!isPlus && a < b) [a, b] = [b, a]; ans = isPlus ? a + b : a - b; qText = `${a} ${isPlus ? '+' : '-'} ${b}`; break;
-        case 6: a = randRange(10, 25); b = randRange(2, 9); ans = a * b; qText = `${a} × ${b}`; break;
+        case 1: a=r(1,9); b=r(1,9); if(a<b)[a,b]=[b,a]; let p1=Math.random()>0.5; ans=p1?a+b:a-b; q=`${a}${p1?'+':'-'}${b}`; wrong = ans + (Math.random() > 0.5 ? 1 : -1); break;
+        case 2: a=r(10,99); b=r(10,99); if(a<b)[a,b]=[b,a]; let p2=Math.random()>0.5; ans=p2?a+b:a-b; q=`${a}${p2?'+':'-'}${b}`; wrong = ans + (Math.random() > 0.5 ? (Math.random() > 0.5 ? 10 : 1) : -10); break;
+        case 3: a=r(2,9); b=r(2,9); ans=a*b; q=`${a} × ${b}`; wrong = ans + (Math.random() > 0.5 ? a : -b); break;
+        case 4: let c=r(2,5), fa=r(1,4), fb=r(fa+1,6); q=`${fa*c}/${fb*c}`; ans=`${fa}/${fb}`; wrong = Math.random() > 0.5 ? `${fa}/${fb+1}` : `${fa+1}/${fb}`; break;
+        case 5: a=r(100,999); b=r(100,999); if(a<b)[a,b]=[b,a]; let p5=Math.random()>0.5; ans=p5?a+b:a-b; q=`${a}${p5?'+':'-'}${b}`; wrong = ans + (Math.random() > 0.5 ? 100 : -10); break;
+        case 6: a=r(10,25); b=r(2,9); ans=a*b; q=`${a} × ${b}`; wrong = ans + (Math.random() > 0.5 ? b : -b); break;
       }
-
-      let wrong;
-      if (currentLevel === 4) {
-        wrong = `${randRange(1, 5)}/${randRange(6, 9)}`;
-      } else {
-        wrong = ans + (Math.random() > 0.5 ? (currentLevel > 4 ? 10 : 1) : (currentLevel > 4 ? -10 : -1));
-        if (wrong < 0 || wrong == ans) wrong = ans + 5;
+      if (currentLevel !== 4) {
+          let wrongNum = parseInt(wrong);
+          if (wrongNum <= 0) wrongNum = ans + 2;
+          if (wrongNum === ans) wrongNum = ans + 1;
+          wrong = wrongNum.toString();
       }
-
-      currentQuestion = {
-        ans: ans.toString(),
-        options: Math.random() > 0.5 ? [ans.toString(), wrong.toString()] : [wrong.toString(), ans.toString()]
-      };
-
-      document.getElementById('question-box').innerText = qText;
+      currentQuestion = { ans: ans.toString(), options: Math.random()>0.5 ? [ans.toString(), wrong.toString()] : [wrong.toString(), ans.toString()] };
+      document.getElementById('question-box').innerText = q;
       document.getElementById('left-zone').innerText = currentQuestion.options[0];
       document.getElementById('right-zone').innerText = currentQuestion.options[1];
-      document.getElementById('feedback').innerText = "";
       needsReset = false;
+      document.getElementById('feedback').innerText = "";
     }
 
     function onResults(results) {
       canvasCtx.save();
       canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
       canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-
-      if (results.multiHandLandmarks) {
-        for (const landmarks of results.multiHandLandmarks) {
-          drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 4});
-          drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 1, radius: 3});
-
-          const x = 1 - landmarks[8].x; 
-          const isPalmOpen = landmarks[8].y < landmarks[6].y && landmarks[12].y < landmarks[10].y;
-
-          if (gameActive && isPalmOpen && timeLeft > 0) {
-            if (needsReset) {
-              if (x > 0.375 && x < 0.625) {
-                generateQuestion();
-                document.getElementById('message').innerText = "Select Answer";
-              }
-            } else {
-              if (x < 0.25) checkAnswer(currentQuestion.options[0]);
-              else if (x > 0.75) checkAnswer(currentQuestion.options[1]);
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const hand = results.multiHandLandmarks[0];
+        drawConnectors(canvasCtx, hand, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 4});
+        const x = 1 - hand[8].x; 
+        const isPalmOpen = hand[8].y < hand[6].y && hand[12].y < hand[10].y;
+        if (gameActive && isPalmOpen) {
+          if (needsReset) {
+            if (x > 0.22 && x < 0.78) {
+              generateQuestion();
+              document.getElementById('message').innerText = "Pick an answer!";
+              document.getElementById('reset-box').style.opacity = "0.2";
             }
+          } else {
+            if (x < 0.22) checkAnswer(currentQuestion.options[0]);
+            else if (x > 0.78) checkAnswer(currentQuestion.options[1]);
           }
         }
       }
@@ -214,32 +246,50 @@
     }
 
     function checkAnswer(val) {
-      totalAnswered++;
+      totalAttempted++;
+      const now = Date.now();
       const fb = document.getElementById('feedback');
       if (val === currentQuestion.ans) {
-        score++;
+        rawCorrect++; streak++;
+        document.getElementById('streak').innerText = streak;
+        if (streak % 10 === 0) triggerFreeze();
+        answerHistory.push(now);
+        answerHistory = answerHistory.filter(ts => now - ts < 5000);
+        multiplier = answerHistory.length >= 3 ? answerHistory.length - 1 : 1;
+        if (multiplier >= 4) document.body.classList.add('fever-active');
+        score += (1 * multiplier);
         playSound('correct');
         document.getElementById('score').innerText = score;
-        fb.innerText = "CORRECT!"; fb.className = "correct";
+        document.getElementById('combo-mult').innerText = multiplier;
+        fb.innerText = multiplier > 1 ? `COMBO x${multiplier}!` : "CORRECT!";
+        fb.className = "correct";
       } else {
+        streak = 0; multiplier = 1; answerHistory = [];
+        document.getElementById('streak').innerText = "0";
+        document.body.classList.remove('fever-active');
+        document.getElementById('combo-mult').innerText = "1";
         playSound('wrong');
         fb.innerText = "WRONG!"; fb.className = "wrong";
       }
       needsReset = true;
-      document.getElementById('message').innerText = "Return to Center";
+      document.getElementById('message').innerText = "← RETURN TO CENTER →";
+      document.getElementById('reset-box').style.opacity = "1";
+    }
+
+    function triggerFreeze() {
+      isTimeFrozen = true; playSound('freeze');
+      document.getElementById('timer').classList.add('time-frozen');
+      setTimeout(() => { isTimeFrozen = false; document.getElementById('timer').classList.remove('time-frozen'); }, 5000);
     }
 
     function startTimer() {
       if(timerInterval) clearInterval(timerInterval);
       timerInterval = setInterval(() => {
-        timeLeft--;
-        document.getElementById('timer').innerText = timeLeft;
-        if (timeLeft <= 5 && timeLeft > 0) playSound('tick');
-        
-        if (timeLeft <= 0) {
-          clearInterval(timerInterval);
-          gameActive = false;
-          showResults();
+        if (!isTimeFrozen) {
+          timeLeft--;
+          document.getElementById('timer').innerText = timeLeft;
+          if (timeLeft <= 10 && timeLeft > 0) playSound('countdown');
+          if (timeLeft <= 0) { clearInterval(timerInterval); gameActive = false; showResults(); }
         }
       }, 1000);
     }
@@ -247,26 +297,20 @@
     function showResults() {
       document.getElementById('ui-layer').classList.add('hidden');
       document.getElementById('result-overlay').classList.remove('hidden');
-      
-      const accuracy = totalAnswered > 0 ? Math.round((score / totalAnswered) * 100) : 0;
-      document.getElementById('final-score').innerText = `Score: ${score}`;
-      document.getElementById('final-accuracy').innerText = `Accuracy: ${accuracy}%`;
-
-      // Update the hidden scorecard div
+      const acc = totalAttempted > 0 ? Math.round((rawCorrect / totalAttempted) * 100) : 0;
+      document.getElementById('final-score').innerText = `Final Score: ${score}`;
+      document.getElementById('final-accuracy').innerText = `Accuracy: ${acc}%`;
       document.getElementById('dl-level').innerText = currentLevel;
-      document.getElementById('dl-correct').innerText = score;
-      document.getElementById('dl-accuracy').innerText = `${accuracy}%`;
+      document.getElementById('dl-score').innerText = score;
+      document.getElementById('dl-correct').innerText = rawCorrect;
+      document.getElementById('dl-accuracy').innerText = acc + "%";
     }
 
     function downloadScorecard() {
-      const scorecard = document.getElementById('scorecard-capture');
-      html2canvas(scorecard, { 
-        backgroundColor: null, // Allow CSS background to render
-        scale: 2 // Higher scale for better resolution
-      }).then(canvas => {
+      html2canvas(document.getElementById('scorecard-capture'), { scale: 2 }).then(canvas => {
         const link = document.createElement('a');
-        link.download = `PalmMath_Level${currentLevel}_Score_${score}.png`;
-        link.href = canvas.toDataURL('image/png');
+        link.download = `PalmMath_Results.png`;
+        link.href = canvas.toDataURL();
         link.click();
       });
     }
@@ -274,11 +318,7 @@
     const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
     hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
     hands.onResults(onResults);
-
-    const camera = new Camera(videoElement, {
-      onFrame: async () => { await hands.send({image: videoElement}); },
-      width: 1280, height: 720
-    });
+    const camera = new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 1280, height: 720 });
     camera.start();
   </script>
 </body>
