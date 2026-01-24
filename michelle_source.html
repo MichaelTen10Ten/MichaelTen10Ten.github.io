@@ -165,377 +165,393 @@
         </div>
 
         <button onclick="sendQuestion()">Send</button>
-        <div id="status">TTS: Using Plachta VITS Umamusume (cute female Japanese voice)</div>
-    </div>
-    <script>
-        // ────────────────────────────────────────────────
-        // Live2D Setup
-        // ────────────────────────────────────────────────
-        let model;
-        async function initLive2D() {
-            const canvas = document.getElementById('canvas');
+        <div id="status">
+            <span id="thinking-msg" style="display: none; color: #007bff; font-weight: bold;">Michelle is thinking...
+                💭</span>
+            <br>
+        </div>
+        <script>
+            // ────────────────────────────────────────────────
+            // Live2D Setup
+            // ────────────────────────────────────────────────
+            let model;
+            async function initLive2D() {
+                const canvas = document.getElementById('canvas');
 
-            app = new PIXI.Application({
-                view: canvas,
-                autoStart: true,
-                resizeTo: document.getElementById('live2d-container'), // Resize to parent div
-                backgroundColor: 0xf0f8ff,
-                antialias: true,
-                autoDensity: true,
-                resolution: window.devicePixelRatio || 1
-            });
+                app = new PIXI.Application({
+                    view: canvas,
+                    autoStart: true,
+                    resizeTo: document.getElementById('live2d-container'), // Resize to parent div
+                    backgroundColor: 0xf0f8ff,
+                    antialias: true,
+                    autoDensity: true,
+                    resolution: window.devicePixelRatio || 1
+                });
 
-            const modelPath = 'source/michelle_source/simple.model3.json';
+                const modelPath = 'source/michelle_source/simple.model3.json';
 
-            try {
-                model = await PIXI.live2d.Live2DModel.from(modelPath);
-                app.stage.addChild(model);
+                try {
+                    model = await PIXI.live2d.Live2DModel.from(modelPath);
+                    app.stage.addChild(model);
 
-                // This function handles the scaling so it doesn't crop
-                const fitModel = () => {
-                    if (!model) return;
+                    // This function handles the scaling so it doesn't crop
+                    const fitModel = () => {
+                        if (!model) return;
 
-                    // Calculate scale to fit the container (adjust 0.9 to change "zoom")
-                    const scaleX = (app.screen.width / model.width) * 0.8;
-                    const scaleY = (app.screen.height / model.height) * 0.8;
-                    const finalScale = Math.min(scaleX, scaleY);
+                        // Calculate scale to fit the container (adjust 0.9 to change "zoom")
+                        const scaleX = (app.screen.width / model.width) * 0.8;
+                        const scaleY = (app.screen.height / model.height) * 0.8;
+                        const finalScale = Math.min(scaleX, scaleY);
 
-                    model.scale.set(finalScale);
+                        model.scale.set(finalScale);
 
-                    // Center the model
-                    model.anchor.set(0.5, 0.5);
-                    model.position.set(app.screen.width / 2, app.screen.height / 1.5);
-                };
+                        // Center the model
+                        model.anchor.set(0.5, 0.5);
+                        model.position.set(app.screen.width / 2, app.screen.height / 1.5);
+                    };
 
-                // Call once on load
-                fitModel();
+                    // Call once on load
+                    fitModel();
 
-                // Call every time the window resizes
-                app.renderer.on('resize', fitModel);
+                    // Call every time the window resizes
+                    app.renderer.on('resize', fitModel);
 
-                model.autoInteract = true;
-            } catch (err) {
-                console.error("Live2D load failed:", err);
-                document.getElementById('model-error').style.display = 'block';
+                    model.autoInteract = true;
+                } catch (err) {
+                    console.error("Live2D load failed:", err);
+                    document.getElementById('model-error').style.display = 'block';
+                }
             }
-        }
-        function resizeCanvas() {
-            if (!app || !model) return;
+            function resizeCanvas() {
+                if (!app || !model) return;
 
-            const container = document.getElementById('live2d-container');
-            const screenWidth = container.clientWidth;
-            const screenHeight = container.clientHeight;
-            const targetRatio = 16 / 9;
+                const container = document.getElementById('live2d-container');
+                const screenWidth = container.clientWidth;
+                const screenHeight = container.clientHeight;
+                const targetRatio = 16 / 9;
 
-            let newWidth, newHeight;
+                let newWidth, newHeight;
 
-            // Calculate dimensions to fit 16:9 inside the container
-            if (screenWidth / screenHeight > targetRatio) {
-                newHeight = screenHeight;
-                newWidth = screenHeight * targetRatio;
-            } else {
-                newWidth = screenWidth;
-                newHeight = screenWidth / targetRatio;
+                // Calculate dimensions to fit 16:9 inside the container
+                if (screenWidth / screenHeight > targetRatio) {
+                    newHeight = screenHeight;
+                    newWidth = screenHeight * targetRatio;
+                } else {
+                    newWidth = screenWidth;
+                    newHeight = screenWidth / targetRatio;
+                }
+
+                // Resize the renderer
+                app.renderer.resize(newWidth, newHeight);
+
+                // Reposition the model relative to the NEW canvas size
+                model.scale.set(1); // Adjust this base scale as needed
+                model.anchor.set(0.5, 0.5);
+                model.position.set(newWidth / 2, newHeight * 0.6);
             }
+            window.addEventListener('resize', resizeCanvas);
+            initLive2D().catch(err => console.error(err));
 
-            // Resize the renderer
-            app.renderer.resize(newWidth, newHeight);
-
-            // Reposition the model relative to the NEW canvas size
-            model.scale.set(1); // Adjust this base scale as needed
-            model.anchor.set(0.5, 0.5);
-            model.position.set(newWidth / 2, newHeight * 0.6);
-        }
-        window.addEventListener('resize', resizeCanvas);
-        initLive2D().catch(err => console.error(err));
-
-        // ────────────────────────────────────────────────
-        // Chat & System prompt (force English output)
-        // ────────────────────────────────────────────────
-        const messages = [{
-            role: "system",
-            content: `You are a cute girl named Michelle.
+            // ────────────────────────────────────────────────
+            // Chat & System prompt (force English output)
+            // ────────────────────────────────────────────────
+            const messages = [{
+                role: "system",
+                content: `You are a cute girl named Michelle.
 You are Created by Michael Ten.
 Always reply in English only, no matter what language the user uses.
 Be natural, friendly, and a little playful.
 Always start your reply with [lang:en-US] followed by the content.`
-        }];
+            }];
 
-        const chatHistory = document.getElementById('chat-history');
+            const chatHistory = document.getElementById('chat-history');
 
-        function addMessage(role, content) {
-            const div = document.createElement('div');
-            div.classList.add('message', role);
-            div.textContent = content;
-            chatHistory.appendChild(div);
-            chatHistory.scrollTop = chatHistory.scrollHeight;
-        }
-
-        // ────────────────────────────────────────────────
-        // Mouth animation
-        // ────────────────────────────────────────────────
-        let mouthInterval = null;
-
-        function startMouthAnimation() {
-            if (mouthInterval) clearInterval(mouthInterval);
-            let phase = 0;
-            mouthInterval = setInterval(() => {
-                if (!model?.internalModel?.coreModel) return;
-                const value = 0.2 + Math.abs(Math.sin(phase)) * 0.9;
-                model.internalModel.coreModel.setParameterValueById('PARAM_MOUTH_OPEN_Y', value);
-                phase += 0.65;
-            }, 45);
-        }
-
-        function stopMouthAnimation() {
-            if (mouthInterval) {
-                clearInterval(mouthInterval);
-                mouthInterval = null;
+            function addMessage(role, content) {
+                const div = document.createElement('div');
+                div.classList.add('message', role);
+                div.textContent = content;
+                chatHistory.appendChild(div);
+                chatHistory.scrollTop = chatHistory.scrollHeight;
             }
-            if (model?.internalModel?.coreModel) {
-                model.internalModel.coreModel.setParameterValueById('PARAM_MOUTH_OPEN_Y', 0);
+
+            // ────────────────────────────────────────────────
+            // Mouth animation
+            // ────────────────────────────────────────────────
+            let mouthInterval = null;
+
+            function startMouthAnimation() {
+                if (mouthInterval) clearInterval(mouthInterval);
+                let phase = 0;
+                mouthInterval = setInterval(() => {
+                    if (!model?.internalModel?.coreModel) return;
+                    const value = 0.2 + Math.abs(Math.sin(phase)) * 0.9;
+                    model.internalModel.coreModel.setParameterValueById('PARAM_MOUTH_OPEN_Y', value);
+                    phase += 0.65;
+                }, 45);
             }
-        }
 
-        // ────────────────────────────────────────────────
-        // TTS with Pre-fetching and Recursive Splitting
-        // ────────────────────────────────────────────────
-
-        async function speak(text) {
-            if (typeof text !== 'string' || !text.trim()) return;
-
-            try {
-                // 1. Get all audio blobs (recursively splitting if needed)
-                const audioBlobs = await getAudioChunks(text);
-
-                // 2. Play all blobs in sequence
-                await playAudioSequence(audioBlobs);
-
-            } catch (err) {
-                console.error("Total TTS Failure:", err);
-                fallbackBrowserTTS(text);
-            }
-        }
-
-        /**
-         * Recursively tries to fetch audio. 
-         * If the API fails, it splits the text and tries to get chunks for both halves.
-         */
-        async function getAudioChunks(text) {
-            try {
-                const blob = await fetchSingleAudioBlob(text);
-                return [blob]; // Success: return this blob in an array
-            } catch (err) {
-                console.warn("Chunk failed, splitting text...", text.substring(0, 30));
-
-                const splitIndex = findSplitPoint(text);
-                if (splitIndex !== -1) {
-                    const part1 = text.substring(0, splitIndex + 1).trim();
-                    const part2 = text.substring(splitIndex + 1).trim();
-
-                    // Recursively get chunks for both halves
-                    const chunks1 = await getAudioChunks(part1);
-                    const chunks2 = await getAudioChunks(part2);
-                    return [...chunks1, ...chunks2];
-                } else {
-                    // Cannot split further, throw error to trigger browser fallback
-                    throw new Error("Text too short to split but API failed.");
+            function stopMouthAnimation() {
+                if (mouthInterval) {
+                    clearInterval(mouthInterval);
+                    mouthInterval = null;
+                }
+                if (model?.internalModel?.coreModel) {
+                    model.internalModel.coreModel.setParameterValueById('PARAM_MOUTH_OPEN_Y', 0);
                 }
             }
-        }
 
-        /**
-         * Logic to fetch a single audio file from Gradio
-         */
-        async function fetchSingleAudioBlob(text) {
-            const base_url = "https://plachta-vits-umamusume-voice-synthesizer.hf.space/gradio_api/call/tts_fn";
-            const payload = {
-                data: [text, "特别周 Special Week (Umamusume Pretty Derby)", "English", 0.75, false]
-            };
+            // ────────────────────────────────────────────────
+            // TTS with Pre-fetching and Recursive Splitting
+            // ────────────────────────────────────────────────
 
-            const submitRes = await fetch(base_url, {
-                method: 'POST',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            const submitData = await submitRes.json();
-            if (!submitData.event_id) throw new Error("No event_id");
+            async function speak(text) {
+                if (typeof text !== 'string' || !text.trim()) return;
 
-            const pollRes = await fetch(`${base_url}/${submitData.event_id}`);
-            const pollText = await pollRes.text();
+                const thinkingMsg = document.getElementById('thinking-msg');
 
-            let audioUrl = null;
-            const lines = pollText.split('\n');
-            for (const line of lines) {
-                if (line.startsWith("data:")) {
-                    const result = JSON.parse(line.replace("data: ", ""));
-                    if (Array.isArray(result) && result[1]?.url) {
-                        audioUrl = result[1].url;
-                        break;
+                try {
+                    // Show "Michelle is thinking"
+                    thinkingMsg.style.display = 'inline';
+
+                    // 1. Get all audio blobs (recursively splitting if needed)
+                    const audioBlobs = await getAudioChunks(text);
+
+                    // Hide "thinking" once all audio is ready to play
+                    thinkingMsg.style.display = 'none';
+
+                    // 2. Play all blobs in sequence
+                    await playAudioSequence(audioBlobs);
+
+                } catch (err) {
+                    console.error("Total TTS Failure:", err);
+                    thinkingMsg.style.display = 'none'; // Hide on error
+                    fallbackBrowserTTS(text);
+                }
+            }
+
+            /**
+             * Recursively tries to fetch audio. 
+             * If the API fails, it splits the text and tries to get chunks for both halves.
+             */
+            async function getAudioChunks(text) {
+                try {
+                    const blob = await fetchSingleAudioBlob(text);
+                    return [blob]; // Success: return this blob in an array
+                } catch (err) {
+                    console.warn("Chunk failed, splitting text...", text.substring(0, 30));
+
+                    const splitIndex = findSplitPoint(text);
+                    if (splitIndex !== -1) {
+                        const part1 = text.substring(0, splitIndex + 1).trim();
+                        const part2 = text.substring(splitIndex + 1).trim();
+
+                        // Recursively get chunks for both halves
+                        const chunks1 = await getAudioChunks(part1);
+                        const chunks2 = await getAudioChunks(part2);
+                        return [...chunks1, ...chunks2];
+                    } else {
+                        // Cannot split further, throw error to trigger browser fallback
+                        throw new Error("Text too short to split but API failed.");
                     }
                 }
             }
 
-            if (!audioUrl) throw new Error("Audio URL not found");
+            /**
+             * Logic to fetch a single audio file from Gradio
+             */
+            async function fetchSingleAudioBlob(text) {
+                const base_url = "https://plachta-vits-umamusume-voice-synthesizer.hf.space/gradio_api/call/tts_fn";
+                const payload = {
+                    data: [text, "特别周 Special Week (Umamusume Pretty Derby)", "English", 0.75, false]
+                };
 
-            // Convert URL to Blob to ensure we "have" the data before playing
-            const audioRes = await fetch(audioUrl);
-            return await audioRes.blob();
-        }
-
-        /**
-         * Plays an array of Blobs one after another
-         */
-        async function playAudioSequence(blobs) {
-            for (const blob of blobs) {
-                const url = URL.createObjectURL(blob);
-                const audio = new Audio(url);
-
-                await new Promise((resolve, reject) => {
-                    audio.onplay = startMouthAnimation;
-                    audio.onended = () => {
-                        stopMouthAnimation();
-                        URL.revokeObjectURL(url); // Clean up memory
-                        resolve();
-                    };
-                    audio.onerror = reject;
-                    audio.play().catch(reject);
-                });
-            }
-        }
-
-        /**
-         * Finds the punctuation mark closest to the center
-         */
-        function findSplitPoint(text) {
-            const punctuations = /[.!?;]/g;
-            const matches = Array.from(text.matchAll(punctuations));
-            if (matches.length === 0) return -1;
-
-            const mid = text.length / 2;
-            let bestMatch = matches[0];
-            matches.forEach(match => {
-                if (Math.abs(match.index - mid) < Math.abs(bestMatch.index - mid)) {
-                    bestMatch = match;
-                }
-            });
-            return bestMatch.index;
-        }
-
-        function fallbackBrowserTTS(text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = "en-US";
-            utterance.pitch = 1.85;
-            utterance.onstart = startMouthAnimation;
-            utterance.onend = stopMouthAnimation;
-            speechSynthesis.speak(utterance);
-        }
-        // ────────────────────────────────────────────────
-        // Send question
-        // ────────────────────────────────────────────────
-        async function sendQuestion() {
-            const apiKey = document.getElementById('api-key').value.trim();
-            if (!apiKey) { alert('請輸入 Poe API Key'); return; }
-
-            const question = document.getElementById('question').value.trim();
-            if (!question) return;
-
-            addMessage('user', question);
-            document.getElementById('question').value = '';
-
-            messages.push({ role: 'user', content: question });
-
-            try {
-                const res = await fetch('https://api.poe.com/v1/chat/completions', {
+                const submitRes = await fetch(base_url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-                    body: JSON.stringify({ model: 'gpt-4o-mini', messages, stream: false })
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
                 });
+                const submitData = await submitRes.json();
+                if (!submitData.event_id) throw new Error("No event_id");
 
-                if (!res.ok) throw new Error(`Poe API ${res.status}`);
+                const pollRes = await fetch(`${base_url}/${submitData.event_id}`);
+                const pollText = await pollRes.text();
 
-                const data = await res.json();
-                let fullReply = data?.choices?.[0]?.message?.content?.trim?.() || '';
-
-                let replyText = fullReply;
-                const langMatch = fullReply.match(/^\[lang:([a-zA-Z-]+)\]/i);
-                if (langMatch) replyText = fullReply.replace(langMatch[0], '').trim();
-
-
-                await speak(replyText);
-                addMessage('bot', replyText);
-                messages.push({ role: 'assistant', content: fullReply });
-
-            } catch (err) {
-                console.error(err);
-                addMessage('bot', '出咗問題…請檢查 API key 或網絡');
-            }
-        }
-
-        window.sendQuestion = sendQuestion;
-        document.getElementById('question').addEventListener('keypress', e => {
-            if (e.key === 'Enter') { e.preventDefault(); sendQuestion(); }
-        });
-
-        // Debug voices
-        speechSynthesis.onvoiceschanged = () => {
-            const voices = speechSynthesis.getVoices();
-            const cantonese = voices.filter(v => v.lang === "zh-HK");
-            if (cantonese.length) console.log("Browser zh-HK voices:", cantonese.map(v => v.name));
-        };
-        speechSynthesis.getVoices();
-
-        // ────────────────────────────────────────────────
-        // Speech to Text (STT) Setup
-        // ────────────────────────────────────────────────
-        const micBtn = document.getElementById('mic-btn');
-        const questionInput = document.getElementById('question');
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-        if (SpeechRecognition) {
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'en-US'; // You can change this to 'zh-HK' or 'ja-JP'
-            recognition.interimResults = false;
-            recognition.continuous = false;
-
-            micBtn.addEventListener('click', () => {
-                try {
-                    recognition.start();
-                } catch (e) {
-                    recognition.stop();
+                let audioUrl = null;
+                const lines = pollText.split('\n');
+                for (const line of lines) {
+                    if (line.startsWith("data:")) {
+                        const result = JSON.parse(line.replace("data: ", ""));
+                        if (Array.isArray(result) && result[1]?.url) {
+                            audioUrl = result[1].url;
+                            break;
+                        }
+                    }
                 }
+
+                if (!audioUrl) throw new Error("Audio URL not found");
+
+                // Convert URL to Blob to ensure we "have" the data before playing
+                const audioRes = await fetch(audioUrl);
+                return await audioRes.blob();
+            }
+
+            /**
+ * Plays an array of Blobs one after another
+ */
+            async function playAudioSequence(blobs) {
+                for (const blob of blobs) {
+                    const url = URL.createObjectURL(blob);
+                    const audio = new Audio(url);
+
+                    await new Promise((resolve, reject) => {
+                        audio.onplay = () => {
+                            startMouthAnimation();
+                            // Ensure thinking message stays hidden during playback
+                            document.getElementById('thinking-msg').style.display = 'none';
+                        };
+                        audio.onended = () => {
+                            stopMouthAnimation();
+                            URL.revokeObjectURL(url);
+                            resolve();
+                        };
+                        audio.onerror = reject;
+                        audio.play().catch(reject);
+                    });
+                }
+            }
+
+            /**
+             * Finds the punctuation mark closest to the center
+             */
+            function findSplitPoint(text) {
+                const punctuations = /[.!?;]/g;
+                const matches = Array.from(text.matchAll(punctuations));
+                if (matches.length === 0) return -1;
+
+                const mid = text.length / 2;
+                let bestMatch = matches[0];
+                matches.forEach(match => {
+                    if (Math.abs(match.index - mid) < Math.abs(bestMatch.index - mid)) {
+                        bestMatch = match;
+                    }
+                });
+                return bestMatch.index;
+            }
+
+            function fallbackBrowserTTS(text) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = "en-US";
+                utterance.pitch = 1.85;
+                utterance.onstart = startMouthAnimation;
+                utterance.onend = stopMouthAnimation;
+                speechSynthesis.speak(utterance);
+            }
+            // ────────────────────────────────────────────────
+            // Send question
+            // ────────────────────────────────────────────────
+            async function sendQuestion() {
+                const apiKey = document.getElementById('api-key').value.trim();
+                if (!apiKey) { alert('請輸入 Poe API Key'); return; }
+
+                const question = document.getElementById('question').value.trim();
+                if (!question) return;
+
+                addMessage('user', question);
+                document.getElementById('question').value = '';
+
+                messages.push({ role: 'user', content: question });
+
+                try {
+                    const res = await fetch('https://api.poe.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                        body: JSON.stringify({ model: 'gpt-4o-mini', messages, stream: false })
+                    });
+
+                    if (!res.ok) throw new Error(`Poe API ${res.status}`);
+
+                    const data = await res.json();
+                    let fullReply = data?.choices?.[0]?.message?.content?.trim?.() || '';
+
+                    let replyText = fullReply;
+                    const langMatch = fullReply.match(/^\[lang:([a-zA-Z-]+)\]/i);
+                    if (langMatch) replyText = fullReply.replace(langMatch[0], '').trim();
+
+
+                    await speak(replyText);
+                    addMessage('bot', replyText);
+                    messages.push({ role: 'assistant', content: fullReply });
+
+                } catch (err) {
+                    console.error(err);
+                    addMessage('bot', '出咗問題…請檢查 API key 或網絡');
+                }
+            }
+
+            window.sendQuestion = sendQuestion;
+            document.getElementById('question').addEventListener('keypress', e => {
+                if (e.key === 'Enter') { e.preventDefault(); sendQuestion(); }
             });
 
-            recognition.onstart = () => {
-                micBtn.classList.add('recording');
-                micBtn.textContent = '🛑';
-                questionInput.placeholder = "Listening...";
+            // Debug voices
+            speechSynthesis.onvoiceschanged = () => {
+                const voices = speechSynthesis.getVoices();
+                const cantonese = voices.filter(v => v.lang === "zh-HK");
+                if (cantonese.length) console.log("Browser zh-HK voices:", cantonese.map(v => v.name));
             };
+            speechSynthesis.getVoices();
 
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                questionInput.value = transcript;
-                // Automatically send the question after voice input
-                sendQuestion();
-            };
+            // ────────────────────────────────────────────────
+            // Speech to Text (STT) Setup
+            // ────────────────────────────────────────────────
+            const micBtn = document.getElementById('mic-btn');
+            const questionInput = document.getElementById('question');
 
-            recognition.onend = () => {
-                micBtn.classList.remove('recording');
-                micBtn.textContent = '🎤';
-                questionInput.placeholder = "Ask a question...";
-            };
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-            recognition.onerror = (event) => {
-                console.error("Speech Recognition Error: ", event.error);
-                micBtn.classList.remove('recording');
-                micBtn.textContent = '🎤';
-            };
-        } else {
-            micBtn.style.display = 'none';
-            console.warn("Speech Recognition not supported in this browser.");
-        }
-    </script>
+            if (SpeechRecognition) {
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'en-US'; // You can change this to 'zh-HK' or 'ja-JP'
+                recognition.interimResults = false;
+                recognition.continuous = false;
+
+                micBtn.addEventListener('click', () => {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        recognition.stop();
+                    }
+                });
+
+                recognition.onstart = () => {
+                    micBtn.classList.add('recording');
+                    micBtn.textContent = '🛑';
+                    questionInput.placeholder = "Listening...";
+                };
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    questionInput.value = transcript;
+                    // Automatically send the question after voice input
+                    sendQuestion();
+                };
+
+                recognition.onend = () => {
+                    micBtn.classList.remove('recording');
+                    micBtn.textContent = '🎤';
+                    questionInput.placeholder = "Ask a question...";
+                };
+
+                recognition.onerror = (event) => {
+                    console.error("Speech Recognition Error: ", event.error);
+                    micBtn.classList.remove('recording');
+                    micBtn.textContent = '🎤';
+                };
+            } else {
+                micBtn.style.display = 'none';
+                console.warn("Speech Recognition not supported in this browser.");
+            }
+        </script>
 </body>
 
 </html>
