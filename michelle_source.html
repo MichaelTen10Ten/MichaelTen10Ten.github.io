@@ -429,7 +429,6 @@ Always start your reply with [lang:en-US] followed by the content.`
 
             addMessage('user', question);
             document.getElementById('question').value = '';
-
             messages.push({ role: 'user', content: question });
 
             try {
@@ -448,10 +447,22 @@ Always start your reply with [lang:en-US] followed by the content.`
                 const langMatch = fullReply.match(/^\[lang:([a-zA-Z-]+)\]/i);
                 if (langMatch) replyText = fullReply.replace(langMatch[0], '').trim();
 
-
-                await speak(replyText);
                 addMessage('bot', replyText);
                 messages.push({ role: 'assistant', content: fullReply });
+
+                // --- SPLITTING LOGIC START ---
+                // Splits by . ! ? or , (followed by space)
+                const sentences = replyText.match(/[^.!?区域,]+[.!?区域,]+|\s*[^.!?区域,]+/g) || [replyText];
+
+                // Use a sequential loop to speak sentences one by one
+                for (const sentence of sentences) {
+                    const cleanSentence = sentence.trim();
+                    if (cleanSentence.length > 0) {
+                        console.log("Speaking segment:", cleanSentence);
+                        await speak(cleanSentence);
+                    }
+                }
+                // --- SPLITTING LOGIC END ---
 
             } catch (err) {
                 console.error(err);
