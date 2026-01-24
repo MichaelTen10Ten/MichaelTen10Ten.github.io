@@ -362,7 +362,13 @@ Always start your reply with [lang:en-US] followed by the content.`
             async function fetchSingleAudioBlob(text) {
                 const base_url = "https://plachta-vits-umamusume-voice-synthesizer.hf.space/gradio_api/call/tts_fn";
                 const payload = {
-                    data: [text, "特别周 Special Week (Umamusume Pretty Derby)", "English", 0.75, false]
+                    data: [
+                        text,
+                        "特别周 Special Week (Umamusume Pretty Derby)",  // cute female voice
+                        "English",  // Japanese
+                        0.75,        // speed/preset
+                        false      // some flag (emotion?)
+                    ]
                 };
 
                 const submitRes = await fetch(base_url, {
@@ -478,8 +484,8 @@ Always start your reply with [lang:en-US] followed by the content.`
                     if (langMatch) replyText = fullReply.replace(langMatch[0], '').trim();
 
 
-                    await speak(replyText);
                     addMessage('bot', replyText);
+                    await speak(replyText);
                     messages.push({ role: 'assistant', content: fullReply });
 
                 } catch (err) {
