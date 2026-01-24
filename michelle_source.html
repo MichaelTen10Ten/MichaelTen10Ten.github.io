@@ -373,8 +373,21 @@ Always start your reply with [lang:en-US] followed by the content.`
                 // Play audio
                 const audio = new Audio(audioUrl);
                 audio.crossOrigin = "anonymous";
-                audio.onplay = startMouthAnimation;
-                audio.onended = stopMouthAnimation;
+                // Update these lines inside your existing speak() function:
+                audio.onplay = () => {
+                    isListening = false; // Pause listening
+                    recognition.stop();  // Stop mic so she doesn't hear herself
+                    startMouthAnimation();
+                };
+
+                audio.onended = () => {
+                    stopMouthAnimation();
+                    // Resume listening after she finishes talking
+                    setTimeout(() => {
+                        isListening = true;
+                        recognition.start();
+                    }, 500); // 0.5s delay to ensure room is quiet
+                };
                 audio.onerror = (e) => {
                     console.error("Audio play error:", e);
                     stopMouthAnimation();
@@ -460,54 +473,62 @@ Always start your reply with [lang:en-US] followed by the content.`
         speechSynthesis.getVoices();
 
         // ────────────────────────────────────────────────
-        // Speech to Text (STT) Setup
+        // Continuous Speech to Text (STT) Setup
         // ────────────────────────────────────────────────
         const micBtn = document.getElementById('mic-btn');
         const questionInput = document.getElementById('question');
+        let isListening = false;
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
         if (SpeechRecognition) {
             const recognition = new SpeechRecognition();
-            recognition.lang = 'en-US'; // You can change this to 'zh-HK' or 'ja-JP'
+            recognition.lang = 'en-US';
             recognition.interimResults = false;
-            recognition.continuous = false;
+            recognition.continuous = false; // We handle continuity manually for better accuracy
 
             micBtn.addEventListener('click', () => {
-                try {
+                if (!isListening) {
+                    isListening = true;
                     recognition.start();
-                } catch (e) {
+                } else {
+                    isListening = false;
                     recognition.stop();
                 }
             });
 
             recognition.onstart = () => {
                 micBtn.classList.add('recording');
-                micBtn.textContent = '🛑';
-                questionInput.placeholder = "Listening...";
+                micBtn.textContent = 'ON'; // Indicates Michelle is "Awake"
+                questionInput.placeholder = "Michelle is listening...";
             };
 
             recognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
-                questionInput.value = transcript;
-                // Automatically send the question after voice input
-                sendQuestion();
+                if (transcript.trim().length > 0) {
+                    questionInput.value = transcript;
+                    sendQuestion();
+                }
             };
 
             recognition.onend = () => {
-                micBtn.classList.remove('recording');
-                micBtn.textContent = '🎤';
-                questionInput.placeholder = "Ask a question...";
+                // This is the "Continuous" magic: 
+                // If the user didn't manually stop it, restart the engine.
+                if (isListening) {
+                    recognition.start();
+                } else {
+                    micBtn.classList.remove('recording');
+                    micBtn.textContent = '🎤';
+                    questionInput.placeholder = "Ask a question...";
+                }
             };
 
             recognition.onerror = (event) => {
+                // Ignore "no-speech" errors to prevent the loop from breaking
+                if (event.error === 'no-speech') return;
                 console.error("Speech Recognition Error: ", event.error);
-                micBtn.classList.remove('recording');
-                micBtn.textContent = '🎤';
+                isListening = false;
             };
-        } else {
-            micBtn.style.display = 'none';
-            console.warn("Speech Recognition not supported in this browser.");
         }
     </script>
 </body>
