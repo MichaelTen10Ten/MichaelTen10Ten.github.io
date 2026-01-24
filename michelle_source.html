@@ -298,54 +298,56 @@ Always start your reply with [lang:en-US] followed by the content.`
         }
 
         // ────────────────────────────────────────────────
-        // TTS: Fetch All Chunks First, Then Play
+        // TTS with Pre-fetching and Recursive Splitting
         // ────────────────────────────────────────────────
+
         async function speak(text) {
             if (typeof text !== 'string' || !text.trim()) return;
 
-            // 1. Break text into chunks (sentences) to prevent API timeouts
-            const chunks = splitTextIntoChunks(text, 100); // 100 chars is a safe limit for this API
-            console.log(`Split into ${chunks.length} chunks. Fetching audio...`);
-
             try {
-                // 2. Fetch all audio URLs in parallel
-                const audioUrlPromises = chunks.map(chunk => fetchAudioUrl(chunk));
-                const audioUrls = await Promise.all(audioUrlPromises);
+                // 1. Get all audio blobs (recursively splitting if needed)
+                const audioBlobs = await getAudioChunks(text);
 
-                // 3. Play them in sequence
-                console.log("All audio fetched. Starting playback...");
-                for (const url of audioUrls) {
-                    if (url) {
-                        await playAudio(url);
-                    }
-                }
+                // 2. Play all blobs in sequence
+                await playAudioSequence(audioBlobs);
+
             } catch (err) {
-                console.error("Batch TTS failed, falling back to browser voice:", err);
+                console.error("Total TTS Failure:", err);
                 fallbackBrowserTTS(text);
             }
         }
 
-        // Helper: Split text by punctuation (. ! ?)
-        function splitTextIntoChunks(text, maxLength) {
-            // Regex splits by . ! or ? but keeps the punctuation with the sentence
-            const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-            const chunks = [];
-            let currentChunk = "";
+        /**
+         * Recursively tries to fetch audio. 
+         * If the API fails, it splits the text and tries to get chunks for both halves.
+         */
+        async function getAudioChunks(text) {
+            try {
+                const blob = await fetchSingleAudioBlob(text);
+                return [blob]; // Success: return this blob in an array
+            } catch (err) {
+                console.warn("Chunk failed, splitting text...", text.substring(0, 30));
 
-            sentences.forEach(sentence => {
-                if ((currentChunk + sentence).length < maxLength) {
-                    currentChunk += sentence;
+                const splitIndex = findSplitPoint(text);
+                if (splitIndex !== -1) {
+                    const part1 = text.substring(0, splitIndex + 1).trim();
+                    const part2 = text.substring(splitIndex + 1).trim();
+
+                    // Recursively get chunks for both halves
+                    const chunks1 = await getAudioChunks(part1);
+                    const chunks2 = await getAudioChunks(part2);
+                    return [...chunks1, ...chunks2];
                 } else {
-                    if (currentChunk) chunks.push(currentChunk.trim());
-                    currentChunk = sentence;
+                    // Cannot split further, throw error to trigger browser fallback
+                    throw new Error("Text too short to split but API failed.");
                 }
-            });
-            if (currentChunk) chunks.push(currentChunk.trim());
-            return chunks;
+            }
         }
 
-        // Helper: Fetch a single audio URL from Gradio
-        async function fetchAudioUrl(text) {
+        /**
+         * Logic to fetch a single audio file from Gradio
+         */
+        async function fetchSingleAudioBlob(text) {
             const base_url = "https://plachta-vits-umamusume-voice-synthesizer.hf.space/gradio_api/call/tts_fn";
             const payload = {
                 data: [text, "特别周 Special Week (Umamusume Pretty Derby)", "English", 0.75, false]
@@ -356,41 +358,74 @@ Always start your reply with [lang:en-US] followed by the content.`
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
-            const { event_id } = await submitRes.json();
+            const submitData = await submitRes.json();
+            if (!submitData.event_id) throw new Error("No event_id");
 
-            const pollRes = await fetch(`${base_url}/${event_id}`);
+            const pollRes = await fetch(`${base_url}/${submitData.event_id}`);
             const pollText = await pollRes.text();
 
-            // Extract URL from the SSE (Server Sent Events) response
-            const match = pollText.match(/"url":\s*"(https:\/\/[^"]+)"/);
-            if (match && match[1]) return match[1];
-            throw new Error("Could not find audio URL in response");
+            let audioUrl = null;
+            const lines = pollText.split('\n');
+            for (const line of lines) {
+                if (line.startsWith("data:")) {
+                    const result = JSON.parse(line.replace("data: ", ""));
+                    if (Array.isArray(result) && result[1]?.url) {
+                        audioUrl = result[1].url;
+                        break;
+                    }
+                }
+            }
+
+            if (!audioUrl) throw new Error("Audio URL not found");
+
+            // Convert URL to Blob to ensure we "have" the data before playing
+            const audioRes = await fetch(audioUrl);
+            return await audioRes.blob();
         }
 
-        // Helper: Play audio and return promise that resolves when finished
-        function playAudio(url) {
-            return new Promise((resolve, reject) => {
+        /**
+         * Plays an array of Blobs one after another
+         */
+        async function playAudioSequence(blobs) {
+            for (const blob of blobs) {
+                const url = URL.createObjectURL(blob);
                 const audio = new Audio(url);
-                audio.crossOrigin = "anonymous";
-                audio.onplay = startMouthAnimation;
-                audio.onended = () => {
-                    stopMouthAnimation();
-                    resolve();
-                };
-                audio.onerror = (e) => {
-                    stopMouthAnimation();
-                    reject(e);
-                };
-                audio.play().catch(reject);
-            });
+
+                await new Promise((resolve, reject) => {
+                    audio.onplay = startMouthAnimation;
+                    audio.onended = () => {
+                        stopMouthAnimation();
+                        URL.revokeObjectURL(url); // Clean up memory
+                        resolve();
+                    };
+                    audio.onerror = reject;
+                    audio.play().catch(reject);
+                });
+            }
         }
 
-        // Helper: Browser Fallback
+        /**
+         * Finds the punctuation mark closest to the center
+         */
+        function findSplitPoint(text) {
+            const punctuations = /[.!?;]/g;
+            const matches = Array.from(text.matchAll(punctuations));
+            if (matches.length === 0) return -1;
+
+            const mid = text.length / 2;
+            let bestMatch = matches[0];
+            matches.forEach(match => {
+                if (Math.abs(match.index - mid) < Math.abs(bestMatch.index - mid)) {
+                    bestMatch = match;
+                }
+            });
+            return bestMatch.index;
+        }
+
         function fallbackBrowserTTS(text) {
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = "en-US";
             utterance.pitch = 1.85;
-            utterance.rate = 1.15;
             utterance.onstart = startMouthAnimation;
             utterance.onend = stopMouthAnimation;
             speechSynthesis.speak(utterance);
