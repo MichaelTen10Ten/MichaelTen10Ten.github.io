@@ -257,11 +257,11 @@
             // ────────────────────────────────────────────────
             const messages = [{
                 role: "system",
-                content: `You are a cute girl named Michelle.
-You are Created by Michael Ten.
-Always reply in English only, no matter what language the user uses.
-Be natural, friendly, and a little playful.
-Always start your reply with [lang:en-US] followed by the content.`
+                content: `You are a cute girl named Michelle, created by Michael Ten.
+- Always reply in English first.
+- Then, provide a natural Japanese translation of your reply after the delimiter "|||".
+- Keep the Japanese natural for a cute girl (using "chan", "desu", etc.).
+- Example format: Hello there! How are you? ||| こんにちは！元気ですか？`
             }];
 
             const chatHistory = document.getElementById('chat-history');
@@ -364,8 +364,8 @@ Always start your reply with [lang:en-US] followed by the content.`
                 const payload = {
                     data: [
                         text,
-                        "特别周 Special Week (Umamusume Pretty Derby)",  // cute female voice
-                        "English",  // Japanese
+                        "早柚 Sayu (Genshin Impact)",  // cute female voice
+                        "日本語",  // Japanese
                         0.75,        // speed/preset
                         false      // some flag (emotion?)
                     ]
@@ -457,20 +457,22 @@ Always start your reply with [lang:en-US] followed by the content.`
             // ────────────────────────────────────────────────
             async function sendQuestion() {
                 const apiKey = document.getElementById('api-key').value.trim();
-                if (!apiKey) { alert('請輸入 Poe API Key'); return; }
+                if (!apiKey) { alert('Please enter Poe API Key'); return; }
 
                 const question = document.getElementById('question').value.trim();
                 if (!question) return;
 
                 addMessage('user', question);
                 document.getElementById('question').value = '';
-
                 messages.push({ role: 'user', content: question });
 
                 try {
                     const res = await fetch('https://api.poe.com/v1/chat/completions', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
                         body: JSON.stringify({ model: 'gpt-4o-mini', messages, stream: false })
                     });
 
@@ -479,18 +481,32 @@ Always start your reply with [lang:en-US] followed by the content.`
                     const data = await res.json();
                     let fullReply = data?.choices?.[0]?.message?.content?.trim?.() || '';
 
-                    let replyText = fullReply;
-                    const langMatch = fullReply.match(/^\[lang:([a-zA-Z-]+)\]/i);
-                    if (langMatch) replyText = fullReply.replace(langMatch[0], '').trim();
+                    // --- NEW PARSING LOGIC ---
+                    let englishText = '';
+                    let japaneseText = '';
 
+                    if (fullReply.includes('|||')) {
+                        const parts = fullReply.split('|||');
+                        englishText = parts[0].trim();
+                        japaneseText = parts[1].trim();
+                    } else {
+                        // Fallback if the AI forgets the delimiter
+                        englishText = fullReply;
+                        japaneseText = fullReply;
+                    }
 
-                    addMessage('bot', replyText);
+                    // 1. Output original English to Chat History
+                    addMessage('bot', englishText);
+
+                    // 2. Add full reply to history so AI remembers the context
                     messages.push({ role: 'assistant', content: fullReply });
-                    await speak(replyText);
+
+                    // 3. Send ONLY the Japanese part to the TTS
+                    await speak(japaneseText);
 
                 } catch (err) {
                     console.error(err);
-                    addMessage('bot', '出咗問題…請檢查 API key 或網絡');
+                    addMessage('bot', 'Error: Please check API key or network.');
                 }
             }
 
