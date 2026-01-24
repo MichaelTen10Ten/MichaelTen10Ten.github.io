@@ -122,6 +122,25 @@
             border-radius: 8px;
             display: none;
         }
+
+        #mic-btn.recording {
+            background: #dc3545 !important;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
     </style>
 
     <!-- Live2D scripts -->
@@ -139,7 +158,12 @@
     <div id="chat-container">
         <div id="chat-history"></div>
         <input id="api-key" type="password" placeholder="Paste your Poe API Key here">
-        <input id="question" type="text" placeholder="Ask a question... (Enter to send)">
+
+        <div style="display: flex; gap: 5px;">
+            <input id="question" type="text" placeholder="Ask a question..." style="flex: 1;">
+            <button id="mic-btn" style="width: 50px; background: #6c757d;">🎤</button>
+        </div>
+
         <button onclick="sendQuestion()">Send</button>
         <div id="status">TTS: Using Plachta VITS Umamusume (cute female Japanese voice)</div>
     </div>
@@ -434,6 +458,57 @@ Always start your reply with [lang:en-US] followed by the content.`
             if (cantonese.length) console.log("Browser zh-HK voices:", cantonese.map(v => v.name));
         };
         speechSynthesis.getVoices();
+
+        // ────────────────────────────────────────────────
+        // Speech to Text (STT) Setup
+        // ────────────────────────────────────────────────
+        const micBtn = document.getElementById('mic-btn');
+        const questionInput = document.getElementById('question');
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US'; // You can change this to 'zh-HK' or 'ja-JP'
+            recognition.interimResults = false;
+            recognition.continuous = false;
+
+            micBtn.addEventListener('click', () => {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    recognition.stop();
+                }
+            });
+
+            recognition.onstart = () => {
+                micBtn.classList.add('recording');
+                micBtn.textContent = '🛑';
+                questionInput.placeholder = "Listening...";
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                questionInput.value = transcript;
+                // Automatically send the question after voice input
+                sendQuestion();
+            };
+
+            recognition.onend = () => {
+                micBtn.classList.remove('recording');
+                micBtn.textContent = '🎤';
+                questionInput.placeholder = "Ask a question...";
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Speech Recognition Error: ", event.error);
+                micBtn.classList.remove('recording');
+                micBtn.textContent = '🎤';
+            };
+        } else {
+            micBtn.style.display = 'none';
+            console.warn("Speech Recognition not supported in this browser.");
+        }
     </script>
 </body>
 
