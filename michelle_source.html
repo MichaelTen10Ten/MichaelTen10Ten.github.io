@@ -485,8 +485,8 @@ Always start your reply with [lang:en-US] followed by the content.`
 
 
                     addMessage('bot', replyText);
-                    await speak(replyText);
                     messages.push({ role: 'assistant', content: fullReply });
+                    await speak(replyText);
 
                 } catch (err) {
                     console.error(err);
