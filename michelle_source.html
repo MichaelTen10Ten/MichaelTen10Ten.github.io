@@ -298,58 +298,42 @@ Always start your reply with [lang:en-US] followed by the content.`
         }
 
         // ────────────────────────────────────────────────
-        // TTS using Plachta VITS Umamusume (Gradio API)
+        // TTS with Recursive Error Splitting
         // ────────────────────────────────────────────────
         async function speak(text) {
-            if (typeof text !== 'string' || !text.trim()) {
-                console.warn("TTS skipped - empty text");
-                return;
-            }
+            if (typeof text !== 'string' || !text.trim()) return;
 
-            console.log("VITS Umamusume TTS →", text.substring(0, 80) + (text.length > 80 ? "..." : ""));
+            console.log("Attempting to speak:", text.substring(0, 50) + "...");
 
             try {
                 const base_url = "https://plachta-vits-umamusume-voice-synthesizer.hf.space/gradio_api/call/tts_fn";
                 const headers = { "Content-Type": "application/json" };
-
                 const payload = {
                     data: [
                         text,
-                        "特别周 Special Week (Umamusume Pretty Derby)",  // cute female voice
-                        "English",  // Japanese
-                        0.75,        // speed/preset
-                        false      // some flag (emotion?)
+                        "特别周 Special Week (Umamusume Pretty Derby)",
+                        "English",
+                        0.75,
+                        false
                     ]
                 };
 
-                // Step 1: Submit request → get event_id
+                // Step 1: Submit request
                 const submitRes = await fetch(base_url, {
                     method: 'POST',
                     headers,
                     body: JSON.stringify(payload)
                 });
-
                 const submitData = await submitRes.json();
                 const event_id = submitData?.event_id;
+                if (!event_id) throw new Error("No event_id");
 
-                if (!event_id) {
-                    throw new Error("No event_id received: " + JSON.stringify(submitData));
-                }
-
-                console.log("Event ID:", event_id);
-                // addMessage('bot', `(Event ID: ${event_id})`);  // show event id in chat
-
-                // Step 2: Poll the result using event_id
+                // Step 2: Poll result
                 const status_url = `${base_url}/${event_id}`;
+                const pollRes = await fetch(status_url, { method: 'GET' });
+                const pollText = await pollRes.text();
 
                 let audioUrl = null;
-                const pollRes = await fetch(status_url, { method: 'GET' });
-
-                // Gradio often returns JSON chunks or final result
-                const pollText = await pollRes.text();
-                console.log("Poll response:", pollText);
-
-                // Try to parse final result (adjust if format changes)
                 const lines = pollText.split('\n');
                 for (const line of lines) {
                     if (line.startsWith("data:")) {
@@ -364,46 +348,85 @@ Always start your reply with [lang:en-US] followed by the content.`
                     }
                 }
 
-                if (!audioUrl) {
-                    throw new Error("No audio URL found in response");
-                }
+                if (!audioUrl) throw new Error("No audio URL");
 
-                console.log("Audio URL:", audioUrl);
-
-                // Play audio
-                const audio = new Audio(audioUrl);
-                audio.crossOrigin = "anonymous";
-                audio.onplay = startMouthAnimation;
-                audio.onended = stopMouthAnimation;
-                audio.onerror = (e) => {
-                    console.error("Audio play error:", e);
-                    stopMouthAnimation();
-                };
-
-                await audio.play();
+                // Step 3: Play and Wait for completion
+                return new Promise((resolve, reject) => {
+                    const audio = new Audio(audioUrl);
+                    audio.crossOrigin = "anonymous";
+                    audio.onplay = startMouthAnimation;
+                    audio.onended = () => {
+                        stopMouthAnimation();
+                        resolve(); // Success!
+                    };
+                    audio.onerror = (e) => {
+                        stopMouthAnimation();
+                        reject(new Error("Audio playback failed"));
+                    };
+                    audio.play().catch(reject);
+                });
 
             } catch (err) {
-                console.error("VITS Umamusume TTS failed:", err);
-                addMessage('bot', `(TTS error: ${err.message})`);
+                console.warn("TTS Chunk failed, attempting to split...", err);
 
-                // Fallback to browser TTS (Tracy female + high pitch)
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = "zh-HK";
+                // --- RECURSIVE SPLITTING LOGIC ---
+                // Find the best place to split (., !, ?)
+                const splitIndex = findSplitPoint(text);
 
-                const voices = speechSynthesis.getVoices();
-                const tracy = voices.find(v => v.name.includes("Tracy"));
-                if (tracy) utterance.voice = tracy;
+                if (splitIndex !== -1) {
+                    const part1 = text.substring(0, splitIndex + 1).trim();
+                    const part2 = text.substring(splitIndex + 1).trim();
 
-                utterance.pitch = 1.85;
-                utterance.rate = 1.15;
+                    if (part1 && part2) {
+                        console.log("Splitting text into two parts.");
+                        await speak(part1); // Speak first half
+                        return await speak(part2); // Speak second half
+                    }
+                }
 
-                utterance.onstart = startMouthAnimation;
-                utterance.onend = stopMouthAnimation;
-
-                speechSynthesis.speak(utterance);
+                // Final Fallback if it's still too long or cannot be split further
+                console.error("Split failed or text too short. Falling back to Browser TTS.");
+                fallbackBrowserTTS(text);
             }
         }
 
+        /**
+         * Finds a punctuation mark as close to the middle as possible
+         */
+        function findSplitPoint(text) {
+            const punctuations = /[.!?;]/g;
+            const matches = Array.from(text.matchAll(punctuations));
+
+            if (matches.length === 0) return -1;
+
+            // Get the match closest to the middle of the string
+            const mid = text.length / 2;
+            let bestMatch = matches[0];
+
+            matches.forEach(match => {
+                if (Math.abs(match.index - mid) < Math.abs(bestMatch.index - mid)) {
+                    bestMatch = match;
+                }
+            });
+
+            return bestMatch.index;
+        }
+
+        /**
+         * Extracted Browser TTS fallback
+         */
+        function fallbackBrowserTTS(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = "en-US";
+            const voices = speechSynthesis.getVoices();
+            const tracy = voices.find(v => v.name.includes("Tracy") || v.lang.includes("en-US"));
+            if (tracy) utterance.voice = tracy;
+            utterance.pitch = 1.85;
+            utterance.rate = 1.15;
+            utterance.onstart = startMouthAnimation;
+            utterance.onend = stopMouthAnimation;
+            speechSynthesis.speak(utterance);
+        }
         // ────────────────────────────────────────────────
         // Send question
         // ────────────────────────────────────────────────
