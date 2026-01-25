@@ -168,6 +168,11 @@
         <div id="status">
             <span id="thinking-msg" style="display: none; color: #007bff; font-weight: bold;">Michelle is thinking...
                 💭</span>
+            <div id="progress-container"
+                style="display: none; width: 100%; background: #eee; border-radius: 10px; margin-top: 5px; height: 10px; overflow: hidden;">
+                <div id="progress-bar" style="width: 0%; height: 100%; background: #28a745; transition: width 0.3s;">
+                </div>
+            </div>
             <br>
         </div>
         <script>
@@ -334,26 +339,43 @@
              * If the API fails, it splits the text and tries to get chunks for both halves.
              */
             async function getAudioChunks(text) {
-                try {
-                    const blob = await fetchSingleAudioBlob(text);
-                    return [blob]; // Success: return this blob in an array
-                } catch (err) {
-                    console.warn("Chunk failed, splitting text...", text.substring(0, 30));
+                const progressBar = document.getElementById('progress-bar');
+                const progressContainer = document.getElementById('progress-container');
 
-                    const splitIndex = findSplitPoint(text);
-                    if (splitIndex !== -1) {
-                        const part1 = text.substring(0, splitIndex + 1).trim();
-                        const part2 = text.substring(splitIndex + 1).trim();
+                // Show the bar at the start
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '0%';
 
-                        // Recursively get chunks for both halves
-                        const chunks1 = await getAudioChunks(part1);
-                        const chunks2 = await getAudioChunks(part2);
-                        return [...chunks1, ...chunks2];
-                    } else {
-                        // Cannot split further, throw error to trigger browser fallback
-                        throw new Error("Text too short to split but API failed.");
+                // Helper to split text into chunks based on punctuation
+                const sentences = text.match(/[^.!?。！？]+[.!?。！？]?/g) || [text];
+                const totalSentences = sentences.length;
+                let loadedSentences = 0;
+                const blobs = [];
+
+                for (const sentence of sentences) {
+                    const trimmed = sentence.trim();
+                    if (!trimmed) continue;
+
+                    try {
+                        const blob = await fetchSingleAudioBlob(trimmed);
+                        blobs.push(blob);
+
+                        // Update progress bar
+                        loadedSentences++;
+                        const percent = (loadedSentences / totalSentences) * 100;
+                        progressBar.style.width = percent + '%';
+                    } catch (err) {
+                        console.warn("Chunk failed:", trimmed, err);
                     }
                 }
+
+                // Hide bar after a short delay so the user sees it hit 100%
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                    progressBar.style.width = '0%';
+                }, 500);
+
+                return blobs;
             }
 
             /**
@@ -466,47 +488,43 @@
                 document.getElementById('question').value = '';
                 messages.push({ role: 'user', content: question });
 
+                const thinkingMsg = document.getElementById('thinking-msg');
+                thinkingMsg.style.display = 'inline';
+
                 try {
                     const res = await fetch('https://api.poe.com/v1/chat/completions', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${apiKey}`
-                        },
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
                         body: JSON.stringify({ model: 'gpt-4o-mini', messages, stream: false })
                     });
-
-                    if (!res.ok) throw new Error(`Poe API ${res.status}`);
 
                     const data = await res.json();
                     let fullReply = data?.choices?.[0]?.message?.content?.trim?.() || '';
 
-                    // --- NEW PARSING LOGIC ---
-                    let englishText = '';
-                    let japaneseText = '';
-
+                    let englishText = fullReply;
+                    let japaneseText = fullReply;
                     if (fullReply.includes('|||')) {
                         const parts = fullReply.split('|||');
                         englishText = parts[0].trim();
                         japaneseText = parts[1].trim();
-                    } else {
-                        // Fallback if the AI forgets the delimiter
-                        englishText = fullReply;
-                        japaneseText = fullReply;
                     }
 
-                    // 1. Output original English to Chat History
-                    addMessage('bot', englishText);
+                    // 1. Fetch all audio (this updates the progress bar automatically)
+                    const audioBlobs = await getAudioChunks(japaneseText);
 
-                    // 2. Add full reply to history so AI remembers the context
+                    // 2. Clear status and show message
+                    thinkingMsg.style.display = 'none';
+                    addMessage('bot', englishText);
                     messages.push({ role: 'assistant', content: fullReply });
 
-                    // 3. Send ONLY the Japanese part to the TTS
-                    await speak(japaneseText);
+                    // 3. Start speaking immediately
+                    await playAudioSequence(audioBlobs);
 
                 } catch (err) {
                     console.error(err);
-                    addMessage('bot', 'Error: Please check API key or network.');
+                    thinkingMsg.style.display = 'none';
+                    document.getElementById('progress-container').style.display = 'none';
+                    addMessage('bot', 'Error... please check API key or connection.');
                 }
             }
 
