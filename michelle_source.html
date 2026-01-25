@@ -434,7 +434,7 @@
 
                     // Map volume (0-255) to Live2D parameter (0.0-1.0)
                     // Sensitivity 2.0 helps the mouth open wider for quieter sounds
-                    let mouthValue = Math.min(1.0, (average / 128) * 2.0);
+                    let mouthValue = Math.min(1.0, (average / 128));
 
                     // USE THE EXACT ID FROM YOUR CDI3.JSON: "ParamMouthOpenY"
                     model.internalModel.coreModel.setParameterValueById('ParamMouthOpenY', mouthValue);
@@ -614,6 +614,49 @@
                 micBtn.style.display = 'none';
                 console.warn("Speech Recognition not supported in this browser.");
             }
+            // --- Idle Animations (Blinking & Breathing) ---
+            let lastBlinkTime = 0;
+            let blinkDuration = 150;
+            let nextBlinkInterval = 3000;
+
+            function updateIdleAnimations(currentTime) {
+                if (!model?.internalModel?.coreModel) {
+                    requestAnimationFrame(updateIdleAnimations);
+                    return;
+                }
+
+                const coreModel = model.internalModel.coreModel;
+
+                // 1. Breathing Logic
+                // Uses a sine wave to oscillate ParamBreath between 0 and 1
+                // (currentTime / 1000) converts ms to seconds; 0.5 controls the speed
+                let breathValue = (Math.sin(currentTime / 1000 * 0.5) + 1) / 2;
+                coreModel.setParameterValueById('ParamBreath', breathValue);
+
+                // 2. Blinking Logic
+                const elapsed = currentTime - lastBlinkTime;
+                if (elapsed > nextBlinkInterval) {
+                    let blinkProgress = (elapsed - nextBlinkInterval) / blinkDuration;
+
+                    if (blinkProgress <= 1) {
+                        // Smoothly close and open eyes
+                        let eyeValue = 0.5 + 0.5 * Math.cos(blinkProgress * Math.PI * 2);
+                        coreModel.setParameterValueById('ParamEyeLOpen', eyeValue);
+                        coreModel.setParameterValueById('ParamEyeROpen', eyeValue);
+                    } else {
+                        // Reset and randomize next blink
+                        coreModel.setParameterValueById('ParamEyeLOpen', 1.0);
+                        coreModel.setParameterValueById('ParamEyeROpen', 1.0);
+                        lastBlinkTime = currentTime;
+                        nextBlinkInterval = 2000 + Math.random() * 5000;
+                    }
+                }
+
+                requestAnimationFrame(updateIdleAnimations);
+            }
+
+            // Start the loop
+            requestAnimationFrame(updateIdleAnimations);
         </script>
 </body>
 
