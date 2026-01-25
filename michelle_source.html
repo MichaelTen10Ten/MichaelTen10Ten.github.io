@@ -158,9 +158,12 @@
     <div id="chat-container">
         <div id="status">
             <span style="color: #007bff; font-weight: bold;">Model By</span>
+        </div>
+        <div id="status">
             <span style="color: #007bff; font-weight: bold;">Art:koahri1</span>
+        </div>
+        <div id="status">
             <span style="color: #007bff; font-weight: bold;">Live2D:MedL2D</span>
-
         </div>
         <div id="status">
             <span id="thinking-msg" style="display: none; color: #007bff; font-weight: bold;">Michelle is
@@ -185,6 +188,8 @@
             // ────────────────────────────────────────────────
             // Live2D Setup
             // ────────────────────────────────────────────────
+            let nodStart = 0;
+            const nodDuration = 600; // Total time for the nod in milliseconds
             let isTyping = false;
             let lastTypingTime = 0;
             let gazeTarget = { x: 0, y: 0 }; // 0 is center, 1 is right/down, -1 is left/up
@@ -465,6 +470,12 @@
                             if (audioContext?.state === 'suspended') {
                                 audioContext.resume();
                             }
+
+                            // Trigger the nod only on the very first chunk of a sentence
+                            if (blobs.indexOf(blob) === 0) {
+                                nodStart = performance.now();
+                            }
+
                             setupAudioAnalysis(audio);
                             document.getElementById('thinking-msg').style.display = 'none';
                         };
@@ -644,33 +655,40 @@
 
                 const coreModel = model.internalModel.coreModel;
 
-                // --- DYNAMIC GAZE LOGIC ---
+                // --- DYNAMIC GAZE & NOD LOGIC ---
                 const now = currentTime;
-                // Check if user stopped typing more than 2 seconds ago
                 if (isTyping && now - lastTypingTime > 2000) {
                     isTyping = false;
                 }
 
-                // Target values: If typing, look right (1.0) and slightly down (0.5). If not, look center (0)
-                const targetX = isTyping ? 25 : 0; // Head Angle X usually ranges -30 to 30
-                const targetY = isTyping ? -15 : 0; // Head Angle Y (Negative is usually looking down)
+                // 1. Calculate Base Gaze (typing or center)
+                let targetX = isTyping ? 25 : 0;
+                let targetY = isTyping ? -15 : 0;
 
-                // Smooth Interpolation (Lerp) so the head doesn't snap instantly
-                // We use a simple formula: current = current + (target - current) * speed
+                // 2. Add Nodding Override
+                let nodOffset = 0;
+                if (nodStart > 0) {
+                    const elapsedNod = now - nodStart;
+                    if (elapsedNod < nodDuration) {
+                        // Creates a "dip" motion using a Sine wave (goes 0 -> -15 -> 0)
+                        nodOffset = Math.sin((elapsedNod / nodDuration) * Math.PI) * -15;
+                    } else {
+                        nodStart = 0; // End nod
+                    }
+                }
+
+                // 3. Smooth Interpolation
                 let currentX = coreModel.getParameterValueById('ParamAngleX');
                 let currentY = coreModel.getParameterValueById('ParamAngleY');
 
                 let newX = currentX + (targetX - currentX) * 0.1;
-                let newY = currentY + (targetY - currentY) * 0.1;
+                // We add the nodOffset to the current targetY
+                let newY = currentY + ((targetY + nodOffset) - currentY) * 0.1;
 
-                // Apply to Head
                 coreModel.setParameterValueById('ParamAngleX', newX);
                 coreModel.setParameterValueById('ParamAngleY', newY);
-
-                // Apply to Eyes (optional, makes the gaze more intense)
                 coreModel.setParameterValueById('ParamEyeBallX', newX / 25);
                 coreModel.setParameterValueById('ParamEyeBallY', newY / 15);
-
                 // Apply slight body tilt for realism
                 coreModel.setParameterValueById('ParamBodyAngleX', newX / 2);
                 // --- BREATHING ---
