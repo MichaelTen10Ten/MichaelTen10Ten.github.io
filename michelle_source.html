@@ -176,9 +176,10 @@
             <br>
         </div>
         <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-            <button onclick="exportChat()" style="background: #6c757d; font-size: 12px;">Save History</button>
-            <button onclick="importChat()" style="background: #6c757d; font-size: 12px;">Load History</button>
-            <button onclick="clearChat()" style="background: #dc3545; font-size: 12px;">Clear</button>
+            <button onclick="generateAndSaveSummary()" style="background: #007bff; font-size: 12px;">Summarize &
+                Save</button>
+            <button onclick="importSummary()" style="background: #6c757d; font-size: 12px;">Load Summary</button>
+            <button onclick="clearChat()" style="background: #dc3545; font-size: 12px;">Reset</button>
         </div>
         <div id="chat-history"></div>
         <input id="api-key" type="password" placeholder="Paste your Poe API Key here">
@@ -739,57 +740,29 @@
             requestAnimationFrame(updateIdleAnimations);
             // --- SAVE / LOAD LOGIC ---
 
-            // 1. Export: Copies the current message history to clipboard as a base64 string
-            function exportChat() {
-                if (messages.length <= 1) { // Only system prompt exists
-                    alert("No chat history to save!");
-                    return;
-                }
-                const dataString = JSON.stringify(messages);
-                const encodedData = btoa(unescape(encodeURIComponent(dataString))); // Encode to base64
-
-                navigator.clipboard.writeText(encodedData).then(() => {
-                    alert("Chat history copied to clipboard! Save this code in a text file.");
-                });
-            }
-
-            // 2. Import: Takes a code from the user and rebuilds the chat
-            function importChat() {
-                const code = prompt("Paste your chat history code here:");
+            function importSummary() {
+                const code = prompt("Paste your Summary Save Code here:");
                 if (!code) return;
 
                 try {
-                    const decodedData = decodeURIComponent(escape(atob(code)));
-                    const importedMessages = JSON.parse(decodedData);
+                    const decoded = JSON.parse(decodeURIComponent(escape(atob(code))));
 
-                    // Validation: Ensure it's an array
-                    if (!Array.isArray(importedMessages)) throw new Error("Invalid format");
+                    // Reset chat history visually
+                    chatHistory.innerHTML = '<div class="message bot" style="font-style: italic; opacity: 0.7;">Memory Loaded: ' + decoded.summary + '</div>';
 
-                    // Clear current view and memory
+                    // Construct the new starting context
+                    const enhancedSystemPrompt = `${decoded.systemPrompt}\n\nCONTEXT OF PAST CONVERSATIONS: ${decoded.summary}`;
+
+                    // Reset the messages array with the enhanced prompt
                     messages.length = 0;
-                    chatHistory.innerHTML = '';
+                    messages.push({ role: "system", content: enhancedSystemPrompt });
 
-                    // Rebuild
-                    importedMessages.forEach(msg => {
-                        messages.push(msg);
-                        if (msg.role !== 'system') {
-                            // For the bot, we only want to show the English part in the UI
-                            let displayContent = msg.content;
-                            if (msg.role === 'assistant' && displayContent.includes('|||')) {
-                                displayContent = displayContent.split('|||')[0].trim();
-                            }
-                            addMessage(msg.role, displayContent);
-                        }
-                    });
-
-                    alert("Chat history loaded successfully!");
+                    alert("Michelle has loaded the summary into her active memory!");
                 } catch (err) {
-                    console.error(err);
-                    alert("Failed to load chat history. Make sure the code is correct.");
+                    alert("Invalid Save Code.");
                 }
             }
 
-            // 3. Clear: Resets everything back to just the system prompt
             function clearChat() {
                 if (confirm("Are you sure you want to clear the entire chat?")) {
                     messages.length = 1; // Keep only system prompt
@@ -798,7 +771,7 @@
                     location.reload();
                 }
             }
-            
+
             window.addEventListener('load', () => {
                 const saved = localStorage.getItem('michelle_autosave');
                 if (saved) {
@@ -817,6 +790,46 @@
                     });
                 }
             });
+            async function generateAndSaveSummary() {
+                const apiKey = document.getElementById('api-key').value.trim();
+                if (!apiKey || messages.length < 3) return; // Need at least one exchange to summarize
+
+                try {
+                    // Create a summary prompt
+                    const summaryRequest = [
+                        ...messages,
+                        {
+                            role: "user",
+                            content: "Summarize our conversation so far into a short paragraph. Focus on key facts I told you about myself and our main topics. Write it in the third person (e.g., 'The user is...')."
+                        }
+                    ];
+
+                    const res = await fetch('https://api.poe.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                        body: JSON.stringify({ model: 'gpt-4o-mini', messages: summaryRequest, stream: false })
+                    });
+
+                    const data = await res.json();
+                    const summary = data?.choices?.[0]?.message?.content?.trim?.() || '';
+
+                    if (summary) {
+                        // Create a "Save Block" that includes the original system prompt + the new summary
+                        const saveBlock = {
+                            timestamp: new Date().toLocaleString(),
+                            summary: summary,
+                            systemPrompt: messages[0].content // Keep Michelle's personality instructions
+                        };
+
+                        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(saveBlock))));
+                        navigator.clipboard.writeText(encoded);
+                        alert("Summary Save Code copied to clipboard! Michelle will remember this summary next time.");
+                    }
+                } catch (err) {
+                    console.error("Summary failed:", err);
+                    alert("Failed to generate summary.");
+                }
+            }
         </script>
 </body>
 
