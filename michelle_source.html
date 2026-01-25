@@ -280,32 +280,6 @@
             }
 
             // ────────────────────────────────────────────────
-            // Mouth animation
-            // ────────────────────────────────────────────────
-            let mouthInterval = null;
-
-            function startMouthAnimation() {
-                if (mouthInterval) clearInterval(mouthInterval);
-                let phase = 0;
-                mouthInterval = setInterval(() => {
-                    if (!model?.internalModel?.coreModel) return;
-                    const value = 0.2 + Math.abs(Math.sin(phase)) * 0.9;
-                    model.internalModel.coreModel.setParameterValueById('PARAM_MOUTH_OPEN_Y', value);
-                    phase += 0.65;
-                }, 45);
-            }
-
-            function stopMouthAnimation() {
-                if (mouthInterval) {
-                    clearInterval(mouthInterval);
-                    mouthInterval = null;
-                }
-                if (model?.internalModel?.coreModel) {
-                    model.internalModel.coreModel.setParameterValueById('PARAM_MOUTH_OPEN_Y', 0);
-                }
-            }
-
-            // ────────────────────────────────────────────────
             // TTS with Pre-fetching and Recursive Splitting
             // ────────────────────────────────────────────────
 
@@ -426,19 +400,68 @@
             /**
  * Plays an array of Blobs one after another
  */
+            // Global Audio Context and Analyser
+            let audioContext = null;
+            let analyser = null;
+            let animationFrameId = null;
+
+            function setupAudioAnalysis(audioElement) {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                // Create analyser
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                const source = audioContext.createMediaElementSource(audioElement);
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                function update() {
+                    if (!model?.internalModel?.coreModel) return;
+
+                    analyser.getByteFrequencyData(dataArray);
+
+                    // Calculate average volume
+                    let sum = 0;
+                    for (let i = 0; i < bufferLength; i++) {
+                        sum += dataArray[i];
+                    }
+                    let average = sum / bufferLength;
+
+                    // Map volume (0-255) to Live2D parameter (0.0-1.0)
+                    // Sensitivity 2.0 helps the mouth open wider for quieter sounds
+                    let mouthValue = Math.min(1.0, (average / 128) * 2.0);
+
+                    // USE THE EXACT ID FROM YOUR CDI3.JSON: "ParamMouthOpenY"
+                    model.internalModel.coreModel.setParameterValueById('ParamMouthOpenY', mouthValue);
+
+                    animationFrameId = requestAnimationFrame(update);
+                }
+                update();
+            }
+
             async function playAudioSequence(blobs) {
                 for (const blob of blobs) {
                     const url = URL.createObjectURL(blob);
                     const audio = new Audio(url);
+                    audio.crossOrigin = "anonymous"; // Prevents CORS issues with analysis
 
                     await new Promise((resolve, reject) => {
                         audio.onplay = () => {
-                            startMouthAnimation();
-                            // Ensure thinking message stays hidden during playback
+                            if (audioContext?.state === 'suspended') {
+                                audioContext.resume();
+                            }
+                            setupAudioAnalysis(audio);
                             document.getElementById('thinking-msg').style.display = 'none';
                         };
                         audio.onended = () => {
-                            stopMouthAnimation();
+                            cancelAnimationFrame(animationFrameId);
+                            // Reset mouth to closed
+                            model.internalModel.coreModel.setParameterValueById('ParamMouthOpenY', 0);
                             URL.revokeObjectURL(url);
                             resolve();
                         };
