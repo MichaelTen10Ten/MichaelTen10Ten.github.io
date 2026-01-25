@@ -188,6 +188,7 @@
             // ────────────────────────────────────────────────
             // Live2D Setup
             // ────────────────────────────────────────────────
+            let isThinking = false; // Tracks if the model should be tilting
             let nodStart = 0;
             const nodDuration = 600; // Total time for the nod in milliseconds
             let isTyping = false;
@@ -534,6 +535,9 @@
 
                 const question = document.getElementById('question').value.trim();
                 if (!question) return;
+                // Reset gaze and start thinking animation
+                isTyping = false;
+                isThinking = true;
 
                 addMessage('user', question);
                 document.getElementById('question').value = '';
@@ -562,9 +566,10 @@
 
                     // 1. Fetch all audio (this updates the progress bar automatically)
                     const audioBlobs = await getAudioChunks(japaneseText);
-
-                    // 2. Clear status and show message
+                    // Stop thinking tilt just before she starts talking/nodding
+                    isThinking = false;
                     thinkingMsg.style.display = 'none';
+                    // 2. Clear status and show message
                     addMessage('bot', englishText);
                     messages.push({ role: 'assistant', content: fullReply });
 
@@ -572,7 +577,8 @@
                     await playAudioSequence(audioBlobs);
 
                 } catch (err) {
-                    console.error(err);
+                    console.error(err); console.error(err);
+                    isThinking = false; // Reset on error
                     thinkingMsg.style.display = 'none';
                     document.getElementById('progress-container').style.display = 'none';
                     addMessage('bot', 'Error... please check API key or connection.');
@@ -655,7 +661,7 @@
 
                 const coreModel = model.internalModel.coreModel;
 
-                // --- DYNAMIC GAZE & NOD LOGIC ---
+                // --- DYNAMIC GAZE, NOD, & TILT LOGIC ---
                 const now = currentTime;
                 if (isTyping && now - lastTypingTime > 2000) {
                     isTyping = false;
@@ -664,32 +670,42 @@
                 // 1. Calculate Base Gaze (typing or center)
                 let targetX = isTyping ? 25 : 0;
                 let targetY = isTyping ? -15 : 0;
+                let targetZ = 0; // Default tilt
 
-                // 2. Add Nodding Override
+                // 2. Thinking Tilt Override (Z-axis)
+                if (isThinking) {
+                    // Slower, curious side-to-side tilt
+                    targetZ = Math.sin(now / 600) * 10;
+                    targetY = -5; // Look slightly up/neutral while thinking
+                }
+
+                // 3. Nodding Override (Y-axis)
                 let nodOffset = 0;
                 if (nodStart > 0) {
                     const elapsedNod = now - nodStart;
                     if (elapsedNod < nodDuration) {
-                        // Creates a "dip" motion using a Sine wave (goes 0 -> -15 -> 0)
                         nodOffset = Math.sin((elapsedNod / nodDuration) * Math.PI) * -15;
                     } else {
-                        nodStart = 0; // End nod
+                        nodStart = 0;
                     }
                 }
 
-                // 3. Smooth Interpolation
+                // 4. Smooth Interpolation
                 let currentX = coreModel.getParameterValueById('ParamAngleX');
                 let currentY = coreModel.getParameterValueById('ParamAngleY');
+                let currentZ = coreModel.getParameterValueById('ParamAngleZ');
 
                 let newX = currentX + (targetX - currentX) * 0.1;
-                // We add the nodOffset to the current targetY
                 let newY = currentY + ((targetY + nodOffset) - currentY) * 0.1;
+                let newZ = currentZ + (targetZ - currentZ) * 0.05; // Z moves a bit slower for "floaty" feel
 
                 coreModel.setParameterValueById('ParamAngleX', newX);
                 coreModel.setParameterValueById('ParamAngleY', newY);
+                coreModel.setParameterValueById('ParamAngleZ', newZ);
+
+                // Eye movement follows head
                 coreModel.setParameterValueById('ParamEyeBallX', newX / 25);
-                coreModel.setParameterValueById('ParamEyeBallY', newY / 15);
-                // Apply slight body tilt for realism
+                coreModel.setParameterValueById('ParamEyeBallY', newY / 15);                // Apply slight body tilt for realism
                 coreModel.setParameterValueById('ParamBodyAngleX', newX / 2);
                 // --- BREATHING ---
                 let breathValue = (Math.sin(currentTime / 1000 * 0.5) + 1) / 2;
