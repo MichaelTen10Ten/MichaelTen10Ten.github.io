@@ -288,10 +288,10 @@
             const messages = [{
                 role: "system",
                 content: `You are a cute girl named Michelle, created by Michael Ten.
-- Always reply in English first.
-- Then, provide a natural Japanese translation of your reply after the delimiter "|||".
-- Keep the Japanese natural for a cute girl (using "chan", "desu", etc.).
-- Example format: Hello there! How are you? ||| こんにちは！元気ですか？`
+- Always reply in English first, then Japanese after "|||".
+- Keep the Japanese natural (using "chan", "desu", etc.).
+- If a section labeled [PAST MEMORY] is present, use it to personalize your very first response to the user. 
+- Mention something specific from that memory so the user knows you remember them.`
             }];
 
             const chatHistory = document.getElementById('chat-history');
@@ -798,22 +798,55 @@
                 if (!file) return;
 
                 const reader = new FileReader();
-                reader.onload = function (e) {
+                reader.onload = async function (e) {
                     try {
                         const decoded = JSON.parse(e.target.result);
 
-                        // Apply the summary to the AI logic
+                        // 1. Reconstruct Michelle's brain with the memory
                         const enhancedSystemPrompt = `${decoded.systemPrompt}\n\n[PAST MEMORY]: ${decoded.summary}`;
 
                         messages.length = 0;
                         messages.push({ role: "system", content: enhancedSystemPrompt });
 
-                        // Visual update
+                        // 2. Clear UI and show a loading state
                         chatHistory.innerHTML = '';
-                        addMessage('bot', `Memory loaded! I now remember: ${decoded.summary.substring(0, 50)}...`);
+                        const thinkingMsg = document.getElementById('thinking-msg');
+                        thinkingMsg.style.display = 'inline';
+                        isThinking = true;
 
-                        alert("Memory file loaded successfully!");
+                        // 3. Automatically trigger a "Greeting" request to the AI
+                        // We push a hidden prompt asking her to say hi based on her memory
+                        const res = await fetch('https://api.poe.com/v1/chat/completions', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${document.getElementById('api-key').value.trim()}`
+                            },
+                            body: JSON.stringify({
+                                model: 'gpt-4o-mini',
+                                messages: [...messages, { role: "user", content: "I'm back! Can you greet me?" }],
+                                stream: false
+                            })
+                        });
+
+                        const data = await res.json();
+                        let fullReply = data?.choices?.[0]?.message?.content?.trim?.() || '';
+
+                        // 4. Handle the reply (Split English/Japanese)
+                        let englishText = fullReply.split('|||')[0].trim();
+                        let japaneseText = fullReply.includes('|||') ? fullReply.split('|||')[1].trim() : fullReply;
+
+                        // 5. Speak and Display
+                        isThinking = false;
+                        thinkingMsg.style.display = 'none';
+                        addMessage('bot', englishText);
+                        messages.push({ role: 'assistant', content: fullReply });
+
+                        const audioBlobs = await getAudioChunks(japaneseText);
+                        await playAudioSequence(audioBlobs);
+
                     } catch (err) {
+                        console.error(err);
                         alert("Error: This file is not a valid Michelle memory file.");
                     }
                 };
