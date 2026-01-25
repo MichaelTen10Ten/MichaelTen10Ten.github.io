@@ -202,7 +202,8 @@
 
                 try {
                     model = await PIXI.live2d.Live2DModel.from(modelPath, {
-                        autoInteract: false
+                        autoHitTest: false,
+                        autoFocus: false,
                     });
                     app.stage.addChild(model);
 
