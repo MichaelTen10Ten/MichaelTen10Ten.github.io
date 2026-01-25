@@ -184,6 +184,9 @@
             // ────────────────────────────────────────────────
             // Live2D Setup
             // ────────────────────────────────────────────────
+            let isTyping = false;
+            let lastTypingTime = 0;
+            let gazeTarget = { x: 0, y: 0 }; // 0 is center, 1 is right/down, -1 is left/up
             let model;
             async function initLive2D() {
                 const canvas = document.getElementById('canvas');
@@ -228,29 +231,6 @@
 
                     // Call every time the window resizes
                     app.renderer.on('resize', fitModel);
-
-                    //window.addEventListener('mousemove', (e) => {
-                    //    if (!model?.internalModel?.coreModel) return;
-                    //
-                    //    const rect = canvas.getBoundingClientRect();
-                    //    const x = (e.clientX - rect.left) / rect.width;
-                    //    const y = (e.clientY - rect.top) / rect.height;
-                    //
-                    //    // Convert mouse position to Live2D range (-1 to 1)
-                    //    const mouseX = (x - 0.5) * 2;
-                    //    const mouseY = (0.5 - y) * 2;
-                    //
-                    //    // We ONLY apply these to the eyeballs
-                    //    model.internalModel.coreModel.setParameterValueById('ParamEyeBallX', mouseX);
-                    //    model.internalModel.coreModel.setParameterValueById('ParamEyeBallY', mouseY);
-                    //
-                    //    // Explicitly tell the internal Focus system to do nothing 
-                    //    // This prevents the library from "guessing" the head movement
-                    //    if (model.internalModel.focusController) {
-                    //        model.internalModel.focusController.focusX = 0;
-                    //        model.internalModel.focusController.focusY = 0;
-                    //    }
-                    //});
                 } catch (err) {
                     console.error("Live2D load failed:", err);
                     document.getElementById('model-error').style.display = 'block';
@@ -529,7 +509,14 @@
             // ────────────────────────────────────────────────
             // Send question
             // ────────────────────────────────────────────────
+            const questionBox = document.getElementById('question');
+
+            questionBox.addEventListener('input', () => {
+                isTyping = true;
+                lastTypingTime = performance.now();
+            });
             async function sendQuestion() {
+                isTyping = false;
                 const apiKey = document.getElementById('api-key').value.trim();
                 if (!apiKey) { alert('Please enter Poe API Key'); return; }
 
@@ -656,14 +643,35 @@
 
                 const coreModel = model.internalModel.coreModel;
 
-                // --- FORCE HEAD & BODY TO STAY CENTERED ---
-                coreModel.setParameterValueById('ParamAngleX', 0);
-                coreModel.setParameterValueById('ParamAngleY', 0);
-                coreModel.setParameterValueById('ParamAngleZ', 0);
-                coreModel.setParameterValueById('ParamBodyAngleX', 0);
-                coreModel.setParameterValueById('ParamBodyAngleY', 0);
-                coreModel.setParameterValueById('ParamBodyAngleZ', 0);
+                // --- DYNAMIC GAZE LOGIC ---
+                const now = currentTime;
+                // Check if user stopped typing more than 2 seconds ago
+                if (isTyping && now - lastTypingTime > 2000) {
+                    isTyping = false;
+                }
 
+                // Target values: If typing, look right (1.0) and slightly down (0.5). If not, look center (0)
+                const targetX = isTyping ? 25 : 0; // Head Angle X usually ranges -30 to 30
+                const targetY = isTyping ? -15 : 0; // Head Angle Y (Negative is usually looking down)
+
+                // Smooth Interpolation (Lerp) so the head doesn't snap instantly
+                // We use a simple formula: current = current + (target - current) * speed
+                let currentX = coreModel.getParameterValueById('ParamAngleX');
+                let currentY = coreModel.getParameterValueById('ParamAngleY');
+
+                let newX = currentX + (targetX - currentX) * 0.1;
+                let newY = currentY + (targetY - currentY) * 0.1;
+
+                // Apply to Head
+                coreModel.setParameterValueById('ParamAngleX', newX);
+                coreModel.setParameterValueById('ParamAngleY', newY);
+
+                // Apply to Eyes (optional, makes the gaze more intense)
+                coreModel.setParameterValueById('ParamEyeBallX', newX / 25);
+                coreModel.setParameterValueById('ParamEyeBallY', newY / 15);
+
+                // Apply slight body tilt for realism
+                coreModel.setParameterValueById('ParamBodyAngleX', newX / 2);
                 // --- BREATHING ---
                 let breathValue = (Math.sin(currentTime / 1000 * 0.5) + 1) / 2;
                 coreModel.setParameterValueById('ParamBreath', breathValue);
