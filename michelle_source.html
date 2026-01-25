@@ -152,6 +152,10 @@
 <body>
 
     <div id="live2d-container">
+        <div id="memory-indicator"
+            style="display: none; position: absolute; top: 10px; right: 10px; background: rgba(255, 255, 255, 0.8); padding: 5px 10px; border-radius: 20px; border: 1px solid #007bff; font-size: 12px; color: #007bff; z-index: 10;">
+            🧠 Memory Active
+        </div>
         <canvas id="canvas"></canvas>
         <div id="model-error">Live2D model failed to load. Check console & file path.</div>
     </div>
@@ -584,6 +588,7 @@
                     localStorage.setItem('michelle_autosave', JSON.stringify(messages));
                     // 3. Start speaking immediately
                     await playAudioSequence(audioBlobs);
+                    
 
                 } catch (err) {
                     console.error(err); console.error(err);
@@ -801,27 +806,25 @@
                 reader.onload = async function (e) {
                     try {
                         const decoded = JSON.parse(e.target.result);
+                        const apiKey = document.getElementById('api-key').value.trim();
+                        if (!apiKey) { alert("Please enter API Key first!"); return; }
 
-                        // 1. Reconstruct Michelle's brain with the memory
+                        // 1. Reconstruct Brain
                         const enhancedSystemPrompt = `${decoded.systemPrompt}\n\n[PAST MEMORY]: ${decoded.summary}`;
-
                         messages.length = 0;
                         messages.push({ role: "system", content: enhancedSystemPrompt });
 
-                        // 2. Clear UI and show a loading state
+                        // 2. Show UI state (Thinking)
+                        document.getElementById('memory-indicator').style.display = 'block';
                         chatHistory.innerHTML = '';
                         const thinkingMsg = document.getElementById('thinking-msg');
                         thinkingMsg.style.display = 'inline';
                         isThinking = true;
 
-                        // 3. Automatically trigger a "Greeting" request to the AI
-                        // We push a hidden prompt asking her to say hi based on her memory
+                        // 3. Fetch Greeting Text
                         const res = await fetch('https://api.poe.com/v1/chat/completions', {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${document.getElementById('api-key').value.trim()}`
-                            },
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
                             body: JSON.stringify({
                                 model: 'gpt-4o-mini',
                                 messages: [...messages, { role: "user", content: "I'm back! Can you greet me?" }],
@@ -831,23 +834,26 @@
 
                         const data = await res.json();
                         let fullReply = data?.choices?.[0]?.message?.content?.trim?.() || '';
-
-                        // 4. Handle the reply (Split English/Japanese)
                         let englishText = fullReply.split('|||')[0].trim();
                         let japaneseText = fullReply.includes('|||') ? fullReply.split('|||')[1].trim() : fullReply;
 
-                        // 5. Speak and Display
+                        // 4. PRE-FETCH AUDIO (Wait for this to finish before showing message)
+                        const audioBlobs = await getAudioChunks(japaneseText);
+
+                        // 5. SUCCESS: Display and Speak at the same time
                         isThinking = false;
                         thinkingMsg.style.display = 'none';
+
+                        // Now we show the message
                         addMessage('bot', englishText);
                         messages.push({ role: 'assistant', content: fullReply });
 
-                        const audioBlobs = await getAudioChunks(japaneseText);
+                        // Start audio immediately
                         await playAudioSequence(audioBlobs);
 
                     } catch (err) {
                         console.error(err);
-                        alert("Error: This file is not a valid Michelle memory file.");
+                        alert("Error loading memory file.");
                     }
                 };
                 reader.readAsText(file);
