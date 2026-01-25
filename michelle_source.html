@@ -156,6 +156,21 @@
         <div id="model-error">Live2D model failed to load. Check console & file path.</div>
     </div>
     <div id="chat-container">
+        <div id="status">
+            <span id="thinking-msg" style="display: none; color: #007bff; font-weight: bold;">Michelle is thinking...
+                💭</span>
+            <span style="color: #007bff; font-weight: bold;">Model By</span>
+            <span style="color: #007bff; font-weight: bold;">Art: https://twitter.com/koahri1</span>
+            <span style="color: #007bff; font-weight: bold;">Live2D: https://twitter.com/MedL2D</span>
+            
+
+            <div id="progress-container"
+                style="display: none; width: 100%; background: #eee; border-radius: 10px; margin-top: 5px; height: 10px; overflow: hidden;">
+                <div id="progress-bar" style="width: 0%; height: 100%; background: #28a745; transition: width 0.3s;">
+                </div>
+            </div>
+            <br>
+        </div>
         <div id="chat-history"></div>
         <input id="api-key" type="password" placeholder="Paste your Poe API Key here">
 
@@ -165,16 +180,6 @@
         </div>
 
         <button onclick="sendQuestion()">Send</button>
-        <div id="status">
-            <span id="thinking-msg" style="display: none; color: #007bff; font-weight: bold;">Michelle is thinking...
-                💭</span>
-            <div id="progress-container"
-                style="display: none; width: 100%; background: #eee; border-radius: 10px; margin-top: 5px; height: 10px; overflow: hidden;">
-                <div id="progress-bar" style="width: 0%; height: 100%; background: #28a745; transition: width 0.3s;">
-                </div>
-            </div>
-            <br>
-        </div>
         <script>
             // ────────────────────────────────────────────────
             // Live2D Setup
@@ -221,7 +226,7 @@
                     // Call every time the window resizes
                     app.renderer.on('resize', fitModel);
 
-                    model.autoInteract = true;
+                    model.autoInteract = false; // Disable full head tracking
                 } catch (err) {
                     console.error("Live2D load failed:", err);
                     document.getElementById('model-error').style.display = 'block';
@@ -627,6 +632,12 @@
 
                 const coreModel = model.internalModel.coreModel;
 
+                // --- FORCE HEAD/BODY TO CENTER ---
+                coreModel.setParameterValueById('ParamAngleX', 0);
+                coreModel.setParameterValueById('ParamAngleY', 0);
+                coreModel.setParameterValueById('ParamAngleZ', 0);
+                coreModel.setParameterValueById('ParamBodyAngleX', 0);
+
                 // 1. Breathing Logic
                 // Uses a sine wave to oscillate ParamBreath between 0 and 1
                 // (currentTime / 1000) converts ms to seconds; 0.5 controls the speed
@@ -657,6 +668,24 @@
 
             // Start the loop
             requestAnimationFrame(updateIdleAnimations);
+            // Add a manual mouse listener
+            window.addEventListener('mousemove', (e) => {
+                if (!model?.internalModel?.coreModel) return;
+
+                // Get mouse position relative to the canvas
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width; // 0 to 1
+                const y = (e.clientY - rect.top) / rect.height; // 0 to 1
+
+                // Convert to Live2D range (-1.0 to 1.0)
+                // Note: y is inverted because in Live2D +1 is up
+                const mouseX = (x - 0.5) * 2;
+                const mouseY = (0.5 - y) * 2;
+
+                // Apply only to Eyeballs
+                model.internalModel.coreModel.setParameterValueById('ParamEyeBallX', mouseX);
+                model.internalModel.coreModel.setParameterValueById('ParamEyeBallY', mouseY);
+            });
         </script>
 </body>
 
