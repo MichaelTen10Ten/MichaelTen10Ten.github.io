@@ -227,28 +227,28 @@
                     app.renderer.on('resize', fitModel);
 
                     model.autoInteract = false; // Disable full head tracking
-                    window.addEventListener('mousemove', (e) => {
-                        if (!model?.internalModel?.coreModel) return;
-
-                        const rect = canvas.getBoundingClientRect();
-                        const x = (e.clientX - rect.left) / rect.width;
-                        const y = (e.clientY - rect.top) / rect.height;
-
-                        // Convert mouse position to Live2D range (-1 to 1)
-                        const mouseX = (x - 0.5) * 2;
-                        const mouseY = (0.5 - y) * 2;
-
-                        // We ONLY apply these to the eyeballs
-                        model.internalModel.coreModel.setParameterValueById('ParamEyeBallX', mouseX);
-                        model.internalModel.coreModel.setParameterValueById('ParamEyeBallY', mouseY);
-
-                        // Explicitly tell the internal Focus system to do nothing 
-                        // This prevents the library from "guessing" the head movement
-                        if (model.internalModel.focusController) {
-                            model.internalModel.focusController.focusX = 0;
-                            model.internalModel.focusController.focusY = 0;
-                        }
-                    });
+                    //window.addEventListener('mousemove', (e) => {
+                    //    if (!model?.internalModel?.coreModel) return;
+//
+                    //    const rect = canvas.getBoundingClientRect();
+                    //    const x = (e.clientX - rect.left) / rect.width;
+                    //    const y = (e.clientY - rect.top) / rect.height;
+//
+                    //    // Convert mouse position to Live2D range (-1 to 1)
+                    //    const mouseX = (x - 0.5) * 2;
+                    //    const mouseY = (0.5 - y) * 2;
+//
+                    //    // We ONLY apply these to the eyeballs
+                    //    model.internalModel.coreModel.setParameterValueById('ParamEyeBallX', mouseX);
+                    //    model.internalModel.coreModel.setParameterValueById('ParamEyeBallY', mouseY);
+//
+                    //    // Explicitly tell the internal Focus system to do nothing 
+                    //    // This prevents the library from "guessing" the head movement
+                    //    if (model.internalModel.focusController) {
+                    //        model.internalModel.focusController.focusX = 0;
+                    //        model.internalModel.focusController.focusY = 0;
+                    //    }
+                    //});
                 } catch (err) {
                     console.error("Live2D load failed:", err);
                     document.getElementById('model-error').style.display = 'block';
