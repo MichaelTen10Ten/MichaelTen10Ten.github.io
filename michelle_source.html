@@ -175,6 +175,11 @@
             </div>
             <br>
         </div>
+        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+            <button onclick="exportChat()" style="background: #6c757d; font-size: 12px;">Save History</button>
+            <button onclick="importChat()" style="background: #6c757d; font-size: 12px;">Load History</button>
+            <button onclick="clearChat()" style="background: #dc3545; font-size: 12px;">Clear</button>
+        </div>
         <div id="chat-history"></div>
         <input id="api-key" type="password" placeholder="Paste your Poe API Key here">
 
@@ -572,7 +577,7 @@
                     // 2. Clear status and show message
                     addMessage('bot', englishText);
                     messages.push({ role: 'assistant', content: fullReply });
-
+                    localStorage.setItem('michelle_autosave', JSON.stringify(messages));
                     // 3. Start speaking immediately
                     await playAudioSequence(audioBlobs);
 
@@ -732,6 +737,86 @@
 
             // Start the loop
             requestAnimationFrame(updateIdleAnimations);
+            // --- SAVE / LOAD LOGIC ---
+
+            // 1. Export: Copies the current message history to clipboard as a base64 string
+            function exportChat() {
+                if (messages.length <= 1) { // Only system prompt exists
+                    alert("No chat history to save!");
+                    return;
+                }
+                const dataString = JSON.stringify(messages);
+                const encodedData = btoa(unescape(encodeURIComponent(dataString))); // Encode to base64
+
+                navigator.clipboard.writeText(encodedData).then(() => {
+                    alert("Chat history copied to clipboard! Save this code in a text file.");
+                });
+            }
+
+            // 2. Import: Takes a code from the user and rebuilds the chat
+            function importChat() {
+                const code = prompt("Paste your chat history code here:");
+                if (!code) return;
+
+                try {
+                    const decodedData = decodeURIComponent(escape(atob(code)));
+                    const importedMessages = JSON.parse(decodedData);
+
+                    // Validation: Ensure it's an array
+                    if (!Array.isArray(importedMessages)) throw new Error("Invalid format");
+
+                    // Clear current view and memory
+                    messages.length = 0;
+                    chatHistory.innerHTML = '';
+
+                    // Rebuild
+                    importedMessages.forEach(msg => {
+                        messages.push(msg);
+                        if (msg.role !== 'system') {
+                            // For the bot, we only want to show the English part in the UI
+                            let displayContent = msg.content;
+                            if (msg.role === 'assistant' && displayContent.includes('|||')) {
+                                displayContent = displayContent.split('|||')[0].trim();
+                            }
+                            addMessage(msg.role, displayContent);
+                        }
+                    });
+
+                    alert("Chat history loaded successfully!");
+                } catch (err) {
+                    console.error(err);
+                    alert("Failed to load chat history. Make sure the code is correct.");
+                }
+            }
+
+            // 3. Clear: Resets everything back to just the system prompt
+            function clearChat() {
+                if (confirm("Are you sure you want to clear the entire chat?")) {
+                    messages.length = 1; // Keep only system prompt
+                    chatHistory.innerHTML = '';
+                    localStorage.removeItem('michelle_autosave');
+                    location.reload();
+                }
+            }
+            
+            window.addEventListener('load', () => {
+                const saved = localStorage.getItem('michelle_autosave');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    // Wipe default messages and load saved ones
+                    messages.length = 0;
+                    parsed.forEach(msg => {
+                        messages.push(msg);
+                        if (msg.role !== 'system') {
+                            let displayContent = msg.content;
+                            if (msg.role === 'assistant' && displayContent.includes('|||')) {
+                                displayContent = displayContent.split('|||')[0].trim();
+                            }
+                            addMessage(msg.role, displayContent);
+                        }
+                    });
+                }
+            });
         </script>
 </body>
 
