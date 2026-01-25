@@ -176,10 +176,13 @@
             <br>
         </div>
         <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-            <button onclick="generateAndSaveSummary()" style="background: #007bff; font-size: 12px;">Summarize &
-                Save</button>
-            <button onclick="importSummary()" style="background: #6c757d; font-size: 12px;">Load Summary</button>
+            <button onclick="saveSummaryToFile()" style="background: #007bff; font-size: 12px;">📥 Save Memory
+                (.json)</button>
+            <button onclick="document.getElementById('file-upload').click()"
+                style="background: #6c757d; font-size: 12px;">📤 Load Memory</button>
             <button onclick="clearChat()" style="background: #dc3545; font-size: 12px;">Reset</button>
+            <input type="file" id="file-upload" style="display: none;" accept=".json"
+                onchange="loadSummaryFromFile(event)">
         </div>
         <div id="chat-history"></div>
         <input id="api-key" type="password" placeholder="Paste your Poe API Key here">
@@ -740,27 +743,81 @@
             requestAnimationFrame(updateIdleAnimations);
             // --- SAVE / LOAD LOGIC ---
 
-            function importSummary() {
-                const code = prompt("Paste your Summary Save Code here:");
-                if (!code) return;
+            // --- FILE-BASED SAVE / LOAD ---
+
+            async function saveSummaryToFile() {
+                const apiKey = document.getElementById('api-key').value.trim();
+                if (!apiKey || messages.length < 3) {
+                    alert("Need a conversation to summarize first!");
+                    return;
+                }
 
                 try {
-                    const decoded = JSON.parse(decodeURIComponent(escape(atob(code))));
+                    // 1. Get the summary from AI
+                    const summaryRequest = [
+                        ...messages,
+                        { role: "user", content: "Summarize our conversation into a short paragraph for your memory. Write it in the third person." }
+                    ];
 
-                    // Reset chat history visually
-                    chatHistory.innerHTML = '<div class="message bot" style="font-style: italic; opacity: 0.7;">Memory Loaded: ' + decoded.summary + '</div>';
+                    const res = await fetch('https://api.poe.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                        body: JSON.stringify({ model: 'gpt-4o-mini', messages: summaryRequest, stream: false })
+                    });
 
-                    // Construct the new starting context
-                    const enhancedSystemPrompt = `${decoded.systemPrompt}\n\nCONTEXT OF PAST CONVERSATIONS: ${decoded.summary}`;
+                    const data = await res.json();
+                    const summary = data?.choices?.[0]?.message?.content?.trim?.() || '';
 
-                    // Reset the messages array with the enhanced prompt
-                    messages.length = 0;
-                    messages.push({ role: "system", content: enhancedSystemPrompt });
+                    // 2. Prepare the data object
+                    const saveData = {
+                        botName: "Michelle",
+                        date: new Date().toLocaleDateString(),
+                        summary: summary,
+                        systemPrompt: messages[0].content
+                    };
 
-                    alert("Michelle has loaded the summary into her active memory!");
+                    // 3. Create the file and trigger download
+                    const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `michelle_memory_${new Date().getTime()}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
                 } catch (err) {
-                    alert("Invalid Save Code.");
+                    console.error(err);
+                    alert("Failed to save memory file.");
                 }
+            }
+
+            function loadSummaryFromFile(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    try {
+                        const decoded = JSON.parse(e.target.result);
+
+                        // Apply the summary to the AI logic
+                        const enhancedSystemPrompt = `${decoded.systemPrompt}\n\n[PAST MEMORY]: ${decoded.summary}`;
+
+                        messages.length = 0;
+                        messages.push({ role: "system", content: enhancedSystemPrompt });
+
+                        // Visual update
+                        chatHistory.innerHTML = '';
+                        addMessage('bot', `Memory loaded! I now remember: ${decoded.summary.substring(0, 50)}...`);
+
+                        alert("Memory file loaded successfully!");
+                    } catch (err) {
+                        alert("Error: This file is not a valid Michelle memory file.");
+                    }
+                };
+                reader.readAsText(file);
             }
 
             function clearChat() {
