@@ -331,13 +331,49 @@
         <input id="api-key" type="password" placeholder="Paste your Poe API Key here">
 
         <div style="display: flex; gap: 5px;">
-            <input id="question" type="text" placeholder="Ask a question..." style="flex: 1;">
-            <button id="mic-btn" style="width: 50px; background: #6c757d;">🎤</button>
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <div id="image-preview-container"
+                    style="display:none; position:relative; width: 60px; height: 60px; margin-bottom: 5px;">
+                    <img id="image-preview" src=""
+                        style="width:100%; height:100%; object-fit:cover; border-radius:8px; border:1px solid #007bff;">
+                    <button onclick="clearImage()"
+                        style="position:absolute; top:-5px; right:-5px; width:20px; height:20px; padding:0; background:#dc3545; border-radius:50%; font-size:10px;">✕</button>
+                </div>
+
+                <div style="display: flex; gap: 5px;">
+                    <input id="image-input" type="file" accept="image/*" style="display:none;"
+                        onchange="previewImage(event)">
+                    <button onclick="document.getElementById('image-input').click()"
+                        style="width: 50px; background: #6c757d; margin:0;">🖼️</button>
+                    <input id="question" type="text" placeholder="Ask a question..." style="flex: 1;">
+                    <button id="mic-btn" style="width: 50px; background: #6c757d; margin:0;">🎤</button>
+                </div>
+            </div>
         </div>
 
         <button onclick="sendQuestion()">Send</button>
 
         <script>
+            let selectedImageBase64 = null;
+
+            function previewImage(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    selectedImageBase64 = e.target.result;
+                    document.getElementById('image-preview').src = selectedImageBase64;
+                    document.getElementById('image-preview-container').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+
+            function clearImage() {
+                selectedImageBase64 = null;
+                document.getElementById('image-input').value = "";
+                document.getElementById('image-preview-container').style.display = 'none';
+            }
             // Mapping GPT tags to specific Parameter IDs from your model
             const virtualEmotions = {
                 "[HAPPY]": {
@@ -806,7 +842,6 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
                 lastTypingTime = performance.now();
             });
             async function sendQuestion() {
-                isTyping = false;
                 const apiKey = document.getElementById('api-key').value.trim();
                 if (!apiKey) { alert('Please enter Poe API Key'); return; }
 
@@ -816,9 +851,30 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
                 isTyping = false;
                 isThinking = true;
 
-                addMessage('user', question);
                 document.getElementById('question').value = '';
-                messages.push({ role: 'user', content: question });
+                // 1. Prepare the message content
+                let userContent = [];
+                if (question) userContent.push({ type: "text", text: question });
+                if (selectedImageBase64) {
+                    userContent.push({
+                        type: "image_url",
+                        image_url: { url: selectedImageBase64 }
+                    });
+                }
+                addMessage('user', question || "Sent an image");
+                if (selectedImageBase64) {
+                    const img = document.createElement('img');
+                    img.src = selectedImageBase64;
+                    img.style.width = "100px";
+                    img.style.borderRadius = "8px";
+                    chatHistory.lastElementChild.appendChild(document.createElement('br'));
+                    chatHistory.lastElementChild.appendChild(img);
+                }
+                messages.push({ role: 'user', content: userContent });
+
+                // Clear inputs immediately
+                document.getElementById('question').value = '';
+                clearImage();
 
                 const thinkingMsg = document.getElementById('thinking-msg');
                 thinkingMsg.style.display = 'inline';
@@ -885,7 +941,7 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
                     localStorage.setItem('michelle_autosave', JSON.stringify(messages));
                     // 3. Start speaking immediately
                     await playAudioSequence(audioBlobs);
-
+                    await pruneOldImages(apiKey);
 
                 } catch (err) {
                     console.error(err); console.error(err);
@@ -1220,48 +1276,28 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
                 }
             }
 
-            window.addEventListener('load', async () => {
+            window.addEventListener('load', () => {
                 const saved = localStorage.getItem('michelle_autosave');
-                const apiKey = document.getElementById('api-key').value.trim();
-
                 if (saved) {
-                    let parsed = JSON.parse(saved);
-
-                    // Auto-summarize if history is longer than 10 messages
-                    if (parsed.length > 10 && apiKey) {
-                        console.log("Michelle is cleaning her memory...");
-                        const result = await summarizeHistory(parsed, apiKey);
-
-                        if (result && result.summary) {
-                            // 1. Update the Facts in LocalStorage
-                            if (result.updated_facts) {
-                                localStorage.setItem('michelle_memory', JSON.stringify(result.updated_facts));
-                                updateMemoryUI(); // Refresh the sidebar/accordion
-                            }
-
-                            // 2. Restart the message chain with the new summary
-                            const baseSystemPrompt = parsed[0].content.split('[PAST SUMMARY]')[0];
-                            messages.length = 0;
-                            messages.push({
-                                role: "system",
-                                content: `${baseSystemPrompt}\n\n[PAST SUMMARY]: ${result.summary}`
-                            });
-
-                            chatHistory.innerHTML = '';
-                            addMessage('bot', "I've organized my notes and summarized our talk so I don't forget the important parts! ✨");
-
-                            localStorage.setItem('michelle_autosave', JSON.stringify(messages));
-                            document.getElementById('memory-indicator').style.display = 'block';
-                            return;
-                        }
-                    }
-                    // --- NORMAL LOAD LOGIC (if history is short) ---
+                    const parsed = JSON.parse(saved);
                     messages.length = 0;
                     parsed.forEach(msg => {
                         messages.push(msg);
                         if (msg.role !== 'system') {
-                            let displayContent = msg.content;
-                            if (msg.role === 'assistant') {
+                            let displayContent = "";
+
+                            // --- FIX: Handle Multi-modal User Messages ---
+                            if (msg.role === 'user') {
+                                if (typeof msg.content === 'string') {
+                                    displayContent = msg.content;
+                                } else if (Array.isArray(msg.content)) {
+                                    // Find the text part of the multi-modal array
+                                    const textPart = msg.content.find(p => p.type === 'text');
+                                    displayContent = textPart ? textPart.text : "Sent an image";
+                                }
+                            }
+                            // --- Handle Assistant JSON Responses ---
+                            else if (msg.role === 'assistant') {
                                 try {
                                     const json = JSON.parse(msg.content);
                                     displayContent = json.english;
@@ -1269,7 +1305,22 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
                                     displayContent = msg.content;
                                 }
                             }
+
                             addMessage(msg.role, displayContent);
+
+                            // Optional: If you want to show the image in history too
+                            if (Array.isArray(msg.content)) {
+                                const imgPart = msg.content.find(p => p.type === 'image_url');
+                                if (imgPart) {
+                                    const img = document.createElement('img');
+                                    img.src = imgPart.image_url.url;
+                                    img.style.width = "100px";
+                                    img.style.borderRadius = "8px";
+                                    img.style.marginTop = "5px";
+                                    img.style.display = "block";
+                                    chatHistory.lastElementChild.appendChild(img);
+                                }
+                            }
                         }
                     });
                 }
@@ -1278,19 +1329,22 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
 
             // Helper function to call the API for a summary
             async function summarizeHistory(history, apiKey) {
-                // Get current facts from local storage to provide as context for the cleanup
-                const currentFacts = localStorage.getItem('michelle_memory') || "{}";
+                const currentMemory = JSON.parse(localStorage.getItem('michelle_memory') || "{}");
+                const expirationDays = 7; // Facts older than 7 days will be considered for deletion
+                const now = new Date().getTime();
 
                 const cleanupPrompt = {
                     role: "user",
-                    content: `Summarize our conversation so far into a concise third-person paragraph. 
-Also, look at these current facts: ${currentFacts}. 
-Update them based on our latest chat: remove duplicates, correct old info, and keep only what's important.
+                    content: `Review these facts Michelle knows: ${JSON.stringify(currentMemory)}.
 
-RETURN ONLY A JSON OBJECT:
+1. Summarize our conversation so far.
+2. Identify if any facts are outdated or haven't been mentioned.
+3. If a fact is still relevant, keep it. If it's old or contradicted by the new chat, remove it.
+
+RETURN ONLY JSON:
 {
-    "summary": "The summary text...",
-    "updated_facts": {"key": "value"}
+    "summary": "...",
+    "updated_facts": {"key": {"value": "...", "timestamp": ${now}}}
 }`
                 };
 
@@ -1306,10 +1360,9 @@ RETURN ONLY A JSON OBJECT:
                     });
 
                     const data = await res.json();
-                    const responseText = data?.choices?.[0]?.message?.content?.trim?.() || "";
-                    return JSON.parse(responseText); // Returns {summary, updated_facts}
+                    return JSON.parse(data?.choices?.[0]?.message?.content);
                 } catch (err) {
-                    console.error("Brain Cleanup failed:", err);
+                    console.error("Memory Age Cleanup failed:", err);
                     return null;
                 }
             }
@@ -1398,18 +1451,19 @@ RETURN ONLY A JSON OBJECT:
                     return;
                 }
 
-                memoryList.innerHTML = ''; // Clear current list
-                for (const [key, value] of Object.entries(memory)) {
+                memoryList.innerHTML = '';
+                for (const [key, data] of Object.entries(memory)) {
                     const li = document.createElement('li');
                     li.style.marginBottom = "10px";
                     li.style.padding = "5px";
                     li.style.background = "#fff";
                     li.style.borderRadius = "4px";
-                    li.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
 
-                    // Format the key to be more readable (e.g., user_name -> User Name)
                     const label = key.replace(/_/g, ' ').toUpperCase();
-                    li.innerHTML = `<small style="color:#007bff; font-weight:bold;">${label}</small><br>${value}`;
+                    // Access data.value instead of just data
+                    const val = typeof data === 'object' ? data.value : data;
+
+                    li.innerHTML = `<small style="color:#007bff; font-weight:bold;">${label}</small><br>${val}`;
                     memoryList.appendChild(li);
                 }
             }
@@ -1421,6 +1475,73 @@ RETURN ONLY A JSON OBJECT:
                 const savedKey = localStorage.getItem('michelle_api_key');
                 if (savedKey) document.getElementById('api-key').value = savedKey;
             });
+            function updateFactWithTimestamp(key, value) {
+                const currentMemory = JSON.parse(localStorage.getItem('michelle_memory') || "{}");
+
+                // Store the value along with the current date
+                currentMemory[key] = {
+                    value: value,
+                    timestamp: new Date().getTime() // Current time in milliseconds
+                };
+
+                localStorage.setItem('michelle_memory', JSON.stringify(currentMemory));
+            }
+            async function describeImage(imageBase64, apiKey) {
+                try {
+                    const res = await fetch('https://api.poe.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                        body: JSON.stringify({
+                            model: 'gpt-4o-mini',
+                            messages: [
+                                {
+                                    role: "user", content: [
+                                        { type: "text", text: "Describe this image in one very short sentence for my memory." },
+                                        { type: "image_url", image_url: { url: imageBase64 } }
+                                    ]
+                                }
+                            ],
+                            stream: false
+                        })
+                    });
+                    const data = await res.json();
+                    return data?.choices?.[0]?.message?.content?.trim() || "An image was shared.";
+                } catch (err) {
+                    console.error("Failed to describe image:", err);
+                    return "A shared image.";
+                }
+            }
+            async function pruneOldImages(apiKey) {
+                let changed = false;
+
+                // We skip the very last message (messages.length - 1) because that is the "newest"
+                for (let i = 0; i < messages.length - 1; i++) {
+                    const msg = messages[i];
+
+                    // Check if this message contains an image array
+                    if (msg.role === 'user' && Array.isArray(msg.content)) {
+                        const imgIndex = msg.content.findIndex(p => p.type === 'image_url');
+                        const textIndex = msg.content.findIndex(p => p.type === 'text');
+
+                        if (imgIndex !== -1) {
+                            console.log("Archiving old image to text...");
+                            const base64 = msg.content[imgIndex].image_url.url;
+                            const description = await describeImage(base64, apiKey);
+
+                            // Convert the whole message content back into a simple string for storage efficiency
+                            const originalText = textIndex !== -1 ? msg.content[textIndex].text : "";
+                            msg.content = `[Image: ${description}] ${originalText}`.trim();
+
+                            changed = true;
+                        }
+                    }
+                }
+
+                if (changed) {
+                    localStorage.setItem('michelle_autosave', JSON.stringify(messages));
+                    console.log("History cleaned: Images converted to text descriptions.");
+                }
+            }
         </script>
 </body>
 
