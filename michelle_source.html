@@ -14,21 +14,26 @@
             /* Desktop default */
         }
 
-        /* On small screens, stack vertically */
+        /* Fix for small screens */
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
+                overflow-x: hidden;
+                /* Prevents accidental horizontal scrolls */
             }
 
             #chat-container {
                 width: 100% !important;
-                height: 50vh;
+                /* Forces full width on mobile */
+                height: auto;
+                min-height: 50vh;
                 border-left: none;
                 border-top: 1px solid #ccc;
             }
 
             #live2d-container {
                 height: 50vh;
+                width: 100%;
             }
         }
 
@@ -45,6 +50,7 @@
             height: 100%;
         }
 
+        /* Update chat container to handle width better */
         #chat-container {
             width: 380px;
             display: flex;
@@ -52,6 +58,8 @@
             padding: 15px;
             background: #fff;
             border-left: 1px solid #ccc;
+            box-sizing: border-box;
+            /* Ensures padding doesn't add to width */
         }
 
         #chat-history {
@@ -83,6 +91,7 @@
             align-self: flex-start;
         }
 
+        /* Ensure all inputs and buttons respect the container width */
         input,
         button {
             width: 100%;
@@ -91,6 +100,7 @@
             border: 1px solid #ccc;
             border-radius: 4px;
             box-sizing: border-box;
+            /* Critical for keeping elements the same width */
         }
 
         button {
@@ -141,6 +151,45 @@
                 transform: scale(1);
             }
         }
+
+        /* Accordion Styles */
+        .accordion {
+            background-color: #f1f1f1;
+            color: #444;
+            cursor: pointer;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 14px;
+            transition: 0.4s;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .active,
+        .accordion:hover {
+            background-color: #ddd;
+        }
+
+        .panel {
+            padding: 0 10px;
+            background-color: white;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+
+        .settings-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px 0;
+        }
     </style>
 
     <!-- Live2D scripts -->
@@ -159,15 +208,57 @@
         <canvas id="canvas"></canvas>
         <div id="model-error">Live2D model failed to load. Check console & file path.</div>
     </div>
+
+
+    <audio id="bg-music" loop>
+        <source src="source/BackgroundMusic.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
     <div id="chat-container">
-        <div id="status">
-            <span style="color: #007bff; font-weight: bold;">Model By</span>
-        </div>
-        <div id="status">
-            <span style="color: #007bff; font-weight: bold;">Art:koahri1</span>
-        </div>
-        <div id="status">
-            <span style="color: #007bff; font-weight: bold;">Live2D:MedL2D</span>
+        <button class="accordion">⚙️ Credit & Settings & Controls</button>
+        <div class="panel">
+            <div class="settings-grid">
+                <div style="padding: 5px; background: #f8f9fa; border-radius: 6px; border: 1px solid #ddd;">
+
+                    <div style="padding: 5px; background: #f8f9fa; border: 1px solid #ddd;">
+
+                        <div id="status">
+                            <span style="color: #007bff; font-weight: bold;">Model By</span>
+                        </div>
+                        <div id="status">
+                            <span style="color: #007bff; font-weight: bold;">Art:koahri1</span>
+                        </div>
+                        <div id="status">
+                            <span style="color: #007bff; font-weight: bold;">Live2D:MedL2D</span>
+                        </div>
+                        <div id="status">
+                            <span style="color: #007bff; font-weight: bold;">BGM:Ray Krislianggi
+                            </span>
+                        </div>
+                        <div id="status">
+                            <span style="color: #007bff; font-weight: bold;">TTS:Plachta
+                            </span>
+                        </div>
+                    </div>
+                    <label for="bgm-volume" style="font-size: 12px; color: #555; display: block; margin-bottom: 2px;">🎵
+                        Background Music</label>
+                    <input type="range" id="bgm-volume" min="0" max="1" step="0.01" value="0.2" style="width:100%;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                    <button onclick="saveSummaryToFile()" style="background: #007bff; font-size: 11px; margin:0;">📥
+                        Save Memory</button>
+                    <button onclick="document.getElementById('file-upload').click()"
+                        style="background: #6c757d; font-size: 11px; margin:0;">📤 Load Memory</button>
+                    <button onclick="clearChat()"
+                        style="background: #dc3545; font-size: 11px; margin:0; grid-column: span 2;">🗑️ Reset
+                        Conversation</button>
+                </div>
+
+                <input type="file" id="file-upload" style="display: none;" accept=".json"
+                    onchange="loadSummaryFromFile(event)">
+            </div>
         </div>
         <div id="status">
             <span id="thinking-msg" style="display: none; color: #007bff; font-weight: bold;">Michelle is
@@ -179,15 +270,7 @@
             </div>
             <br>
         </div>
-        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-            <button onclick="saveSummaryToFile()" style="background: #007bff; font-size: 12px;">📥 Save Memory
-                (.json)</button>
-            <button onclick="document.getElementById('file-upload').click()"
-                style="background: #6c757d; font-size: 12px;">📤 Load Memory</button>
-            <button onclick="clearChat()" style="background: #dc3545; font-size: 12px;">Reset</button>
-            <input type="file" id="file-upload" style="display: none;" accept=".json"
-                onchange="loadSummaryFromFile(event)">
-        </div>
+
         <div id="chat-history"></div>
         <input id="api-key" type="password" placeholder="Paste your Poe API Key here">
 
@@ -197,6 +280,7 @@
         </div>
 
         <button onclick="sendQuestion()">Send</button>
+
         <script>
             // ────────────────────────────────────────────────
             // Live2D Setup
@@ -385,12 +469,12 @@
              * Logic to fetch a single audio file from Gradio
              */
             async function fetchSingleAudioBlob(text) {
-                const base_url = "https://plachta-vits-umamusume-voice-synthesizer.hf.space/gradio_api/call/tts_fn";
+                const base_url = "https://plachta-vits-umamusume-voice-synthesizer.hf.space/gradio_api/call/tts_fn_1";
                 const payload = {
                     data: [
                         text,
-                        "早柚 Sayu (Genshin Impact)",  // cute female voice
-                        "日本語",  // Japanese
+                        "重炮 Mayano Topgun (Umamusume Pretty Derby)",  // cute female voice
+                        "Japanese",  // Japanese
                         1,        // speed/preset
                         false      // some flag (emotion?)
                     ]
@@ -434,16 +518,29 @@
             let analyser = null;
             let animationFrameId = null;
 
+            // 1. Create a global GainNode for TTS volume control
+            let ttsGainNode = null;
+
             function setupAudioAnalysis(audioElement) {
                 if (!audioContext) {
                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 }
 
-                // Create analyser
+                // Create nodes if they don't exist
+                if (!ttsGainNode) {
+                    ttsGainNode = audioContext.createGain();
+                    // SET YOUR TTS VOLUME HERE (0.0 to 1.0)
+                    ttsGainNode.gain.value = 0.25;
+                }
+
                 analyser = audioContext.createAnalyser();
                 analyser.fftSize = 256;
+
                 const source = audioContext.createMediaElementSource(audioElement);
-                source.connect(analyser);
+
+                // Connect: Source -> Gain (Volume) -> Analyser (Mouth) -> Speakers
+                source.connect(ttsGainNode);
+                ttsGainNode.connect(analyser);
                 analyser.connect(audioContext.destination);
 
                 const bufferLength = analyser.frequencyBinCount;
@@ -451,23 +548,14 @@
 
                 function update() {
                     if (!model?.internalModel?.coreModel) return;
-
                     analyser.getByteFrequencyData(dataArray);
-
-                    // Calculate average volume
                     let sum = 0;
                     for (let i = 0; i < bufferLength; i++) {
                         sum += dataArray[i];
                     }
                     let average = sum / bufferLength;
-
-                    // Map volume (0-255) to Live2D parameter (0.0-1.0)
-                    // Sensitivity 2.0 helps the mouth open wider for quieter sounds
                     let mouthValue = Math.min(1.0, (average / 128));
-
-                    // USE THE EXACT ID FROM YOUR CDI3.JSON: "ParamMouthOpenY"
                     model.internalModel.coreModel.setParameterValueById('ParamMouthOpenY', mouthValue);
-
                     animationFrameId = requestAnimationFrame(update);
                 }
                 update();
@@ -477,25 +565,20 @@
                 for (const blob of blobs) {
                     const url = URL.createObjectURL(blob);
                     const audio = new Audio(url);
-                    audio.crossOrigin = "anonymous"; // Prevents CORS issues with analysis
+                    audio.crossOrigin = "anonymous";
 
                     await new Promise((resolve, reject) => {
                         audio.onplay = () => {
                             if (audioContext?.state === 'suspended') {
                                 audioContext.resume();
                             }
-
-                            // Trigger the nod only on the very first chunk of a sentence
                             if (blobs.indexOf(blob) === 0) {
                                 nodStart = performance.now();
                             }
-
                             setupAudioAnalysis(audio);
-                            document.getElementById('thinking-msg').style.display = 'none';
                         };
                         audio.onended = () => {
                             cancelAnimationFrame(animationFrameId);
-                            // Reset mouth to closed
                             model.internalModel.coreModel.setParameterValueById('ParamMouthOpenY', 0);
                             URL.revokeObjectURL(url);
                             resolve();
@@ -588,7 +671,7 @@
                     localStorage.setItem('michelle_autosave', JSON.stringify(messages));
                     // 3. Start speaking immediately
                     await playAudioSequence(audioBlobs);
-                    
+
 
                 } catch (err) {
                     console.error(err); console.error(err);
@@ -753,12 +836,11 @@
             async function saveSummaryToFile() {
                 const apiKey = document.getElementById('api-key').value.trim();
                 if (!apiKey || messages.length < 3) {
-                    alert("Need a conversation to summarize first!");
+                    alert("Need a conversation and API Key to save memory!");
                     return;
                 }
 
                 try {
-                    // 1. Get the summary from AI
                     const summaryRequest = [
                         ...messages,
                         { role: "user", content: "Summarize our conversation into a short paragraph for your memory. Write it in the third person." }
@@ -773,15 +855,14 @@
                     const data = await res.json();
                     const summary = data?.choices?.[0]?.message?.content?.trim?.() || '';
 
-                    // 2. Prepare the data object
                     const saveData = {
                         botName: "Michelle",
                         date: new Date().toLocaleDateString(),
                         summary: summary,
-                        systemPrompt: messages[0].content
+                        systemPrompt: messages[0].content,
+                        poeApiKey: apiKey // Added the API key here
                     };
 
-                    // 3. Create the file and trigger download
                     const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: "application/json" });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -806,22 +887,25 @@
                 reader.onload = async function (e) {
                     try {
                         const decoded = JSON.parse(e.target.result);
-                        const apiKey = document.getElementById('api-key').value.trim();
-                        if (!apiKey) { alert("Please enter API Key first!"); return; }
 
-                        // 1. Reconstruct Brain
+                        // Auto-input the API key if it exists in the file
+                        if (decoded.poeApiKey) {
+                            document.getElementById('api-key').value = decoded.poeApiKey;
+                        }
+
+                        const apiKey = document.getElementById('api-key').value.trim();
+                        if (!apiKey) { alert("No API Key found in file or input!"); return; }
+
                         const enhancedSystemPrompt = `${decoded.systemPrompt}\n\n[PAST MEMORY]: ${decoded.summary}`;
                         messages.length = 0;
                         messages.push({ role: "system", content: enhancedSystemPrompt });
 
-                        // 2. Show UI state (Thinking)
                         document.getElementById('memory-indicator').style.display = 'block';
                         chatHistory.innerHTML = '';
                         const thinkingMsg = document.getElementById('thinking-msg');
                         thinkingMsg.style.display = 'inline';
                         isThinking = true;
 
-                        // 3. Fetch Greeting Text
                         const res = await fetch('https://api.poe.com/v1/chat/completions', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
@@ -837,18 +921,14 @@
                         let englishText = fullReply.split('|||')[0].trim();
                         let japaneseText = fullReply.includes('|||') ? fullReply.split('|||')[1].trim() : fullReply;
 
-                        // 4. PRE-FETCH AUDIO (Wait for this to finish before showing message)
                         const audioBlobs = await getAudioChunks(japaneseText);
 
-                        // 5. SUCCESS: Display and Speak at the same time
                         isThinking = false;
                         thinkingMsg.style.display = 'none';
 
-                        // Now we show the message
                         addMessage('bot', englishText);
                         messages.push({ role: 'assistant', content: fullReply });
 
-                        // Start audio immediately
                         await playAudioSequence(audioBlobs);
 
                     } catch (err) {
@@ -925,6 +1005,42 @@
                     console.error("Summary failed:", err);
                     alert("Failed to generate summary.");
                 }
+            }
+            // ────────────────────────────────────────────────
+            // Background Music Logic
+            // ────────────────────────────────────────────────
+            const bgMusic = document.getElementById('bg-music');
+            const volumeSlider = document.getElementById('bgm-volume');
+
+            // Set default volume
+            bgMusic.volume = 0.2;
+
+            // Update volume when slider moves
+            volumeSlider.addEventListener('input', (e) => {
+                bgMusic.volume = e.target.value;
+            });
+
+            // Auto-play workaround: Browsers block sound until a user clicks something.
+            // This will start the music on the first click anywhere on the page.
+            window.addEventListener('click', () => {
+                if (bgMusic.paused) {
+                    bgMusic.play().catch(err => console.log("Autoplay blocked until interaction."));
+                }
+            }, { once: true });
+            // ────────────────────────────────────────────────
+            // Accordion Logic
+            // ────────────────────────────────────────────────
+            var acc = document.getElementsByClassName("accordion");
+            for (var i = 0; i < acc.length; i++) {
+                acc[i].addEventListener("click", function () {
+                    this.classList.toggle("active");
+                    var panel = this.nextElementSibling;
+                    if (panel.style.maxHeight) {
+                        panel.style.maxHeight = null;
+                    } else {
+                        panel.style.maxHeight = panel.scrollHeight + "px";
+                    }
+                });
             }
         </script>
 </body>
