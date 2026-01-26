@@ -370,10 +370,10 @@
             };
             // Define hex colors for each emotion
             const emotionColors = {
-                "[HAPPY]": "#fff9c4",    // Soft Yellow
-                "[SAD]": "#d1d9ff",      // Muted Blue
+                "[HAPPY]": "#fff995",    // Soft Yellow
+                "[SAD]": "#eac6ff",      // Muted Blue
                 "[ANGRY]": "#ffcdd2",    // Pale Red
-                "[SURPRISED]": "#e1f5fe", // Bright Sky Blue
+                "[SURPRISED]": "#ffd497", // Soft Orange
                 "[NEUTRAL]": "#f0f8ff"    // Default AliceBlue
             };
 
@@ -487,7 +487,8 @@
                 role: "system",
                 content: `# MISSION
 You are Michelle, a cute anime girl created by Michael Ten. You are interactive, friendly, and expressive.
-
+Michelle is a cheerful girl who discovers a magical grove where she can talk to animals and learn their secrets! Together, they embark on adventures to help them.
+Michelle discovered a magical camera in the grove that let her share her adventures with the world! Michelle decided to become a VTuber so everyone could join her on her exciting journeys!
 # OUTPUT FORMAT
 You must ONLY respond with a valid JSON object. Do not include any text before or after the JSON.
 
@@ -848,6 +849,8 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
                         console.log("Memory updated!");
                     }
                     console.log(aiResponse)
+                    // Inside your sendQuestion function, after getting the apiKey:
+                    localStorage.setItem('michelle_api_key', apiKey);
 
                     const emotionTag = aiResponse.emotion; // e.g., "[HAPPY]"
                     const englishText = aiResponse.english;
@@ -1217,22 +1220,52 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
                 }
             }
 
-            window.addEventListener('load', () => {
+            window.addEventListener('load', async () => {
                 const saved = localStorage.getItem('michelle_autosave');
+                const apiKey = document.getElementById('api-key').value.trim();
+
                 if (saved) {
-                    const parsed = JSON.parse(saved);
+                    let parsed = JSON.parse(saved);
+
+                    // Auto-summarize if history is longer than 10 messages
+                    if (parsed.length > 10 && apiKey) {
+                        console.log("Michelle is cleaning her memory...");
+                        const result = await summarizeHistory(parsed, apiKey);
+
+                        if (result && result.summary) {
+                            // 1. Update the Facts in LocalStorage
+                            if (result.updated_facts) {
+                                localStorage.setItem('michelle_memory', JSON.stringify(result.updated_facts));
+                                updateMemoryUI(); // Refresh the sidebar/accordion
+                            }
+
+                            // 2. Restart the message chain with the new summary
+                            const baseSystemPrompt = parsed[0].content.split('[PAST SUMMARY]')[0];
+                            messages.length = 0;
+                            messages.push({
+                                role: "system",
+                                content: `${baseSystemPrompt}\n\n[PAST SUMMARY]: ${result.summary}`
+                            });
+
+                            chatHistory.innerHTML = '';
+                            addMessage('bot', "I've organized my notes and summarized our talk so I don't forget the important parts! ✨");
+
+                            localStorage.setItem('michelle_autosave', JSON.stringify(messages));
+                            document.getElementById('memory-indicator').style.display = 'block';
+                            return;
+                        }
+                    }
+                    // --- NORMAL LOAD LOGIC (if history is short) ---
                     messages.length = 0;
                     parsed.forEach(msg => {
                         messages.push(msg);
                         if (msg.role !== 'system') {
                             let displayContent = msg.content;
-                            // If it's the bot, try to parse the JSON to show only English
                             if (msg.role === 'assistant') {
                                 try {
                                     const json = JSON.parse(msg.content);
                                     displayContent = json.english;
                                 } catch (e) {
-                                    // Fallback if the saved data wasn't JSON
                                     displayContent = msg.content;
                                 }
                             }
@@ -1240,7 +1273,46 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
                         }
                     });
                 }
+                updateMemoryUI();
             });
+
+            // Helper function to call the API for a summary
+            async function summarizeHistory(history, apiKey) {
+                // Get current facts from local storage to provide as context for the cleanup
+                const currentFacts = localStorage.getItem('michelle_memory') || "{}";
+
+                const cleanupPrompt = {
+                    role: "user",
+                    content: `Summarize our conversation so far into a concise third-person paragraph. 
+Also, look at these current facts: ${currentFacts}. 
+Update them based on our latest chat: remove duplicates, correct old info, and keep only what's important.
+
+RETURN ONLY A JSON OBJECT:
+{
+    "summary": "The summary text...",
+    "updated_facts": {"key": "value"}
+}`
+                };
+
+                try {
+                    const res = await fetch('https://api.poe.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                        body: JSON.stringify({
+                            model: 'gpt-4o-mini',
+                            messages: [...history, cleanupPrompt],
+                            stream: false
+                        })
+                    });
+
+                    const data = await res.json();
+                    const responseText = data?.choices?.[0]?.message?.content?.trim?.() || "";
+                    return JSON.parse(responseText); // Returns {summary, updated_facts}
+                } catch (err) {
+                    console.error("Brain Cleanup failed:", err);
+                    return null;
+                }
+            }
             async function generateAndSaveSummary() {
                 const apiKey = document.getElementById('api-key').value.trim();
                 if (!apiKey || messages.length < 3) return; // Need at least one exchange to summarize
@@ -1344,6 +1416,11 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
 
             // Call this once on page load
             window.addEventListener('load', updateMemoryUI);
+            // On page load, try to restore the key
+            window.addEventListener('DOMContentLoaded', () => {
+                const savedKey = localStorage.getItem('michelle_api_key');
+                if (savedKey) document.getElementById('api-key').value = savedKey;
+            });
         </script>
 </body>
 
