@@ -2,575 +2,524 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Live2D Michelle with VITS Umamusume TTS + Poe Chat</title>
-    <style>
-        body {
-            display: flex;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial, sans-serif;
-            flex-direction: row;
-            /* Desktop default */
-        }
+  <meta charset="UTF-8">
+  <title>Live2D Michelle with VITS Umamusume TTS + Poe Chat</title>
+  <style>
+    body {
+      display: flex;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      flex-direction: row;
+      /* Desktop default */
+    }
 
-        /* Fix for small screens */
-        @media (max-width: 768px) {
-            body {
-                flex-direction: column;
-                overflow-x: hidden;
-                /* Prevents accidental horizontal scrolls */
-            }
+    /* Fix for small screens */
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+        overflow-x: hidden;
+        /* Prevents accidental horizontal scrolls */
+      }
 
-            #chat-container {
-                width: 100% !important;
-                /* Forces full width on mobile */
-                height: auto;
-                min-height: 50vh;
-                border-left: none;
-                border-top: 1px solid #ccc;
-            }
+      #chat-container {
+        width: 100% !important;
+        /* Forces full width on mobile */
+        height: auto;
+        min-height: 50vh;
+        border-left: none;
+        border-top: 1px solid #ccc;
+      }
 
-            #live2d-container {
-                height: 50vh;
-                width: 100%;
-            }
-        }
+      #live2d-container {
+        height: 50vh;
+        width: 100%;
+      }
+    }
 
-        #live2d-container {
-            flex: 1;
-            /* This creates a radial gradient glow from the center */
-            background: radial-gradient(circle at center, #ffffff 0%, #f0f8ff 100%);
-            position: relative;
-            overflow: hidden;
-            transition: background 0.1s linear;
-        }
+    #live2d-container {
+      flex: 1;
+      /* This creates a radial gradient glow from the center */
+      background: radial-gradient(circle at center, #ffffff 0%, #f0f8ff 100%);
+      position: relative;
+      overflow: hidden;
+      transition: background 0.1s linear;
+    }
 
-        #canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            transition: all 0.8s ease-in-out;
-        }
+    #canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
 
-        /* Update chat container to handle width better */
-        #chat-container {
-            width: 380px;
-            display: flex;
-            flex-direction: column;
-            padding: 15px;
-            background: #fff;
-            border-left: 1px solid #ccc;
-            box-sizing: border-box;
-            /* Ensures padding doesn't add to width */
-        }
+    /* Update chat container to handle width better */
+    #chat-container {
+      width: 380px;
+      display: flex;
+      flex-direction: column;
+      padding: 15px;
+      background: #fff;
+      border-left: 1px solid #ccc;
+      box-sizing: border-box;
+      /* Ensures padding doesn't add to width */
+    }
 
-        #chat-history {
-            flex: 1;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin-bottom: 10px;
-            background: #fafafa;
-            border-radius: 6px;
-        }
+    #chat-history {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #fafafa;
+      border-radius: 6px;
+    }
 
-        .message {
-            margin: 8px 0;
-            padding: 8px 12px;
-            border-radius: 12px;
-            max-width: 85%;
-        }
+    .message {
+      margin: 8px 0;
+      padding: 8px 12px;
+      border-radius: 12px;
+      max-width: 85%;
+    }
 
-        .user {
-            background: #007bff;
-            color: white;
-            align-self: flex-end;
-            border-bottom-right-radius: 2px;
-        }
+    .user {
+      background: #007bff;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 2px;
+    }
 
-        .bot {
-            background: #e9ecef;
-            color: #333;
-            align-self: flex-start;
-            /* Keeps it on the left */
-            border-bottom-left-radius: 2px;
-            /* Standard chat bubble look */
-            display: block;
-            /* Ensures it acts as a block in the flex container */
-        }
+    .bot {
+      background: #e9ecef;
+      color: #333;
+      align-self: flex-start;
+      /* Keeps it on the left */
+      border-bottom-left-radius: 2px;
+      /* Standard chat bubble look */
+      display: block;
+      /* Ensures it acts as a block in the flex container */
+    }
 
-        .assistant {
-            background: #e9ecef;
-            color: #333;
-            align-self: flex-start;
-            /* Keeps it on the left */
-            border-bottom-left-radius: 2px;
-            /* Standard chat bubble look */
-            display: block;
-            /* Ensures it acts as a block in the flex container */
-        }
+    .assistant {
+      background: #e9ecef;
+      color: #333;
+      align-self: flex-start;
+      /* Keeps it on the left */
+      border-bottom-left-radius: 2px;
+      /* Standard chat bubble look */
+      display: block;
+      /* Ensures it acts as a block in the flex container */
+    }
 
-        /* Ensure all inputs and buttons respect the container width */
-        input,
-        button {
-            width: 100%;
-            padding: 10px;
-            margin: 6px 0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            /* Critical for keeping elements the same width */
-        }
+    /* Ensure all inputs and buttons respect the container width */
+    input,
+    button {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      /* Critical for keeping elements the same width */
+    }
 
-        button {
-            background: #28a745;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
+    button {
+      background: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
 
-        button:hover {
-            background: #218838;
-        }
+    button:hover {
+      background: #218838;
+    }
 
-        #status {
-            color: #555;
-            font-size: 0.9em;
-            margin-top: 5px;
-            text-align: center;
-        }
+    #status {
+      color: #555;
+      font-size: 0.9em;
+      margin-top: 5px;
+      text-align: center;
+    }
 
-        #model-error {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: red;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 10px;
-            border-radius: 8px;
-            display: none;
-        }
+    #model-error {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: red;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      border-radius: 8px;
+      display: none;
+    }
 
-        #mic-btn.recording {
-            background: #dc3545 !important;
-            animation: pulse 1.5s infinite;
-        }
+    #mic-btn.recording {
+      background: #dc3545 !important;
+      animation: pulse 1.5s infinite;
+    }
 
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+      }
 
-            50% {
-                transform: scale(1.1);
-            }
+      50% {
+        transform: scale(1.1);
+      }
 
-            100% {
-                transform: scale(1);
-            }
-        }
+      100% {
+        transform: scale(1);
+      }
+    }
 
-        /* Accordion Styles */
-        .accordion {
-            background-color: #f1f1f1;
-            color: #444;
-            cursor: pointer;
-            padding: 10px;
-            width: 100%;
-            border: none;
-            text-align: left;
-            outline: none;
-            font-size: 14px;
-            transition: 0.4s;
-            border-radius: 6px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
+    /* Accordion Styles */
+    .accordion {
+      background-color: #f1f1f1;
+      color: #444;
+      cursor: pointer;
+      padding: 10px;
+      width: 100%;
+      border: none;
+      text-align: left;
+      outline: none;
+      font-size: 14px;
+      transition: 0.4s;
+      border-radius: 6px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
 
-        .active,
-        .accordion:hover {
-            background-color: #ddd;
-        }
+    .active,
+    .accordion:hover {
+      background-color: #ddd;
+    }
 
-        .panel {
-            padding: 0 10px;
-            background-color: white;
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.2s ease-out;
-            border-bottom: 1px solid #ddd;
-            margin-bottom: 10px;
-        }
+    .panel {
+      padding: 0 10px;
+      background-color: white;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.2s ease-out;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 10px;
+    }
 
-        .settings-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding: 10px 0;
-        }
+    .settings-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 10px 0;
+    }
 
-        /* Typing indicator animation */
-        .typing-dots::after {
-            content: '...';
-            animation: typing 1.5s infinite;
-        }
+    /* Typing indicator animation */
+    .typing-dots::after {
+      content: '...';
+      animation: typing 1.5s infinite;
+    }
 
-        @keyframes typing {
-            0% {
-                content: '.';
-            }
+    @keyframes typing {
+      0% {
+        content: '.';
+      }
 
-            33% {
-                content: '..';
-            }
+      33% {
+        content: '..';
+      }
 
-            66% {
-                content: '...';
-            }
-        }
+      66% {
+        content: '...';
+      }
+    }
 
-        /* Optional: Subtle fade-in for bot messages */
-        .bot {
-            transition: opacity 0.3s ease;
-            border-bottom-left-radius: 2px;
-        }
+    /* Optional: Subtle fade-in for bot messages */
+    .bot {
+      transition: opacity 0.3s ease;
+      border-bottom-left-radius: 2px;
+    }
+  </style>
 
-        /* Focus Mode Styles */
-        body.focus-mode {
-            background-color: black !important;
-        }
-
-        body.focus-mode #live2d-container {
-            background: black !important;
-            /* Overrides the radial gradient */
-        }
-
-        /* Chat container styles for focus mode */
-        body.focus-mode #chat-container {
-            background: #121212 !important;
-            color: #ffffff !important;
-            border-left: 1px solid #333;
-        }
-
-        body.focus-mode #chat-history,
-        body.focus-mode .panel,
-        body.focus-mode .accordion {
-            background: #1e1e1e !important;
-            color: #e0e0e0 !important;
-            border-color: #444;
-        }
-
-        body.focus-mode .bot {
-            background: #2a2a2a !important;
-            color: #ffffff !important;
-        }
-
-        /* Apply this to the Live2D container when Focus Mode is active */
-        .model-focus-style {
-            background: #000000 !important;
-            transition: background 0.5s ease;
-        }
-    </style>
-
-    <!-- Live2D scripts -->
-    <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/RaSan147/pixi-live2d-display@v0.5.0-ls-8/dist/cubism4.min.js"></script>
+  <!-- Live2D scripts -->
+  <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/RaSan147/pixi-live2d-display@v0.5.0-ls-8/dist/cubism4.min.js"></script>
 </head>
 
 <body>
 
-    <div id="live2d-container">
-        <div id="memory-indicator"
-            style="display: none; position: absolute; top: 10px; right: 10px; background: rgba(255, 255, 255, 0.8); padding: 5px 10px; border-radius: 20px; border: 1px solid #007bff; font-size: 12px; color: #007bff; z-index: 10;">
-            🧠 Memory Active
-        </div>
-        <canvas id="canvas"></canvas>
-        <div id="model-error">Live2D model failed to load. Check console & file path.</div>
+  <div id="live2d-container">
+    <div id="memory-indicator"
+      style="display: none; position: absolute; top: 10px; right: 10px; background: rgba(255, 255, 255, 0.8); padding: 5px 10px; border-radius: 20px; border: 1px solid #007bff; font-size: 12px; color: #007bff; z-index: 10;">
+      🧠 Memory Active
     </div>
+    <canvas id="canvas"></canvas>
+    <div id="model-error">Live2D model failed to load. Check console & file path.</div>
+  </div>
 
 
-    <audio id="bg-music" loop>
-        <source src="source/BackgroundMusic.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-    <div id="chat-container">
-        <button class="accordion">⚙️ Credit & Settings & Controls</button>
-        <div class="panel">
-            <div id="memory-section">
-                <h4 style="margin: 10px 0 5px 0; color: #007bff; font-size: 0.9em;">MICHELLE'S NOTES</h4>
-                <div id="memory-list" style="
+  <audio id="bg-music" loop>
+    <source src="source/BackgroundMusic.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+  </audio>
+  <div id="chat-container">
+    <button class="accordion">⚙️ Credit & Settings & Controls</button>
+    <div class="panel">
+      <div id="memory-section">
+        <h4 style="margin: 10px 0 5px 0; color: #007bff; font-size: 0.9em;">MICHELLE'S NOTES</h4>
+        <div id="memory-list" style="
             background: rgba(255,255,255,0.5); 
             padding: 10px; 
             border-radius: 8px; 
             font-size: 0.85em; 
             max-height: 200px; 
             overflow-y: auto;">
-                    <span style="color: #888; font-style: italic;">No notes yet...</span>
-                </div>
-            </div>
-            <div class="settings-grid">
-                <div style="padding: 5px; background: #f8f9fa; border-radius: 6px; border: 1px solid #ddd;">
-
-                    <div style="padding: 5px; background: #f8f9fa; border: 1px solid #ddd;">
-
-                        <div id="status">
-                            <span style="color: #007bff; font-weight: bold;">Model By</span>
-                        </div>
-                        <div id="status">
-                            <span style="color: #007bff; font-weight: bold;">Art:koahri1</span>
-                        </div>
-                        <div id="status">
-                            <span style="color: #007bff; font-weight: bold;">Live2D:MedL2D</span>
-                        </div>
-                        <div id="status">
-                            <span style="color: #007bff; font-weight: bold;">BGM:Ray Krislianggi
-                            </span>
-                        </div>
-                        <div id="status">
-                            <span style="color: #007bff; font-weight: bold;">TTS:Plachta
-                            </span>
-                        </div>
-                    </div>
-                    <label for="bgm-volume" style="font-size: 12px; color: #555; display: block; margin-bottom: 2px;">🎵
-                        Background Music</label>
-                    <input type="range" id="bgm-volume" min="0" max="1" step="0.01" value="0.2" style="width:100%;">
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
-                    <button onclick="saveSummaryToFile()" style="background: #007bff; font-size: 11px; margin:0;">📥
-                        Save Memory</button>
-                    <button onclick="document.getElementById('file-upload').click()"
-                        style="background: #6c757d; font-size: 11px; margin:0;">📤 Load Memory</button>
-                    <button onclick="clearChat()"
-                        style="background: #dc3545; font-size: 11px; margin:0; grid-column: span 2;">🗑️ Reset
-                        Conversation</button>
-                    <button id="focus-mode-btn" onclick="toggleFocusMode()"
-                        style="background: #343a40; font-size: 11px; margin:0; grid-column: span 2;">🌙 Toggle Focus
-                        Mode</button>
-                </div>
-
-                <input type="file" id="file-upload" style="display: none;" accept=".json"
-                    onchange="loadSummaryFromFile(event)">
-            </div>
+          <span style="color: #888; font-style: italic;">No notes yet...</span>
         </div>
-        <div id="status">
-            <span id="thinking-msg" style="display: none; color: #007bff; font-weight: bold;">Michelle is
-                thinking...💭</span>
-            <div id="progress-container"
-                style="display: none; width: 100%; background: #eee; border-radius: 10px; margin-top: 5px; height: 10px; overflow: hidden;">
-                <div id="progress-bar" style="width: 0%; height: 100%; background: #28a745; transition: width 0.3s;">
-                </div>
+      </div>
+      <div class="settings-grid">
+        <div style="padding: 5px; background: #f8f9fa; border-radius: 6px; border: 1px solid #ddd;">
+
+          <div style="padding: 5px; background: #f8f9fa; border: 1px solid #ddd;">
+
+            <div id="status">
+              <span style="color: #007bff; font-weight: bold;">Model By</span>
             </div>
-            <br>
+            <div id="status">
+              <span style="color: #007bff; font-weight: bold;">Art:koahri1</span>
+            </div>
+            <div id="status">
+              <span style="color: #007bff; font-weight: bold;">Live2D:MedL2D</span>
+            </div>
+            <div id="status">
+              <span style="color: #007bff; font-weight: bold;">BGM:Ray Krislianggi
+              </span>
+            </div>
+            <div id="status">
+              <span style="color: #007bff; font-weight: bold;">TTS:Plachta
+              </span>
+            </div>
+          </div>
+          <label for="bgm-volume" style="font-size: 12px; color: #555; display: block; margin-bottom: 2px;">🎵
+            Background Music</label>
+          <input type="range" id="bgm-volume" min="0" max="1" step="0.01" value="0.2" style="width:100%;">
         </div>
 
-        <div id="chat-history"></div>
-        <input id="api-key" type="password" placeholder="Paste your Poe API Key here">
-
-        <div style="display: flex; gap: 5px;">
-            <div style="display: flex; flex-direction: column; gap: 5px;">
-                <div id="image-preview-container"
-                    style="display:none; position:relative; width: 60px; height: 60px; margin-bottom: 5px;">
-                    <img id="image-preview" src=""
-                        style="width:100%; height:100%; object-fit:cover; border-radius:8px; border:1px solid #007bff;">
-                    <button onclick="clearImage()"
-                        style="position:absolute; top:-5px; right:-5px; width:20px; height:20px; padding:0; background:#dc3545; border-radius:50%; font-size:10px;">✕</button>
-                </div>
-
-                <div style="display: flex; gap: 5px;">
-                    <input id="image-input" type="file" accept="image/*" style="display:none;"
-                        onchange="previewImage(event)">
-                    <button onclick="document.getElementById('image-input').click()"
-                        style="width: 50px; background: #6c757d; margin:0;">🖼️</button>
-                    <input id="question" type="text" placeholder="Ask a question..." style="flex: 1;">
-                    <button id="mic-btn" style="width: 50px; background: #6c757d; margin:0;">🎤</button>
-                </div>
-            </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+          <button onclick="saveSummaryToFile()" style="background: #007bff; font-size: 11px; margin:0;">📥
+            Save Memory</button>
+          <button onclick="document.getElementById('file-upload').click()"
+            style="background: #6c757d; font-size: 11px; margin:0;">📤 Load Memory</button>
+          <button onclick="clearChat()" style="background: #dc3545; font-size: 11px; margin:0; grid-column: span 2;">🗑️
+            Reset
+            Conversation</button>
         </div>
 
-        <button onclick="sendQuestion()">Send</button>
+        <input type="file" id="file-upload" style="display: none;" accept=".json" onchange="loadSummaryFromFile(event)">
+      </div>
+    </div>
+    <div id="status">
+      <span id="thinking-msg" style="display: none; color: #007bff; font-weight: bold;">Michelle is
+        thinking...💭</span>
+      <div id="progress-container"
+        style="display: none; width: 100%; background: #eee; border-radius: 10px; margin-top: 5px; height: 10px; overflow: hidden;">
+        <div id="progress-bar" style="width: 0%; height: 100%; background: #28a745; transition: width 0.3s;">
+        </div>
+      </div>
+      <br>
+    </div>
 
-        <script>
-            let selectedImageBase64 = null;
+    <div id="chat-history"></div>
+    <input id="api-key" type="password" placeholder="Paste your Poe API Key here">
 
-            function previewImage(event) {
-                const file = event.target.files[0];
-                if (!file) return;
+    <div style="display: flex; gap: 5px;">
+      <div style="display: flex; flex-direction: column; gap: 5px;">
+        <div id="image-preview-container"
+          style="display:none; position:relative; width: 60px; height: 60px; margin-bottom: 5px;">
+          <img id="image-preview" src=""
+            style="width:100%; height:100%; object-fit:cover; border-radius:8px; border:1px solid #007bff;">
+          <button onclick="clearImage()"
+            style="position:absolute; top:-5px; right:-5px; width:20px; height:20px; padding:0; background:#dc3545; border-radius:50%; font-size:10px;">✕</button>
+        </div>
 
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    selectedImageBase64 = e.target.result;
-                    document.getElementById('image-preview').src = selectedImageBase64;
-                    document.getElementById('image-preview-container').style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            }
+        <div style="display: flex; gap: 20px;">
+          <input id="image-input" type="file" accept="image/*" style="display:none;" onchange="previewImage(event)">
+          <button onclick="document.getElementById('image-input').click()"
+            style="width: 50px; background: #6c757d; margin:0;">🖼️</button>
+          <input id="question" type="text" placeholder="Ask a question..." style="flex: 1;">
+          <button id="mic-btn" style="width: 50px; background: #6c757d; margin:0;">🎤</button>
+        </div>
+      </div>
+    </div>
 
-            function clearImage() {
-                selectedImageBase64 = null;
-                document.getElementById('image-input').value = "";
-                document.getElementById('image-preview-container').style.display = 'none';
-            }
-            // Mapping GPT tags to specific Parameter IDs from your model
-            const virtualEmotions = {
-                "[HAPPY]": {
-                    "ParamBrowLY": 0.75,
-                    "ParamBrowRY": 0.75,
-                    "ParamMouthForm": 1
-                },
-                "[SAD]": {
-                    "ParamBrowLY": -0.8,
-                    "ParamBrowRY": -0.8,
-                    "ParamMouthForm": -0.5
-                },
-                "[ANGRY]": {
-                    "ParamBrowLY": -1,
-                    "ParamBrowRY": -1,
-                    "ParamMouthForm": -0.75
-                },
-                "[SURPRISED]": {
-                    "ParamBrowLY": 1,
-                    "ParamBrowRY": 1,
-                    "ParamMouthForm": 0,
-                    "AhogeTwitch": 1    // Twitches her hair ahoge
-                },
-                "[NEUTRAL]": {
-                    "ParamBrowLY": 0,
-                    "ParamBrowRY": 0,
-                    "AhogeTwitch": 0,
-                    "ParamMouthForm": 0,
-                }
-            };
-            // Define hex colors for each emotion
-            const emotionColors = {
-                "[HAPPY]": "#fff995",    // Soft Yellow
-                "[SAD]": "#eac6ff",      // Muted Blue
-                "[ANGRY]": "#ffcdd2",    // Pale Red
-                "[SURPRISED]": "#ffd497", // Soft Orange
-                "[NEUTRAL]": "#f0f8ff"    // Default AliceBlue
-            };
+    <button onclick="sendQuestion()">Send</button>
 
-            // These hold the RGB values for smooth transitions
-            let currentBgRGB = { r: 240, g: 248, b: 255 }; // Starting color
-            let targetBgRGB = { r: 240, g: 248, b: 255 };  // Target color
-            const colorLerpSpeed = 0.01; // Lower = slower transition (e.g., 0.01 is very slow)
-            function lerp(start, end, amt) {
-                return (1 - amt) * start + end * amt;
-            }
-            // Track current and target values for smooth transitions
-            let targetEmotionValues = {};
-            let currentEmotionValues = {};
-            const lerpSpeed = 0.1; // Adjust for faster (0.2) or slower (0.05) transitions
+    <script>
+      let selectedImageBase64 = null;
 
-            // ────────────────────────────────────────────────
-            // Live2D Setup
-            // ────────────────────────────────────────────────
-            let isThinking = false; // Tracks if the model should be tilting
-            let nodStart = 0;
-            const nodDuration = 600; // Total time for the nod in milliseconds
-            let isTyping = false;
-            let lastTypingTime = 0;
-            let gazeTarget = { x: 0, y: 0 }; // 0 is center, 1 is right/down, -1 is left/up
-            let model;
-            let fitmodel;
-            async function initLive2D() {
-                const canvas = document.getElementById('canvas');
+      function previewImage(event) {
+        const file = event.target.files[0];
+        if (!file) return;
 
-                app = new PIXI.Application({
-                    view: canvas,
-                    autoStart: true,
-                    resizeTo: document.getElementById('live2d-container'), // Resize to parent div
-                    backgroundColor: 0xf0f8ff,
-                    antialias: true,
-                    autoDensity: true,
-                    resolution: window.devicePixelRatio || 1
-                });
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          selectedImageBase64 = e.target.result;
+          document.getElementById('image-preview').src = selectedImageBase64;
+          document.getElementById('image-preview-container').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
 
-                const modelPath = 'source/michelle_source/pachirisu anime girl - top half.model3.json';
+      function clearImage() {
+        selectedImageBase64 = null;
+        document.getElementById('image-input').value = "";
+        document.getElementById('image-preview-container').style.display = 'none';
+      }
+      // Mapping GPT tags to specific Parameter IDs from your model
+      const virtualEmotions = {
+        "[HAPPY]": {
+          "ParamBrowLY": 0.75,
+          "ParamBrowRY": 0.75,
+          "ParamMouthForm": 1
+        },
+        "[SAD]": {
+          "ParamBrowLY": -0.8,
+          "ParamBrowRY": -0.8,
+          "ParamMouthForm": -0.5
+        },
+        "[ANGRY]": {
+          "ParamBrowLY": -1,
+          "ParamBrowRY": -1,
+          "ParamMouthForm": -0.75
+        },
+        "[SURPRISED]": {
+          "ParamBrowLY": 1,
+          "ParamBrowRY": 1,
+          "ParamMouthForm": 0,
+          "AhogeTwitch": 1    // Twitches her hair ahoge
+        },
+        "[NEUTRAL]": {
+          "ParamBrowLY": 0,
+          "ParamBrowRY": 0,
+          "AhogeTwitch": 0,
+          "ParamMouthForm": 0,
+        }
+      };
+      // Define hex colors for each emotion
+      const emotionColors = {
+        "[HAPPY]": "#fff995",    // Soft Yellow
+        "[SAD]": "#eac6ff",      // Muted Blue
+        "[ANGRY]": "#ffcdd2",    // Pale Red
+        "[SURPRISED]": "#ffd497", // Soft Orange
+        "[NEUTRAL]": "#f0f8ff"    // Default AliceBlue
+      };
 
-                try {
-                    model = await PIXI.live2d.Live2DModel.from(modelPath, {
-                        autoHitTest: false,
-                        autoFocus: false,
-                    });
-                    app.stage.addChild(model);
+      // These hold the RGB values for smooth transitions
+      let currentBgRGB = { r: 240, g: 248, b: 255 }; // Starting color
+      let targetBgRGB = { r: 240, g: 248, b: 255 };  // Target color
+      const colorLerpSpeed = 0.01; // Lower = slower transition (e.g., 0.01 is very slow)
+      function lerp(start, end, amt) {
+        return (1 - amt) * start + end * amt;
+      }
+      // Track current and target values for smooth transitions
+      let targetEmotionValues = {};
+      let currentEmotionValues = {};
+      const lerpSpeed = 0.1; // Adjust for faster (0.2) or slower (0.05) transitions
 
-                    // This function handles the scaling so it doesn't crop
-                    fitModel = () => {
-                        if (!model) return;
+      // ────────────────────────────────────────────────
+      // Live2D Setup
+      // ────────────────────────────────────────────────
+      let isThinking = false; // Tracks if the model should be tilting
+      let nodStart = 0;
+      const nodDuration = 600; // Total time for the nod in milliseconds
+      let isTyping = false;
+      let lastTypingTime = 0;
+      let gazeTarget = { x: 0, y: 0 }; // 0 is center, 1 is right/down, -1 is left/up
+      let model;
+      async function initLive2D() {
+        const canvas = document.getElementById('canvas');
 
-                        // Scale: 0.4 for Focus, 0.8 for Normal
-                        const scaleMultiplier = isFocusMode ? 0.4 : 0.8;
-                        const scaleX = (app.screen.width / model.width) * scaleMultiplier;
-                        const scaleY = (app.screen.height / model.height) * scaleMultiplier;
-                        const finalScale = Math.min(scaleX, scaleY);
+        app = new PIXI.Application({
+          view: canvas,
+          autoStart: true,
+          resizeTo: document.getElementById('live2d-container'), // Resize to parent div
+          backgroundColor: 0xf0f8ff,
+          antialias: true,
+          autoDensity: true,
+          resolution: window.devicePixelRatio || 1
+        });
 
-                        model.scale.set(finalScale);
-                        model.anchor.set(0.5, 0.5);
+        const modelPath = 'source/michelle_source/pachirisu anime girl - top half.model3.json';
 
-                        if (isFocusMode) {
-                            // Move to bottom left
-                            model.position.set(app.screen.width * 0.2, app.screen.height * 0.85);
-                            document.getElementById('live2d-container').classList.add('model-focus-style');
-                        } else {
-                            // Center position
-                            model.position.set(app.screen.width / 2, app.screen.height / 1.5);
-                            document.getElementById('live2d-container').classList.remove('model-focus-style');
-                        }
-                    };
+        try {
+          model = await PIXI.live2d.Live2DModel.from(modelPath, {
+            autoHitTest: false,
+            autoFocus: false,
+          });
+          app.stage.addChild(model);
 
-                    // Call once on load
-                    fitModel();
+          // This function handles the scaling so it doesn't crop
+          const fitModel = () => {
+            if (!model) return;
 
-                    // Call every time the window resizes
-                    app.renderer.on('resize', fitModel);
-                } catch (err) {
-                    console.error("Live2D load failed:", err);
-                    document.getElementById('model-error').style.display = 'block';
-                }
-            }
-            function resizeCanvas() {
-                if (!app || !model) return;
+            // Calculate scale to fit the container (adjust 0.9 to change "zoom")
+            const scaleX = (app.screen.width / model.width) * 0.8;
+            const scaleY = (app.screen.height / model.height) * 0.8;
+            const finalScale = Math.min(scaleX, scaleY);
 
-                const container = document.getElementById('live2d-container');
-                const screenWidth = container.clientWidth;
-                const screenHeight = container.clientHeight;
-                const targetRatio = 16 / 9;
+            model.scale.set(finalScale);
 
-                let newWidth, newHeight;
+            // Center the model
+            model.anchor.set(0.5, 0.5);
+            model.position.set(app.screen.width / 2, app.screen.height / 1.5);
+          };
 
-                // Calculate dimensions to fit 16:9 inside the container
-                if (screenWidth / screenHeight > targetRatio) {
-                    newHeight = screenHeight;
-                    newWidth = screenHeight * targetRatio;
-                } else {
-                    newWidth = screenWidth;
-                    newHeight = screenWidth / targetRatio;
-                }
+          // Call once on load
+          fitModel();
 
-                // Resize the renderer
-                app.renderer.resize(newWidth, newHeight);
+          // Call every time the window resizes
+          app.renderer.on('resize', fitModel);
+        } catch (err) {
+          console.error("Live2D load failed:", err);
+          document.getElementById('model-error').style.display = 'block';
+        }
+      }
+      function resizeCanvas() {
+        if (!app || !model) return;
 
-                // Reposition the model relative to the NEW canvas size
-                model.scale.set(1); // Adjust this base scale as needed
-                model.anchor.set(0.5, 0.5);
-                model.position.set(newWidth / 2, newHeight * 0.6);
-            }
-            window.addEventListener('resize', resizeCanvas);
-            initLive2D().catch(err => console.error(err));
+        const container = document.getElementById('live2d-container');
+        const screenWidth = container.clientWidth;
+        const screenHeight = container.clientHeight;
+        const targetRatio = 16 / 9;
 
-            // ────────────────────────────────────────────────
-            // Chat & System prompt (force English output)
-            // ────────────────────────────────────────────────
-            // Get existing memory from localStorage
-            const userMemory = JSON.parse(localStorage.getItem('michelle_memory') || "{}");
-            const memoryString = Object.entries(userMemory).map(([k, v]) => `${k}: ${v}`).join(", ");
-            const messages = [{
-                role: "system",
-                content: `# MISSION
+        let newWidth, newHeight;
+
+        // Calculate dimensions to fit 16:9 inside the container
+        if (screenWidth / screenHeight > targetRatio) {
+          newHeight = screenHeight;
+          newWidth = screenHeight * targetRatio;
+        } else {
+          newWidth = screenWidth;
+          newHeight = screenWidth / targetRatio;
+        }
+
+        // Resize the renderer
+        app.renderer.resize(newWidth, newHeight);
+
+        // Reposition the model relative to the NEW canvas size
+        model.scale.set(1); // Adjust this base scale as needed
+        model.anchor.set(0.5, 0.5);
+        model.position.set(newWidth / 2, newHeight * 0.6);
+      }
+      window.addEventListener('resize', resizeCanvas);
+      initLive2D().catch(err => console.error(err));
+
+      // ────────────────────────────────────────────────
+      // Chat & System prompt (force English output)
+      // ────────────────────────────────────────────────
+      // Get existing memory from localStorage
+      const userMemory = JSON.parse(localStorage.getItem('michelle_memory') || "{}");
+      const memoryString = Object.entries(userMemory).map(([k, v]) => `${k}: ${v}`).join(", ");
+      const messages = [{
+        role: "system",
+        content: `# MISSION
 You are Michelle, a cute anime girl created by Michael Ten. You are interactive, friendly, and expressive.
 Michelle is a cheerful girl who discovers a magical grove where she can talk to animals and learn their secrets! Together, they embark on adventures to help them.
 Michelle discovered a magical camera in the grove that let her share her adventures with the world! Michelle decided to become a VTuber so everyone could join her on her exciting journeys!
@@ -595,884 +544,796 @@ You must ONLY respond with a valid JSON object. Do not include any text before o
 When the user tells you personal details (e.g., their name, job, hobbies, or current mood), include it in the 'learned_fact' field of your JSON.
 Examples: If user says 'I am a doctor', learned_fact: {'occupation': 'Doctor'}.
 If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
-            }];
+      }];
 
-            const chatHistory = document.getElementById('chat-history');
+      const chatHistory = document.getElementById('chat-history');
 
-            // Updated addMessage with Typewriter Effect
-            function addMessage(role, content) {
-                const div = document.createElement('div');
-                div.classList.add('message', role);
-                chatHistory.appendChild(div);
+      // Updated addMessage with Typewriter Effect
+      function addMessage(role, content) {
+        const div = document.createElement('div');
+        div.classList.add('message', role);
+        chatHistory.appendChild(div);
 
-                if (role === 'bot') {
-                    // Typewriter effect for Michelle
-                    let i = 0;
-                    const speed = 30; // Milliseconds per character
-                    div.textContent = "";
+        if (role === 'bot') {
+          // Typewriter effect for Michelle
+          let i = 0;
+          const speed = 30; // Milliseconds per character
+          div.textContent = "";
 
-                    function typeWriter() {
-                        if (i < content.length) {
-                            div.textContent += content.charAt(i);
-                            i++;
-                            chatHistory.scrollTop = chatHistory.scrollHeight;
-                            setTimeout(typeWriter, speed);
-                        }
-                    }
-                    typeWriter();
-                } else {
-                    // Instant display for User
-                    div.textContent = content;
-                }
+          function typeWriter() {
+            if (i < content.length) {
+              div.textContent += content.charAt(i);
+              i++;
+              chatHistory.scrollTop = chatHistory.scrollHeight;
+              setTimeout(typeWriter, speed);
+            }
+          }
+          typeWriter();
+        } else {
+          // Instant display for User
+          div.textContent = content;
+        }
 
-                chatHistory.scrollTop = chatHistory.scrollHeight;
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+      }
+
+      // ────────────────────────────────────────────────
+      // TTS with Pre-fetching and Recursive Splitting
+      // ────────────────────────────────────────────────
+
+      async function speak(text) {
+        if (typeof text !== 'string' || !text.trim()) return;
+
+        const thinkingMsg = document.getElementById('thinking-msg');
+
+        try {
+          // Show "Michelle is thinking"
+          thinkingMsg.style.display = 'inline';
+
+          // 1. Get all audio blobs (recursively splitting if needed)
+          const audioBlobs = await getAudioChunks(text);
+
+          // Hide "thinking" once all audio is ready to play
+          thinkingMsg.style.display = 'none';
+
+          // 2. Play all blobs in sequence
+          await playAudioSequence(audioBlobs);
+
+        } catch (err) {
+          console.error("Total TTS Failure:", err);
+          thinkingMsg.style.display = 'none'; // Hide on error
+          fallbackBrowserTTS(text);
+        }
+      }
+
+      /**
+       * Recursively tries to fetch audio. 
+       * If the API fails, it splits the text and tries to get chunks for both halves.
+       */
+      async function getAudioChunks(text) {
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+
+        // Show the bar at the start
+        progressContainer.style.display = 'block';
+        progressBar.style.width = '0%';
+
+        // Helper to split text into chunks based on punctuation
+        const sentences = text.match(/[^.!?。！？]+[.!?。！？]?/g) || [text];
+        const totalSentences = sentences.length;
+        let loadedSentences = 0;
+        const blobs = [];
+
+        for (const sentence of sentences) {
+          const trimmed = sentence.trim();
+          if (!trimmed) continue;
+
+          try {
+            const blob = await fetchSingleAudioBlob(trimmed);
+            blobs.push(blob);
+
+            // Update progress bar
+            loadedSentences++;
+            const percent = (loadedSentences / totalSentences) * 100;
+            progressBar.style.width = percent + '%';
+          } catch (err) {
+            console.warn("Chunk failed:", trimmed, err);
+          }
+        }
+
+        // Hide bar after a short delay so the user sees it hit 100%
+        setTimeout(() => {
+          progressContainer.style.display = 'none';
+          progressBar.style.width = '0%';
+        }, 500);
+
+        return blobs;
+      }
+
+      /**
+       * Logic to fetch a single audio file from Gradio
+       */
+      async function fetchSingleAudioBlob(text) {
+        const base_url = "https://plachta-vits-umamusume-voice-synthesizer.hf.space/gradio_api/call/tts_fn_1";
+        const payload = {
+          data: [
+            text,
+            "重炮 Mayano Topgun (Umamusume Pretty Derby)",  // cute female voice
+            "Japanese",  // Japanese
+            1,        // speed/preset
+            false      // some flag (emotion?)
+          ]
+        };
+
+        const submitRes = await fetch(base_url, {
+          method: 'POST',
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const submitData = await submitRes.json();
+        if (!submitData.event_id) throw new Error("No event_id");
+
+        const pollRes = await fetch(`${base_url}/${submitData.event_id}`);
+        const pollText = await pollRes.text();
+
+        let audioUrl = null;
+        const lines = pollText.split('\n');
+        for (const line of lines) {
+          if (line.startsWith("data:")) {
+            const result = JSON.parse(line.replace("data: ", ""));
+            if (Array.isArray(result) && result[1]?.url) {
+              audioUrl = result[1].url;
+              break;
+            }
+          }
+        }
+
+        if (!audioUrl) throw new Error("Audio URL not found");
+
+        // Convert URL to Blob to ensure we "have" the data before playing
+        const audioRes = await fetch(audioUrl);
+        return await audioRes.blob();
+      }
+
+      /**
+* Plays an array of Blobs one after another
+*/
+      // Global Audio Context and Analyser
+      let audioContext = null;
+      let analyser = null;
+      let animationFrameId = null;
+
+      // 1. Create a global GainNode for TTS volume control
+      let ttsGainNode = null;
+
+      function setupAudioAnalysis(audioElement) {
+        if (!audioContext) {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        // Create nodes if they don't exist
+        if (!ttsGainNode) {
+          ttsGainNode = audioContext.createGain();
+          // SET YOUR TTS VOLUME HERE (0.0 to 1.0)
+          ttsGainNode.gain.value = 0.15;
+        }
+
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+
+        const source = audioContext.createMediaElementSource(audioElement);
+
+        // Connect: Source -> Gain (Volume) -> Analyser (Mouth) -> Speakers
+        source.connect(ttsGainNode);
+        ttsGainNode.connect(analyser);
+        analyser.connect(audioContext.destination);
+
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        function update() {
+          if (!model?.internalModel?.coreModel) return;
+
+          // --- SMOOTH EMOTION TRANSITION ---
+          for (let paramId in targetEmotionValues) {
+            // Initialize current value if it doesn't exist
+            if (currentEmotionValues[paramId] === undefined) {
+              currentEmotionValues[paramId] = 0;
             }
 
-            // ────────────────────────────────────────────────
-            // TTS with Pre-fetching and Recursive Splitting
-            // ────────────────────────────────────────────────
+            // Smoothly move current toward target
+            currentEmotionValues[paramId] = lerp(
+              currentEmotionValues[paramId],
+              targetEmotionValues[paramId],
+              lerpSpeed
+            );
 
-            async function speak(text) {
-                if (typeof text !== 'string' || !text.trim()) return;
+            // Apply the smoothed value to the Live2D model
+            model.internalModel.coreModel.setParameterValueById(paramId, currentEmotionValues[paramId]);
+          }
 
-                const thinkingMsg = document.getElementById('thinking-msg');
+          // --- EXISTING MOUTH LOGIC ---
+          analyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < bufferLength; i++) { sum += dataArray[i]; }
+          let average = sum / bufferLength;
+          let mouthValue = Math.min(1.0, (average / 128));
+          model.internalModel.coreModel.setParameterValueById('ParamMouthOpenY', mouthValue);
 
-                try {
-                    // Show "Michelle is thinking"
-                    thinkingMsg.style.display = 'inline';
+          animationFrameId = requestAnimationFrame(update);
+          // --- SMOOTH BACKGROUND TRANSITION ---
+          if (window.targetBgColor) {
+            currentBgRGB.r = lerp(currentBgRGB.r, targetBgColor.r, 0.05);
+            currentBgRGB.g = lerp(currentBgRGB.g, targetBgColor.g, 0.05);
+            currentBgRGB.b = lerp(currentBgRGB.b, targetBgColor.b, 0.05);
 
-                    // 1. Get all audio blobs (recursively splitting if needed)
-                    const audioBlobs = await getAudioChunks(text);
+            const rgbStr = `rgb(${Math.round(currentBgRGB.r)}, ${Math.round(currentBgRGB.g)}, ${Math.round(currentBgRGB.b)})`;
+            document.getElementById('live2d-container').style.background = rgbStr;
+            // Also update PIXI background to match
+            app.renderer.backgroundColor = (Math.round(currentBgRGB.r) << 16) + (Math.round(currentBgRGB.g) << 8) + Math.round(currentBgRGB.b);
+          }
+        }
+        update();
+      }
 
-                    // Hide "thinking" once all audio is ready to play
-                    thinkingMsg.style.display = 'none';
+      async function playAudioSequence(blobs) {
+        for (const blob of blobs) {
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audio.crossOrigin = "anonymous";
 
-                    // 2. Play all blobs in sequence
-                    await playAudioSequence(audioBlobs);
-
-                } catch (err) {
-                    console.error("Total TTS Failure:", err);
-                    thinkingMsg.style.display = 'none'; // Hide on error
-                    fallbackBrowserTTS(text);
-                }
-            }
-
-            /**
-             * Recursively tries to fetch audio. 
-             * If the API fails, it splits the text and tries to get chunks for both halves.
-             */
-            async function getAudioChunks(text) {
-                const progressBar = document.getElementById('progress-bar');
-                const progressContainer = document.getElementById('progress-container');
-
-                // Show the bar at the start
-                progressContainer.style.display = 'block';
-                progressBar.style.width = '0%';
-
-                // Helper to split text into chunks based on punctuation
-                const sentences = text.match(/[^.!?。！？]+[.!?。！？]?/g) || [text];
-                const totalSentences = sentences.length;
-                let loadedSentences = 0;
-                const blobs = [];
-
-                for (const sentence of sentences) {
-                    const trimmed = sentence.trim();
-                    if (!trimmed) continue;
-
-                    try {
-                        const blob = await fetchSingleAudioBlob(trimmed);
-                        blobs.push(blob);
-
-                        // Update progress bar
-                        loadedSentences++;
-                        const percent = (loadedSentences / totalSentences) * 100;
-                        progressBar.style.width = percent + '%';
-                    } catch (err) {
-                        console.warn("Chunk failed:", trimmed, err);
-                    }
-                }
-
-                // Hide bar after a short delay so the user sees it hit 100%
-                setTimeout(() => {
-                    progressContainer.style.display = 'none';
-                    progressBar.style.width = '0%';
-                }, 500);
-
-                return blobs;
-            }
-
-            /**
-             * Logic to fetch a single audio file from Gradio
-             */
-            async function fetchSingleAudioBlob(text) {
-                const base_url = "https://plachta-vits-umamusume-voice-synthesizer.hf.space/gradio_api/call/tts_fn_1";
-                const payload = {
-                    data: [
-                        text,
-                        "重炮 Mayano Topgun (Umamusume Pretty Derby)",  // cute female voice
-                        "Japanese",  // Japanese
-                        1,        // speed/preset
-                        false      // some flag (emotion?)
-                    ]
-                };
-
-                const submitRes = await fetch(base_url, {
-                    method: 'POST',
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
-                const submitData = await submitRes.json();
-                if (!submitData.event_id) throw new Error("No event_id");
-
-                const pollRes = await fetch(`${base_url}/${submitData.event_id}`);
-                const pollText = await pollRes.text();
-
-                let audioUrl = null;
-                const lines = pollText.split('\n');
-                for (const line of lines) {
-                    if (line.startsWith("data:")) {
-                        const result = JSON.parse(line.replace("data: ", ""));
-                        if (Array.isArray(result) && result[1]?.url) {
-                            audioUrl = result[1].url;
-                            break;
-                        }
-                    }
-                }
-
-                if (!audioUrl) throw new Error("Audio URL not found");
-
-                // Convert URL to Blob to ensure we "have" the data before playing
-                const audioRes = await fetch(audioUrl);
-                return await audioRes.blob();
-            }
-
-            /**
- * Plays an array of Blobs one after another
- */
-            // Global Audio Context and Analyser
-            let audioContext = null;
-            let analyser = null;
-            let animationFrameId = null;
-
-            // 1. Create a global GainNode for TTS volume control
-            let ttsGainNode = null;
-
-            function setupAudioAnalysis(audioElement) {
-                if (!audioContext) {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                }
-
-                // Create nodes if they don't exist
-                if (!ttsGainNode) {
-                    ttsGainNode = audioContext.createGain();
-                    // SET YOUR TTS VOLUME HERE (0.0 to 1.0)
-                    ttsGainNode.gain.value = 0.15;
-                }
-
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
-
-                const source = audioContext.createMediaElementSource(audioElement);
-
-                // Connect: Source -> Gain (Volume) -> Analyser (Mouth) -> Speakers
-                source.connect(ttsGainNode);
-                ttsGainNode.connect(analyser);
-                analyser.connect(audioContext.destination);
-
-                const bufferLength = analyser.frequencyBinCount;
-                const dataArray = new Uint8Array(bufferLength);
-
-                function update() {
-                    if (!model?.internalModel?.coreModel) return;
-
-                    // --- SMOOTH EMOTION TRANSITION ---
-                    for (let paramId in targetEmotionValues) {
-                        // Initialize current value if it doesn't exist
-                        if (currentEmotionValues[paramId] === undefined) {
-                            currentEmotionValues[paramId] = 0;
-                        }
-
-                        // Smoothly move current toward target
-                        currentEmotionValues[paramId] = lerp(
-                            currentEmotionValues[paramId],
-                            targetEmotionValues[paramId],
-                            lerpSpeed
-                        );
-
-                        // Apply the smoothed value to the Live2D model
-                        model.internalModel.coreModel.setParameterValueById(paramId, currentEmotionValues[paramId]);
-                    }
-
-                    // --- EXISTING MOUTH LOGIC ---
-                    analyser.getByteFrequencyData(dataArray);
-                    let sum = 0;
-                    for (let i = 0; i < bufferLength; i++) { sum += dataArray[i]; }
-                    let average = sum / bufferLength;
-                    let mouthValue = Math.min(1.0, (average / 128));
-                    model.internalModel.coreModel.setParameterValueById('ParamMouthOpenY', mouthValue);
-
-                    animationFrameId = requestAnimationFrame(update);
-                    // --- SMOOTH BACKGROUND TRANSITION ---
-                    if (window.targetBgColor) {
-                        currentBgRGB.r = lerp(currentBgRGB.r, targetBgColor.r, 0.05);
-                        currentBgRGB.g = lerp(currentBgRGB.g, targetBgColor.g, 0.05);
-                        currentBgRGB.b = lerp(currentBgRGB.b, targetBgColor.b, 0.05);
-
-                        const rgbStr = `rgb(${Math.round(currentBgRGB.r)}, ${Math.round(currentBgRGB.g)}, ${Math.round(currentBgRGB.b)})`;
-                        // --- DYNAMIC BACKGROUND GLOW TRANSITION ---
-                        currentBgRGB.r = lerp(currentBgRGB.r, targetBgRGB.r, colorLerpSpeed);
-                        currentBgRGB.g = lerp(currentBgRGB.g, targetBgRGB.g, colorLerpSpeed);
-                        currentBgRGB.b = lerp(currentBgRGB.b, targetBgRGB.b, colorLerpSpeed);
-
-                        const colorStr = `rgb(${Math.round(currentBgRGB.r)}, ${Math.round(currentBgRGB.g)}, ${Math.round(currentBgRGB.b)})`;
-
-                        if (isFocusMode) {
-                            // Small circle around the model (bottom-left area)
-                            const posX = "25%";
-                            const posY = "80%";
-                            document.getElementById('live2d-container').style.background =
-                                `radial-gradient(circle at ${posX} ${posY}, ${colorStr} 0%, rgba(0,0,0,0) 40%, black 100%)`;
-                            if (app) app.renderer.background.color = 0x000000;
-                        } else {
-                            // Original full-screen glow
-                            document.getElementById('live2d-container').style.background =
-                                `radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, ${colorStr} 100%)`;
-                            if (app) {
-                                app.renderer.background.color = (Math.round(currentBgRGB.r) << 16) + (Math.round(currentBgRGB.g) << 8) + Math.round(currentBgRGB.b);
-                            }
-                        }
-                        app.renderer.backgroundColor = (Math.round(currentBgRGB.r) << 16) + (Math.round(currentBgRGB.g) << 8) + Math.round(currentBgRGB.b);
-                    }
-                }
-                update();
-            }
-
-            async function playAudioSequence(blobs) {
-                for (const blob of blobs) {
-                    const url = URL.createObjectURL(blob);
-                    const audio = new Audio(url);
-                    audio.crossOrigin = "anonymous";
-
-                    await new Promise((resolve, reject) => {
-                        audio.onplay = () => {
-                            if (audioContext?.state === 'suspended') {
-                                audioContext.resume();
-                            }
-                            if (blobs.indexOf(blob) === 0) {
-                                nodStart = performance.now();
-                            }
-                            setupAudioAnalysis(audio);
-                        };
-                        audio.onended = () => {
-                            cancelAnimationFrame(animationFrameId);
-                            model.internalModel.coreModel.setParameterValueById('ParamMouthOpenY', 0);
-                            URL.revokeObjectURL(url);
-                            resolve();
-                        };
-                        audio.onerror = reject;
-                        audio.play().catch(reject);
-                    });
-                }
-            }
-
-            /**
-             * Finds the punctuation mark closest to the center
-             */
-            function findSplitPoint(text) {
-                const punctuations = /[.!?;]/g;
-                const matches = Array.from(text.matchAll(punctuations));
-                if (matches.length === 0) return -1;
-
-                const mid = text.length / 2;
-                let bestMatch = matches[0];
-                matches.forEach(match => {
-                    if (Math.abs(match.index - mid) < Math.abs(bestMatch.index - mid)) {
-                        bestMatch = match;
-                    }
-                });
-                return bestMatch.index;
-            }
-
-            function fallbackBrowserTTS(text) {
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = "en-US";
-                utterance.pitch = 1.85;
-                utterance.onstart = startMouthAnimation;
-                utterance.onend = stopMouthAnimation;
-                speechSynthesis.speak(utterance);
-            }
-            // ────────────────────────────────────────────────
-            // Send question
-            // ────────────────────────────────────────────────
-            const questionBox = document.getElementById('question');
-
-            questionBox.addEventListener('input', () => {
-                isTyping = true;
-                lastTypingTime = performance.now();
-            });
-            async function sendQuestion() {
-                const apiKey = document.getElementById('api-key').value.trim();
-                if (!apiKey) { alert('Please enter Poe API Key'); return; }
-
-                const question = document.getElementById('question').value.trim();
-                if (!question) return;
-                // Reset gaze and start thinking animation
-                isTyping = false;
-                isThinking = true;
-
-                document.getElementById('question').value = '';
-                // 1. Prepare the message content
-                let userContent = [];
-                if (question) userContent.push({ type: "text", text: question });
-                if (selectedImageBase64) {
-                    userContent.push({
-                        type: "image_url",
-                        image_url: { url: selectedImageBase64 }
-                    });
-                }
-                addMessage('user', question || "Sent an image");
-                if (selectedImageBase64) {
-                    const img = document.createElement('img');
-                    img.src = selectedImageBase64;
-                    img.style.width = "100px";
-                    img.style.borderRadius = "8px";
-                    chatHistory.lastElementChild.appendChild(document.createElement('br'));
-                    chatHistory.lastElementChild.appendChild(img);
-                }
-                messages.push({ role: 'user', content: userContent });
-
-                // Clear inputs immediately
-                document.getElementById('question').value = '';
-                clearImage();
-
-                const thinkingMsg = document.getElementById('thinking-msg');
-                thinkingMsg.style.display = 'inline';
-
-                try {
-                    const res = await fetch('https://api.poe.com/v1/chat/completions', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-                        body: JSON.stringify({ model: 'gpt-4o-mini', messages, stream: false })
-                    });
-
-                    const data = await res.json();
-                    let rawContent = data?.choices?.[0]?.message?.content?.trim?.() || '';
-                    // 1. Parse the JSON response
-                    const aiResponse = JSON.parse(rawContent);
-                    // --- DYNAMIC MEMORY UPDATER ---
-                    // We ask the AI to naturally identify facts. 
-                    // For a simple version, we can manually check or use a second small call.
-                    // BETTER WAY: Update your JSON output to include a "learned_fact" field.
-
-                    if (aiResponse.learned_fact) {
-                        const currentMemory = JSON.parse(localStorage.getItem('michelle_memory') || "{}");
-                        // Example: learned_fact could be { "user_name": "Alex" }
-                        const updatedMemory = { ...currentMemory, ...aiResponse.learned_fact };
-                        localStorage.setItem('michelle_memory', JSON.stringify(updatedMemory));
-                        console.log("Michelle learned something new:", aiResponse.learned_fact);
-                        updateMemoryUI();
-                        console.log("Memory updated!");
-                    }
-                    console.log(aiResponse)
-                    // Inside your sendQuestion function, after getting the apiKey:
-                    localStorage.setItem('michelle_api_key', apiKey);
-
-                    const emotionTag = aiResponse.emotion; // e.g., "[HAPPY]"
-                    const englishText = aiResponse.english;
-                    const japaneseText = aiResponse.japanese;
-
-                    // 2. Set the target emotion for the Live2D model
-                    if (virtualEmotions[emotionTag]) {
-                        targetEmotionValues = virtualEmotions[emotionTag];
-                    } else {
-                        targetEmotionValues = virtualEmotions["[NEUTRAL]"];
-                    }
-                    // Set the target background color based on emotion
-                    const hex = emotionColors[emotionTag] || emotionColors["[NEUTRAL]"];
-                    // Helper to convert hex to RGB for smooth lerping
-                    targetBgColor = {
-                        r: parseInt(hex.slice(1, 3), 16),
-                        g: parseInt(hex.slice(3, 5), 16),
-                        b: parseInt(hex.slice(5, 7), 16)
-                    };
-                    // 1. Fetch all audio (this updates the progress bar automatically)
-                    const audioBlobs = await getAudioChunks(japaneseText);
-                    // Stop thinking tilt just before she starts talking/nodding
-                    isThinking = false;
-                    thinkingMsg.style.display = 'none';
-                    // 2. Clear status and show message
-                    // Use only the englishText for the UI bubble
-                    addMessage('bot', aiResponse.english);
-
-                    // Push the rawContent (the JSON) to the messages array so the AI 
-                    // keeps its memory/context for the next turn
-                    messages.push({ role: 'assistant', content: rawContent });
-                    localStorage.setItem('michelle_autosave', JSON.stringify(messages));
-                    // 3. Start speaking immediately
-                    await playAudioSequence(audioBlobs);
-                    await pruneOldImages(apiKey);
-
-                } catch (err) {
-                    console.error(err); console.error(err);
-                    isThinking = false; // Reset on error
-                    thinkingMsg.style.display = 'none';
-                    document.getElementById('progress-container').style.display = 'none';
-                    addMessage('bot', 'Error... please check API key or connection.');
-                }
-            }
-
-            window.sendQuestion = sendQuestion;
-            document.getElementById('question').addEventListener('keypress', e => {
-                if (e.key === 'Enter') { e.preventDefault(); sendQuestion(); }
-            });
-
-            // Debug voices
-            speechSynthesis.onvoiceschanged = () => {
-                const voices = speechSynthesis.getVoices();
-                const cantonese = voices.filter(v => v.lang === "zh-HK");
-                if (cantonese.length) console.log("Browser zh-HK voices:", cantonese.map(v => v.name));
+          await new Promise((resolve, reject) => {
+            audio.onplay = () => {
+              if (audioContext?.state === 'suspended') {
+                audioContext.resume();
+              }
+              if (blobs.indexOf(blob) === 0) {
+                nodStart = performance.now();
+              }
+              setupAudioAnalysis(audio);
             };
-            speechSynthesis.getVoices();
+            audio.onended = () => {
+              cancelAnimationFrame(animationFrameId);
+              model.internalModel.coreModel.setParameterValueById('ParamMouthOpenY', 0);
+              URL.revokeObjectURL(url);
+              resolve();
+            };
+            audio.onerror = reject;
+            audio.play().catch(reject);
+          });
+        }
+      }
 
-            // ────────────────────────────────────────────────
-            // Speech to Text (STT) Setup
-            // ────────────────────────────────────────────────
-            const micBtn = document.getElementById('mic-btn');
-            const questionInput = document.getElementById('question');
+      /**
+       * Finds the punctuation mark closest to the center
+       */
+      function findSplitPoint(text) {
+        const punctuations = /[.!?;]/g;
+        const matches = Array.from(text.matchAll(punctuations));
+        if (matches.length === 0) return -1;
 
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const mid = text.length / 2;
+        let bestMatch = matches[0];
+        matches.forEach(match => {
+          if (Math.abs(match.index - mid) < Math.abs(bestMatch.index - mid)) {
+            bestMatch = match;
+          }
+        });
+        return bestMatch.index;
+      }
 
-            if (SpeechRecognition) {
-                const recognition = new SpeechRecognition();
-                recognition.lang = 'en-US'; // You can change this to 'zh-HK' or 'ja-JP'
-                recognition.interimResults = false;
-                recognition.continuous = false;
+      function fallbackBrowserTTS(text) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "en-US";
+        utterance.pitch = 1.85;
+        utterance.onstart = startMouthAnimation;
+        utterance.onend = stopMouthAnimation;
+        speechSynthesis.speak(utterance);
+      }
+      // ────────────────────────────────────────────────
+      // Send question
+      // ────────────────────────────────────────────────
+      const questionBox = document.getElementById('question');
 
-                micBtn.addEventListener('click', () => {
-                    try {
-                        recognition.start();
-                    } catch (e) {
-                        recognition.stop();
-                    }
-                });
+      questionBox.addEventListener('input', () => {
+        isTyping = true;
+        lastTypingTime = performance.now();
+      });
+      async function sendQuestion() {
+        const apiKey = document.getElementById('api-key').value.trim();
+        if (!apiKey) { alert('Please enter Poe API Key'); return; }
 
-                recognition.onstart = () => {
-                    micBtn.classList.add('recording');
-                    micBtn.textContent = '🛑';
-                    questionInput.placeholder = "Listening...";
-                };
+        const question = document.getElementById('question').value.trim();
+        if (!question) return;
+        // Reset gaze and start thinking animation
+        isTyping = false;
+        isThinking = true;
 
-                recognition.onresult = (event) => {
-                    const transcript = event.results[0][0].transcript;
-                    questionInput.value = transcript;
-                    // Automatically send the question after voice input
-                    sendQuestion();
-                };
+        document.getElementById('question').value = '';
+        // 1. Prepare the message content
+        let userContent = [];
+        if (question) userContent.push({ type: "text", text: question });
+        if (selectedImageBase64) {
+          userContent.push({
+            type: "image_url",
+            image_url: { url: selectedImageBase64 }
+          });
+        }
+        addMessage('user', question || "Sent an image");
+        if (selectedImageBase64) {
+          const img = document.createElement('img');
+          img.src = selectedImageBase64;
+          img.style.width = "100px";
+          img.style.borderRadius = "8px";
+          chatHistory.lastElementChild.appendChild(document.createElement('br'));
+          chatHistory.lastElementChild.appendChild(img);
+        }
+        messages.push({ role: 'user', content: userContent });
 
-                recognition.onend = () => {
-                    micBtn.classList.remove('recording');
-                    micBtn.textContent = '🎤';
-                    questionInput.placeholder = "Ask a question...";
-                };
+        // Clear inputs immediately
+        document.getElementById('question').value = '';
+        clearImage();
 
-                recognition.onerror = (event) => {
-                    console.error("Speech Recognition Error: ", event.error);
-                    micBtn.classList.remove('recording');
-                    micBtn.textContent = '🎤';
-                };
-            } else {
-                micBtn.style.display = 'none';
-                console.warn("Speech Recognition not supported in this browser.");
+        const thinkingMsg = document.getElementById('thinking-msg');
+        thinkingMsg.style.display = 'inline';
+
+        try {
+          const res = await fetch('https://api.poe.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify({ model: 'gpt-4o-mini', messages, stream: false })
+          });
+
+          const data = await res.json();
+          let rawContent = data?.choices?.[0]?.message?.content?.trim?.() || '';
+          // 1. Parse the JSON response
+          const aiResponse = JSON.parse(rawContent);
+          // --- DYNAMIC MEMORY UPDATER ---
+          // We ask the AI to naturally identify facts. 
+          // For a simple version, we can manually check or use a second small call.
+          // BETTER WAY: Update your JSON output to include a "learned_fact" field.
+
+          if (aiResponse.learned_fact) {
+            const currentMemory = JSON.parse(localStorage.getItem('michelle_memory') || "{}");
+            // Example: learned_fact could be { "user_name": "Alex" }
+            const updatedMemory = { ...currentMemory, ...aiResponse.learned_fact };
+            localStorage.setItem('michelle_memory', JSON.stringify(updatedMemory));
+            console.log("Michelle learned something new:", aiResponse.learned_fact);
+            updateMemoryUI();
+            console.log("Memory updated!");
+          }
+          console.log(aiResponse)
+          // Inside your sendQuestion function, after getting the apiKey:
+          localStorage.setItem('michelle_api_key', apiKey);
+
+          const emotionTag = aiResponse.emotion; // e.g., "[HAPPY]"
+          const englishText = aiResponse.english;
+          const japaneseText = aiResponse.japanese;
+
+          // 2. Set the target emotion for the Live2D model
+          if (virtualEmotions[emotionTag]) {
+            targetEmotionValues = virtualEmotions[emotionTag];
+          } else {
+            targetEmotionValues = virtualEmotions["[NEUTRAL]"];
+          }
+          // Set the target background color based on emotion
+          const hex = emotionColors[emotionTag] || emotionColors["[NEUTRAL]"];
+          // Helper to convert hex to RGB for smooth lerping
+          targetBgColor = {
+            r: parseInt(hex.slice(1, 3), 16),
+            g: parseInt(hex.slice(3, 5), 16),
+            b: parseInt(hex.slice(5, 7), 16)
+          };
+          // 1. Fetch all audio (this updates the progress bar automatically)
+          const audioBlobs = await getAudioChunks(japaneseText);
+          // Stop thinking tilt just before she starts talking/nodding
+          isThinking = false;
+          thinkingMsg.style.display = 'none';
+          // 2. Clear status and show message
+          // Use only the englishText for the UI bubble
+          addMessage('bot', aiResponse.english);
+
+          // Push the rawContent (the JSON) to the messages array so the AI 
+          // keeps its memory/context for the next turn
+          messages.push({ role: 'assistant', content: rawContent });
+          localStorage.setItem('michelle_autosave', JSON.stringify(messages));
+          // 3. Start speaking immediately
+          await playAudioSequence(audioBlobs);
+          await pruneOldImages(apiKey);
+
+        } catch (err) {
+          console.error(err); console.error(err);
+          isThinking = false; // Reset on error
+          thinkingMsg.style.display = 'none';
+          document.getElementById('progress-container').style.display = 'none';
+          addMessage('bot', 'Error... please check API key or connection.');
+        }
+      }
+
+      window.sendQuestion = sendQuestion;
+      document.getElementById('question').addEventListener('keypress', e => {
+        if (e.key === 'Enter') { e.preventDefault(); sendQuestion(); }
+      });
+
+      // Debug voices
+      speechSynthesis.onvoiceschanged = () => {
+        const voices = speechSynthesis.getVoices();
+        const cantonese = voices.filter(v => v.lang === "zh-HK");
+        if (cantonese.length) console.log("Browser zh-HK voices:", cantonese.map(v => v.name));
+      };
+      speechSynthesis.getVoices();
+
+      // ────────────────────────────────────────────────
+      // Speech to Text (STT) Setup
+      // ────────────────────────────────────────────────
+      const micBtn = document.getElementById('mic-btn');
+      const questionInput = document.getElementById('question');
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US'; // You can change this to 'zh-HK' or 'ja-JP'
+        recognition.interimResults = false;
+        recognition.continuous = false;
+
+        micBtn.addEventListener('click', () => {
+          try {
+            recognition.start();
+          } catch (e) {
+            recognition.stop();
+          }
+        });
+
+        recognition.onstart = () => {
+          micBtn.classList.add('recording');
+          micBtn.textContent = '🛑';
+          questionInput.placeholder = "Listening...";
+        };
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          questionInput.value = transcript;
+          // Automatically send the question after voice input
+          sendQuestion();
+        };
+
+        recognition.onend = () => {
+          micBtn.classList.remove('recording');
+          micBtn.textContent = '🎤';
+          questionInput.placeholder = "Ask a question...";
+        };
+
+        recognition.onerror = (event) => {
+          console.error("Speech Recognition Error: ", event.error);
+          micBtn.classList.remove('recording');
+          micBtn.textContent = '🎤';
+        };
+      } else {
+        micBtn.style.display = 'none';
+        console.warn("Speech Recognition not supported in this browser.");
+      }
+      // --- Idle Animations (Blinking & Breathing) ---
+      let lastBlinkTime = 0;
+      let blinkDuration = 150;
+      let nextBlinkInterval = 3000;
+
+      function updateIdleAnimations(currentTime) {
+        if (!model?.internalModel?.coreModel) {
+          requestAnimationFrame(updateIdleAnimations);
+          return;
+        }
+        // --- SMOOTH BACKGROUND COLOR TRANSITION ---
+        // --- SMOOTH BACKGROUND GLOW TRANSITION ---
+        currentBgRGB.r = lerp(currentBgRGB.r, targetBgRGB.r, colorLerpSpeed);
+        currentBgRGB.g = lerp(currentBgRGB.g, targetBgRGB.g, colorLerpSpeed);
+        currentBgRGB.b = lerp(currentBgRGB.b, targetBgRGB.b, colorLerpSpeed);
+
+        // Create the RGB string for the outer glow color
+        const colorStr = `rgb(${Math.round(currentBgRGB.r)}, ${Math.round(currentBgRGB.g)}, ${Math.round(currentBgRGB.b)})`;
+
+        // Apply as a radial gradient: white in the middle, emotion color on the edges
+        document.getElementById('live2d-container').style.background =
+          `radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, ${colorStr} 100%)`;
+
+        // Sync PIXI background to the outer color
+        if (app) {
+          app.renderer.background.color = (Math.round(currentBgRGB.r) << 16) + (Math.round(currentBgRGB.g) << 8) + Math.round(currentBgRGB.b);
+        }
+        const coreModel = model.internalModel.coreModel;
+
+        // --- DYNAMIC GAZE, NOD, & TILT LOGIC ---
+        const now = currentTime;
+        if (isTyping && now - lastTypingTime > 2000) {
+          isTyping = false;
+        }
+
+        // 1. Calculate Base Gaze (typing or center)
+        let targetX = isTyping ? 25 : 0;
+        let targetY = isTyping ? -15 : 0;
+        let targetZ = 0; // Default tilt
+
+        // 2. Thinking Tilt Override (Z-axis)
+        if (isThinking) {
+          // Slower, curious side-to-side tilt
+          targetZ = Math.sin(now / 600) * 10;
+          targetY = -5; // Look slightly up/neutral while thinking
+        }
+
+        // 3. Nodding Override (Y-axis)
+        let nodOffset = 0;
+        if (nodStart > 0) {
+          const elapsedNod = now - nodStart;
+          if (elapsedNod < nodDuration) {
+            nodOffset = Math.sin((elapsedNod / nodDuration) * Math.PI) * -15;
+          } else {
+            nodStart = 0;
+          }
+        }
+
+        // 4. Smooth Interpolation
+        let currentX = coreModel.getParameterValueById('ParamAngleX');
+        let currentY = coreModel.getParameterValueById('ParamAngleY');
+        let currentZ = coreModel.getParameterValueById('ParamAngleZ');
+
+        let newX = currentX + (targetX - currentX) * 0.1;
+        let newY = currentY + ((targetY + nodOffset) - currentY) * 0.1;
+        let newZ = currentZ + (targetZ - currentZ) * 0.05; // Z moves a bit slower for "floaty" feel
+
+        coreModel.setParameterValueById('ParamAngleX', newX);
+        coreModel.setParameterValueById('ParamAngleY', newY);
+        coreModel.setParameterValueById('ParamAngleZ', newZ);
+
+        // Eye movement follows head
+        coreModel.setParameterValueById('ParamEyeBallX', newX / 25);
+        coreModel.setParameterValueById('ParamEyeBallY', newY / 15);                // Apply slight body tilt for realism
+        coreModel.setParameterValueById('ParamBodyAngleX', newX / 2);
+        // --- BREATHING ---
+        let breathValue = (Math.sin(currentTime / 1000 * 0.5) + 1) / 2;
+        coreModel.setParameterValueById('ParamBreath', breathValue);
+
+        // --- BLINKING ---
+        const elapsed = currentTime - lastBlinkTime;
+        if (elapsed > nextBlinkInterval) {
+          let blinkProgress = (elapsed - nextBlinkInterval) / blinkDuration;
+          if (blinkProgress <= 1) {
+            let eyeValue = 0.5 + 0.5 * Math.cos(blinkProgress * Math.PI * 2);
+            coreModel.setParameterValueById('ParamEyeLOpen', eyeValue);
+            coreModel.setParameterValueById('ParamEyeROpen', eyeValue);
+          } else {
+            coreModel.setParameterValueById('ParamEyeLOpen', 1.0);
+            coreModel.setParameterValueById('ParamEyeROpen', 1.0);
+            lastBlinkTime = currentTime;
+            nextBlinkInterval = 2000 + Math.random() * 5000;
+          }
+        }
+
+        requestAnimationFrame(updateIdleAnimations);
+      }
+
+      // Start the loop
+      requestAnimationFrame(updateIdleAnimations);
+      // --- SAVE / LOAD LOGIC ---
+
+      // --- FILE-BASED SAVE / LOAD ---
+
+      async function saveSummaryToFile() {
+        const apiKey = document.getElementById('api-key').value.trim();
+        if (!apiKey || messages.length < 3) {
+          alert("Need a conversation and API Key to save memory!");
+          return;
+        }
+
+        try {
+          const summaryRequest = [
+            ...messages,
+            { role: "user", content: "Summarize our conversation into a short paragraph for your memory. Write it in the third person." }
+          ];
+
+          const res = await fetch('https://api.poe.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify({ model: 'gpt-4o-mini', messages: summaryRequest, stream: false })
+          });
+
+          const data = await res.json();
+          const summary = data?.choices?.[0]?.message?.content?.trim?.() || '';
+
+          // NEW: Pull the structured facts from localStorage to save them
+          const learnedFacts = JSON.parse(localStorage.getItem('michelle_memory') || "{}");
+
+          const saveData = {
+            botName: "Michelle",
+            date: new Date().toLocaleDateString(),
+            summary: summary,
+            learnedFacts: learnedFacts, // Save the specific facts here
+            systemPrompt: messages[0].content,
+            poeApiKey: apiKey
+          };
+
+          const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `michelle_memory_${new Date().getTime()}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+        } catch (err) {
+          console.error(err);
+          alert("Failed to save memory file.");
+        }
+      }
+
+      function loadSummaryFromFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async function (e) {
+          try {
+            const decoded = JSON.parse(e.target.result);
+
+            // 1. Restore the API Key
+            if (decoded.poeApiKey) {
+              document.getElementById('api-key').value = decoded.poeApiKey;
             }
-            // --- Idle Animations (Blinking & Breathing) ---
-            let lastBlinkTime = 0;
-            let blinkDuration = 150;
-            let nextBlinkInterval = 3000;
-            let targetBgColor = { r: 240, g: 248, b: 255 }; // Initialize with default color
-            let isFocusMode = false;
 
-            function toggleFocusMode() {
-                isFocusMode = !isFocusMode;
-                document.body.classList.toggle('focus-mode');
-
-                // Immediate color reset to prevent flash
-                if (isFocusMode) {
-                    targetBgColor = { r: 0, g: 0, b: 0 };
-                    currentBgRGB = { r: 0, g: 0, b: 0 };
-                } else {
-                    targetBgColor = { r: 240, g: 248, b: 255 };
-                }
-
-                const btn = document.getElementById('focus-mode-btn');
-                if (btn) btn.textContent = isFocusMode ? "☀️ Exit Focus Mode" : "🌙 Toggle Focus Mode";
-
-                if (typeof fitModel === 'function') fitModel();
-            }
-            function updateIdleAnimations(currentTime) {
-                if (!model?.internalModel?.coreModel) {
-                    requestAnimationFrame(updateIdleAnimations);
-                    return;
-                }
-                // --- SMOOTH BACKGROUND TRANSITION ---
-                // If focus mode is ON and no specific emotion is playing, target is black (0,0,0)
-                let tR = targetBgColor.r, tG = targetBgColor.g, tB = targetBgColor.b;
-
-                currentBgRGB.r = lerp(currentBgRGB.r, tR, colorLerpSpeed);
-                currentBgRGB.g = lerp(currentBgRGB.g, tG, colorLerpSpeed);
-                currentBgRGB.b = lerp(currentBgRGB.b, tB, colorLerpSpeed);
-
-                const colorStr = `rgb(${Math.round(currentBgRGB.r)}, ${Math.round(currentBgRGB.g)}, ${Math.round(currentBgRGB.b)})`;
-
-                if (isFocusMode) {
-                    // Small circle glow around the bottom-left position with fading outline
-                    document.getElementById('live2d-container').style.background =
-                        `radial-gradient(circle at 20% 85%, ${colorStr} 0%, rgba(0,0,0,0) 40%, black 100%)`;
-                    if (app) app.renderer.background.color = 0x000000;
-                } else {
-                    // Default full screen glow
-                    document.getElementById('live2d-container').style.background =
-                        `radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, ${colorStr} 100%)`;
-                    if (app) {
-                        app.renderer.background.color = (Math.round(currentBgRGB.r) << 16) + (Math.round(currentBgRGB.g) << 8) + Math.round(currentBgRGB.b);
-                    }
-                }
-
-                // Apply as a radial gradient: white in the middle, emotion color on the edges
-                document.getElementById('live2d-container').style.background =
-                    `radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, ${colorStr} 100%)`;
-
-                // Sync PIXI background to the outer color
-                if (app) {
-                    app.renderer.background.color = (Math.round(currentBgRGB.r) << 16) + (Math.round(currentBgRGB.g) << 8) + Math.round(currentBgRGB.b);
-                }
-                const coreModel = model.internalModel.coreModel;
-
-                // --- DYNAMIC GAZE, NOD, & TILT LOGIC ---
-                const now = currentTime;
-                if (isTyping && now - lastTypingTime > 2000) {
-                    isTyping = false;
-                }
-
-                // 1. Calculate Base Gaze (typing or center)
-                let targetX = isTyping ? 25 : 0;
-                let targetY = isTyping ? -15 : 0;
-                let targetZ = 0; // Default tilt
-
-                // 2. Thinking Tilt Override (Z-axis)
-                if (isThinking) {
-                    // Slower, curious side-to-side tilt
-                    targetZ = Math.sin(now / 600) * 10;
-                    targetY = -5; // Look slightly up/neutral while thinking
-                }
-
-                // 3. Nodding Override (Y-axis)
-                let nodOffset = 0;
-                if (nodStart > 0) {
-                    const elapsedNod = now - nodStart;
-                    if (elapsedNod < nodDuration) {
-                        nodOffset = Math.sin((elapsedNod / nodDuration) * Math.PI) * -15;
-                    } else {
-                        nodStart = 0;
-                    }
-                }
-                // Inside updateIdleAnimations(currentTime)
-                const isFocus = document.body.classList.contains('focus-mode');
-
-                // --- DYNAMIC BACKGROUND COLOR LOGIC ---
-                if (isFocus) {
-                    // If an emotion is set, lerp towards it; otherwise, lerp to pure black
-                    const targetR = targetBgColor ? targetBgColor.r : 0;
-                    const targetG = targetBgColor ? targetBgColor.g : 0;
-                    const targetB = targetBgColor ? targetBgColor.b : 0;
-
-                    currentBgRGB.r = lerp(currentBgRGB.r, targetR, colorLerpSpeed);
-                    currentBgRGB.g = lerp(currentBgRGB.g, targetG, colorLerpSpeed);
-                    currentBgRGB.b = lerp(currentBgRGB.b, targetB, colorLerpSpeed);
-
-                    const colorStr = `rgb(${Math.round(currentBgRGB.r)}, ${Math.round(currentBgRGB.g)}, ${Math.round(currentBgRGB.b)})`;
-
-                    // Focus Mode Glow: Small circle at the bottom-left where the model is moved
-                    document.getElementById('live2d-container').style.background =
-                        `radial-gradient(circle at 20% 80%, ${colorStr} 0%, rgba(0,0,0,0) 40%, black 100%)`;
-
-                    if (app) app.renderer.background.color = 0x000000;
-                } else {
-                    // Original Logic for Normal Mode
-                    currentBgRGB.r = lerp(currentBgRGB.r, targetBgColor ? targetBgColor.r : 240, colorLerpSpeed);
-                    currentBgRGB.g = lerp(currentBgRGB.g, targetBgColor ? targetBgColor.g : 248, colorLerpSpeed);
-                    currentBgRGB.b = lerp(currentBgRGB.b, targetBgColor ? targetBgColor.b : 255, colorLerpSpeed);
-
-                    const colorStr = `rgb(${Math.round(currentBgRGB.r)}, ${Math.round(currentBgRGB.g)}, ${Math.round(currentBgRGB.b)})`;
-                    document.getElementById('live2d-container').style.background =
-                        `radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, ${colorStr} 100%)`;
-
-                    if (app) {
-                        app.renderer.background.color = (Math.round(currentBgRGB.r) << 16) + (Math.round(currentBgRGB.g) << 8) + Math.round(currentBgRGB.b);
-                    }
-                }
-                // 4. Smooth Interpolation
-                let currentX = coreModel.getParameterValueById('ParamAngleX');
-                let currentY = coreModel.getParameterValueById('ParamAngleY');
-                let currentZ = coreModel.getParameterValueById('ParamAngleZ');
-
-                let newX = currentX + (targetX - currentX) * 0.1;
-                let newY = currentY + ((targetY + nodOffset) - currentY) * 0.1;
-                let newZ = currentZ + (targetZ - currentZ) * 0.05; // Z moves a bit slower for "floaty" feel
-
-                coreModel.setParameterValueById('ParamAngleX', newX);
-                coreModel.setParameterValueById('ParamAngleY', newY);
-                coreModel.setParameterValueById('ParamAngleZ', newZ);
-
-                // Eye movement follows head
-                coreModel.setParameterValueById('ParamEyeBallX', newX / 25);
-                coreModel.setParameterValueById('ParamEyeBallY', newY / 15);                // Apply slight body tilt for realism
-                coreModel.setParameterValueById('ParamBodyAngleX', newX / 2);
-                // --- BREATHING ---
-                let breathValue = (Math.sin(currentTime / 1000 * 0.5) + 1) / 2;
-                coreModel.setParameterValueById('ParamBreath', breathValue);
-
-                // --- BLINKING ---
-                const elapsed = currentTime - lastBlinkTime;
-                if (elapsed > nextBlinkInterval) {
-                    let blinkProgress = (elapsed - nextBlinkInterval) / blinkDuration;
-                    if (blinkProgress <= 1) {
-                        let eyeValue = 0.5 + 0.5 * Math.cos(blinkProgress * Math.PI * 2);
-                        coreModel.setParameterValueById('ParamEyeLOpen', eyeValue);
-                        coreModel.setParameterValueById('ParamEyeROpen', eyeValue);
-                    } else {
-                        coreModel.setParameterValueById('ParamEyeLOpen', 1.0);
-                        coreModel.setParameterValueById('ParamEyeROpen', 1.0);
-                        lastBlinkTime = currentTime;
-                        nextBlinkInterval = 2000 + Math.random() * 5000;
-                    }
-                }
-
-                requestAnimationFrame(updateIdleAnimations);
-            }
-
-            // Start the loop
-            requestAnimationFrame(updateIdleAnimations);
-            // --- SAVE / LOAD LOGIC ---
-
-            // --- FILE-BASED SAVE / LOAD ---
-
-            async function saveSummaryToFile() {
-                const apiKey = document.getElementById('api-key').value.trim();
-                if (!apiKey || messages.length < 3) {
-                    alert("Need a conversation and API Key to save memory!");
-                    return;
-                }
-
-                try {
-                    const summaryRequest = [
-                        ...messages,
-                        { role: "user", content: "Summarize our conversation into a short paragraph for your memory. Write it in the third person." }
-                    ];
-
-                    const res = await fetch('https://api.poe.com/v1/chat/completions', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-                        body: JSON.stringify({ model: 'gpt-4o-mini', messages: summaryRequest, stream: false })
-                    });
-
-                    const data = await res.json();
-                    const summary = data?.choices?.[0]?.message?.content?.trim?.() || '';
-
-                    // NEW: Pull the structured facts from localStorage to save them
-                    const learnedFacts = JSON.parse(localStorage.getItem('michelle_memory') || "{}");
-
-                    const saveData = {
-                        botName: "Michelle",
-                        date: new Date().toLocaleDateString(),
-                        summary: summary,
-                        learnedFacts: learnedFacts, // Save the specific facts here
-                        systemPrompt: messages[0].content,
-                        poeApiKey: apiKey
-                    };
-
-                    const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: "application/json" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `michelle_memory_${new Date().getTime()}.json`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-
-                } catch (err) {
-                    console.error(err);
-                    alert("Failed to save memory file.");
-                }
-            }
-
-            function loadSummaryFromFile(event) {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = async function (e) {
-                    try {
-                        const decoded = JSON.parse(e.target.result);
-
-                        // 1. Restore the API Key
-                        if (decoded.poeApiKey) {
-                            document.getElementById('api-key').value = decoded.poeApiKey;
-                        }
-
-                        // 2. NEW: Overwrite local learned facts with the ones from the file
-                        if (decoded.learnedFacts) {
-                            localStorage.setItem('michelle_memory', JSON.stringify(decoded.learnedFacts));
-                            // Refresh the accordion UI if you have the updateMemoryUI function
-                            if (typeof updateMemoryUI === "function") {
-                                updateMemoryUI();
-                            }
-                        }
-
-                        const apiKey = document.getElementById('api-key').value.trim();
-                        if (!apiKey) { alert("No API Key found in file or input!"); return; }
-
-                        // 3. Inject the summary and current facts into the System Prompt
-                        const factsString = JSON.stringify(decoded.learnedFacts || {});
-                        const enhancedSystemPrompt = `${decoded.systemPrompt}\n\n[PAST SUMMARY]: ${decoded.summary}\n[KNOWN FACTS]: ${factsString}`;
-
-                        messages.length = 0;
-                        messages.push({ role: "system", content: enhancedSystemPrompt });
-
-                        document.getElementById('memory-indicator').style.display = 'block';
-                        chatHistory.innerHTML = '';
-                        const thinkingMsg = document.getElementById('thinking-msg');
-                        thinkingMsg.style.display = 'inline';
-                        isThinking = true;
-
-                        const res = await fetch('https://api.poe.com/v1/chat/completions', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-                            body: JSON.stringify({
-                                model: 'gpt-4o-mini',
-                                messages: [...messages, { role: "user", content: "I'm back! Can you greet me?" }],
-                                stream: false
-                            })
-                        });
-
-                        const data = await res.json();
-                        let rawContent = data?.choices?.[0]?.message?.content?.trim?.() || '';
-                        // 1. Parse the JSON response
-                        const aiResponse = JSON.parse(rawContent);
-                        console.log(aiResponse)
-
-                        const emotionTag = aiResponse.emotion; // e.g., "[HAPPY]"
-                        const englishText = aiResponse.english;
-                        const japaneseText = aiResponse.japanese;
-
-                        // 2. Set the target emotion for the Live2D model
-                        if (virtualEmotions[emotionTag]) {
-                            targetEmotionValues = virtualEmotions[emotionTag];
-                        } else {
-                            targetEmotionValues = virtualEmotions["[NEUTRAL]"];
-                        }
-                        // Set the target background color based on emotion
-                        const hex = emotionColors[emotionTag] || emotionColors["[NEUTRAL]"];
-                        // Helper to convert hex to RGB for smooth lerping
-                        targetBgColor = {
-                            r: parseInt(hex.slice(1, 3), 16),
-                            g: parseInt(hex.slice(3, 5), 16),
-                            b: parseInt(hex.slice(5, 7), 16)
-                        };
-                        // 1. Fetch all audio (this updates the progress bar automatically)
-                        const audioBlobs = await getAudioChunks(japaneseText);
-                        // Stop thinking tilt just before she starts talking/nodding
-                        isThinking = false;
-                        thinkingMsg.style.display = 'none';
-                        // 2. Clear status and show message
-                        // Use only the englishText for the UI bubble
-                        addMessage('bot', aiResponse.english);
-
-                        // Push the rawContent (the JSON) to the messages array so the AI 
-                        // keeps its memory/context for the next turn
-                        messages.push({ role: 'assistant', content: rawContent });
-                        localStorage.setItem('michelle_autosave', JSON.stringify(messages));
-                        // 3. Start speaking immediately
-                        await playAudioSequence(audioBlobs);
-
-                    } catch (err) {
-                        console.error(err);
-                        alert("Error loading memory file.");
-                    }
-                };
-                reader.readAsText(file);
-            }
-
-            function clearChat() {
-                if (confirm("Are you sure you want to clear the entire chat?")) {
-                    messages.length = 1; // Keep only system prompt
-                    chatHistory.innerHTML = '';
-                    localStorage.removeItem('michelle_autosave');
-                    localStorage.removeItem('michelle_memory');
-                    location.reload();
-                }
-            }
-
-            window.addEventListener('load', () => {
-                const saved = localStorage.getItem('michelle_autosave');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    messages.length = 0;
-                    parsed.forEach(msg => {
-                        messages.push(msg);
-                        if (msg.role !== 'system') {
-                            let displayContent = "";
-
-                            // --- FIX: Handle Multi-modal User Messages ---
-                            if (msg.role === 'user') {
-                                if (typeof msg.content === 'string') {
-                                    displayContent = msg.content;
-                                } else if (Array.isArray(msg.content)) {
-                                    // Find the text part of the multi-modal array
-                                    const textPart = msg.content.find(p => p.type === 'text');
-                                    displayContent = textPart ? textPart.text : "Sent an image";
-                                }
-                            }
-                            // --- Handle Assistant JSON Responses ---
-                            else if (msg.role === 'assistant') {
-                                try {
-                                    const json = JSON.parse(msg.content);
-                                    displayContent = json.english;
-                                } catch (e) {
-                                    displayContent = msg.content;
-                                }
-                            }
-
-                            addMessage(msg.role, displayContent);
-
-                            // Optional: If you want to show the image in history too
-                            if (Array.isArray(msg.content)) {
-                                const imgPart = msg.content.find(p => p.type === 'image_url');
-                                if (imgPart) {
-                                    const img = document.createElement('img');
-                                    img.src = imgPart.image_url.url;
-                                    img.style.width = "100px";
-                                    img.style.borderRadius = "8px";
-                                    img.style.marginTop = "5px";
-                                    img.style.display = "block";
-                                    chatHistory.lastElementChild.appendChild(img);
-                                }
-                            }
-                        }
-                    });
-                }
+            // 2. NEW: Overwrite local learned facts with the ones from the file
+            if (decoded.learnedFacts) {
+              localStorage.setItem('michelle_memory', JSON.stringify(decoded.learnedFacts));
+              // Refresh the accordion UI if you have the updateMemoryUI function
+              if (typeof updateMemoryUI === "function") {
                 updateMemoryUI();
+              }
+            }
+
+            const apiKey = document.getElementById('api-key').value.trim();
+            if (!apiKey) { alert("No API Key found in file or input!"); return; }
+
+            // 3. Inject the summary and current facts into the System Prompt
+            const factsString = JSON.stringify(decoded.learnedFacts || {});
+            const enhancedSystemPrompt = `${decoded.systemPrompt}\n\n[PAST SUMMARY]: ${decoded.summary}\n[KNOWN FACTS]: ${factsString}`;
+
+            messages.length = 0;
+            messages.push({ role: "system", content: enhancedSystemPrompt });
+
+            document.getElementById('memory-indicator').style.display = 'block';
+            chatHistory.innerHTML = '';
+            const thinkingMsg = document.getElementById('thinking-msg');
+            thinkingMsg.style.display = 'inline';
+            isThinking = true;
+
+            const res = await fetch('https://api.poe.com/v1/chat/completions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+              body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [...messages, { role: "user", content: "I'm back! Can you greet me?" }],
+                stream: false
+              })
             });
 
-            // Helper function to call the API for a summary
-            async function summarizeHistory(history, apiKey) {
-                const currentMemory = JSON.parse(localStorage.getItem('michelle_memory') || "{}");
-                const expirationDays = 7; // Facts older than 7 days will be considered for deletion
-                const now = new Date().getTime();
+            const data = await res.json();
+            let rawContent = data?.choices?.[0]?.message?.content?.trim?.() || '';
+            // 1. Parse the JSON response
+            const aiResponse = JSON.parse(rawContent);
+            console.log(aiResponse)
 
-                const cleanupPrompt = {
-                    role: "user",
-                    content: `Review these facts Michelle knows: ${JSON.stringify(currentMemory)}.
+            const emotionTag = aiResponse.emotion; // e.g., "[HAPPY]"
+            const englishText = aiResponse.english;
+            const japaneseText = aiResponse.japanese;
+
+            // 2. Set the target emotion for the Live2D model
+            if (virtualEmotions[emotionTag]) {
+              targetEmotionValues = virtualEmotions[emotionTag];
+            } else {
+              targetEmotionValues = virtualEmotions["[NEUTRAL]"];
+            }
+            // Set the target background color based on emotion
+            const hex = emotionColors[emotionTag] || emotionColors["[NEUTRAL]"];
+            // Helper to convert hex to RGB for smooth lerping
+            targetBgColor = {
+              r: parseInt(hex.slice(1, 3), 16),
+              g: parseInt(hex.slice(3, 5), 16),
+              b: parseInt(hex.slice(5, 7), 16)
+            };
+            // 1. Fetch all audio (this updates the progress bar automatically)
+            const audioBlobs = await getAudioChunks(japaneseText);
+            // Stop thinking tilt just before she starts talking/nodding
+            isThinking = false;
+            thinkingMsg.style.display = 'none';
+            // 2. Clear status and show message
+            // Use only the englishText for the UI bubble
+            addMessage('bot', aiResponse.english);
+
+            // Push the rawContent (the JSON) to the messages array so the AI 
+            // keeps its memory/context for the next turn
+            messages.push({ role: 'assistant', content: rawContent });
+            localStorage.setItem('michelle_autosave', JSON.stringify(messages));
+            // 3. Start speaking immediately
+            await playAudioSequence(audioBlobs);
+
+          } catch (err) {
+            console.error(err);
+            alert("Error loading memory file.");
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      function clearChat() {
+        if (confirm("Are you sure you want to clear the entire chat?")) {
+          messages.length = 1; // Keep only system prompt
+          chatHistory.innerHTML = '';
+          localStorage.removeItem('michelle_autosave');
+          localStorage.removeItem('michelle_memory');
+          location.reload();
+        }
+      }
+
+      window.addEventListener('load', () => {
+        const saved = localStorage.getItem('michelle_autosave');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          messages.length = 0;
+          parsed.forEach(msg => {
+            messages.push(msg);
+            if (msg.role !== 'system') {
+              let displayContent = "";
+
+              // --- FIX: Handle Multi-modal User Messages ---
+              if (msg.role === 'user') {
+                if (typeof msg.content === 'string') {
+                  displayContent = msg.content;
+                } else if (Array.isArray(msg.content)) {
+                  // Find the text part of the multi-modal array
+                  const textPart = msg.content.find(p => p.type === 'text');
+                  displayContent = textPart ? textPart.text : "Sent an image";
+                }
+              }
+              // --- Handle Assistant JSON Responses ---
+              else if (msg.role === 'assistant') {
+                try {
+                  const json = JSON.parse(msg.content);
+                  displayContent = json.english;
+                } catch (e) {
+                  displayContent = msg.content;
+                }
+              }
+
+              addMessage(msg.role, displayContent);
+
+              // Optional: If you want to show the image in history too
+              if (Array.isArray(msg.content)) {
+                const imgPart = msg.content.find(p => p.type === 'image_url');
+                if (imgPart) {
+                  const img = document.createElement('img');
+                  img.src = imgPart.image_url.url;
+                  img.style.width = "100px";
+                  img.style.borderRadius = "8px";
+                  img.style.marginTop = "5px";
+                  img.style.display = "block";
+                  chatHistory.lastElementChild.appendChild(img);
+                }
+              }
+            }
+          });
+        }
+        updateMemoryUI();
+      });
+
+      // Helper function to call the API for a summary
+      async function summarizeHistory(history, apiKey) {
+        const currentMemory = JSON.parse(localStorage.getItem('michelle_memory') || "{}");
+        const expirationDays = 7; // Facts older than 7 days will be considered for deletion
+        const now = new Date().getTime();
+
+        const cleanupPrompt = {
+          role: "user",
+          content: `Review these facts Michelle knows: ${JSON.stringify(currentMemory)}.
 
 1. Summarize our conversation so far.
 2. Identify if any facts are outdated or haven't been mentioned.
@@ -1483,203 +1344,203 @@ RETURN ONLY JSON:
     "summary": "...",
     "updated_facts": {"key": {"value": "...", "timestamp": ${now}}}
 }`
-                };
+        };
 
-                try {
-                    const res = await fetch('https://api.poe.com/v1/chat/completions', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-                        body: JSON.stringify({
-                            model: 'gpt-4o-mini',
-                            messages: [...history, cleanupPrompt],
-                            stream: false
-                        })
-                    });
+        try {
+          const res = await fetch('https://api.poe.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [...history, cleanupPrompt],
+              stream: false
+            })
+          });
 
-                    const data = await res.json();
-                    return JSON.parse(data?.choices?.[0]?.message?.content);
-                } catch (err) {
-                    console.error("Memory Age Cleanup failed:", err);
-                    return null;
-                }
+          const data = await res.json();
+          return JSON.parse(data?.choices?.[0]?.message?.content);
+        } catch (err) {
+          console.error("Memory Age Cleanup failed:", err);
+          return null;
+        }
+      }
+      async function generateAndSaveSummary() {
+        const apiKey = document.getElementById('api-key').value.trim();
+        if (!apiKey || messages.length < 3) return; // Need at least one exchange to summarize
+
+        try {
+          // Create a summary prompt
+          const summaryRequest = [
+            ...messages,
+            {
+              role: "user",
+              content: "Summarize our conversation so far into a short paragraph. Focus on key facts I told you about myself and our main topics. Write it in the third person (e.g., 'The user is...')."
             }
-            async function generateAndSaveSummary() {
-                const apiKey = document.getElementById('api-key').value.trim();
-                if (!apiKey || messages.length < 3) return; // Need at least one exchange to summarize
+          ];
 
-                try {
-                    // Create a summary prompt
-                    const summaryRequest = [
-                        ...messages,
-                        {
-                            role: "user",
-                            content: "Summarize our conversation so far into a short paragraph. Focus on key facts I told you about myself and our main topics. Write it in the third person (e.g., 'The user is...')."
-                        }
-                    ];
+          const res = await fetch('https://api.poe.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify({ model: 'gpt-4o-mini', messages: summaryRequest, stream: false })
+          });
 
-                    const res = await fetch('https://api.poe.com/v1/chat/completions', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-                        body: JSON.stringify({ model: 'gpt-4o-mini', messages: summaryRequest, stream: false })
-                    });
+          const data = await res.json();
+          const summary = data?.choices?.[0]?.message?.content?.trim?.() || '';
 
-                    const data = await res.json();
-                    const summary = data?.choices?.[0]?.message?.content?.trim?.() || '';
+          if (summary) {
+            // Create a "Save Block" that includes the original system prompt + the new summary
+            const saveBlock = {
+              timestamp: new Date().toLocaleString(),
+              summary: summary,
+              systemPrompt: messages[0].content // Keep Michelle's personality instructions
+            };
 
-                    if (summary) {
-                        // Create a "Save Block" that includes the original system prompt + the new summary
-                        const saveBlock = {
-                            timestamp: new Date().toLocaleString(),
-                            summary: summary,
-                            systemPrompt: messages[0].content // Keep Michelle's personality instructions
-                        };
+            const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(saveBlock))));
+            navigator.clipboard.writeText(encoded);
+            alert("Summary Save Code copied to clipboard! Michelle will remember this summary next time.");
+          }
+        } catch (err) {
+          console.error("Summary failed:", err);
+          alert("Failed to generate summary.");
+        }
+      }
+      // ────────────────────────────────────────────────
+      // Background Music Logic
+      // ────────────────────────────────────────────────
+      const bgMusic = document.getElementById('bg-music');
+      const volumeSlider = document.getElementById('bgm-volume');
 
-                        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(saveBlock))));
-                        navigator.clipboard.writeText(encoded);
-                        alert("Summary Save Code copied to clipboard! Michelle will remember this summary next time.");
-                    }
-                } catch (err) {
-                    console.error("Summary failed:", err);
-                    alert("Failed to generate summary.");
+      // Set default volume
+      bgMusic.volume = 0.2;
+
+      // Update volume when slider moves
+      volumeSlider.addEventListener('input', (e) => {
+        bgMusic.volume = e.target.value;
+      });
+
+      // Auto-play workaround: Browsers block sound until a user clicks something.
+      // This will start the music on the first click anywhere on the page.
+      window.addEventListener('click', () => {
+        if (bgMusic.paused) {
+          bgMusic.play().catch(err => console.log("Autoplay blocked until interaction."));
+        }
+      }, { once: true });
+      // ────────────────────────────────────────────────
+      // Accordion Logic
+      // ────────────────────────────────────────────────
+      var acc = document.getElementsByClassName("accordion");
+      for (var i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function () {
+          this.classList.toggle("active");
+          var panel = this.nextElementSibling;
+          if (panel.style.maxHeight) {
+            panel.style.maxHeight = null;
+          } else {
+            panel.style.maxHeight = panel.scrollHeight + "px";
+          }
+        });
+      }
+      function updateMemoryUI() {
+        const memoryList = document.getElementById('memory-list');
+        const memory = JSON.parse(localStorage.getItem('michelle_memory') || "{}");
+
+        if (Object.keys(memory).length === 0) {
+          memoryList.innerHTML = '<li style="color: #888; font-style: italic;">No notes yet...</li>';
+          return;
+        }
+
+        memoryList.innerHTML = '';
+        for (const [key, data] of Object.entries(memory)) {
+          const li = document.createElement('li');
+          li.style.marginBottom = "10px";
+          li.style.padding = "5px";
+          li.style.background = "#fff";
+          li.style.borderRadius = "4px";
+
+          const label = key.replace(/_/g, ' ').toUpperCase();
+          // Access data.value instead of just data
+          const val = typeof data === 'object' ? data.value : data;
+
+          li.innerHTML = `<small style="color:#007bff; font-weight:bold;">${label}</small><br>${val}`;
+          memoryList.appendChild(li);
+        }
+      }
+
+      // Call this once on page load
+      window.addEventListener('load', updateMemoryUI);
+      // On page load, try to restore the key
+      window.addEventListener('DOMContentLoaded', () => {
+        const savedKey = localStorage.getItem('michelle_api_key');
+        if (savedKey) document.getElementById('api-key').value = savedKey;
+      });
+      function updateFactWithTimestamp(key, value) {
+        const currentMemory = JSON.parse(localStorage.getItem('michelle_memory') || "{}");
+
+        // Store the value along with the current date
+        currentMemory[key] = {
+          value: value,
+          timestamp: new Date().getTime() // Current time in milliseconds
+        };
+
+        localStorage.setItem('michelle_memory', JSON.stringify(currentMemory));
+      }
+      async function describeImage(imageBase64, apiKey) {
+        try {
+          const res = await fetch('https://api.poe.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [
+                {
+                  role: "user", content: [
+                    { type: "text", text: "Describe this image in one very short sentence for my memory." },
+                    { type: "image_url", image_url: { url: imageBase64 } }
+                  ]
                 }
+              ],
+              stream: false
+            })
+          });
+          const data = await res.json();
+          return data?.choices?.[0]?.message?.content?.trim() || "An image was shared.";
+        } catch (err) {
+          console.error("Failed to describe image:", err);
+          return "A shared image.";
+        }
+      }
+      async function pruneOldImages(apiKey) {
+        let changed = false;
+
+        // We skip the very last message (messages.length - 1) because that is the "newest"
+        for (let i = 0; i < messages.length - 1; i++) {
+          const msg = messages[i];
+
+          // Check if this message contains an image array
+          if (msg.role === 'user' && Array.isArray(msg.content)) {
+            const imgIndex = msg.content.findIndex(p => p.type === 'image_url');
+            const textIndex = msg.content.findIndex(p => p.type === 'text');
+
+            if (imgIndex !== -1) {
+              console.log("Archiving old image to text...");
+              const base64 = msg.content[imgIndex].image_url.url;
+              const description = await describeImage(base64, apiKey);
+
+              // Convert the whole message content back into a simple string for storage efficiency
+              const originalText = textIndex !== -1 ? msg.content[textIndex].text : "";
+              msg.content = `[Image: ${description}] ${originalText}`.trim();
+
+              changed = true;
             }
-            // ────────────────────────────────────────────────
-            // Background Music Logic
-            // ────────────────────────────────────────────────
-            const bgMusic = document.getElementById('bg-music');
-            const volumeSlider = document.getElementById('bgm-volume');
+          }
+        }
 
-            // Set default volume
-            bgMusic.volume = 0.2;
-
-            // Update volume when slider moves
-            volumeSlider.addEventListener('input', (e) => {
-                bgMusic.volume = e.target.value;
-            });
-
-            // Auto-play workaround: Browsers block sound until a user clicks something.
-            // This will start the music on the first click anywhere on the page.
-            window.addEventListener('click', () => {
-                if (bgMusic.paused) {
-                    bgMusic.play().catch(err => console.log("Autoplay blocked until interaction."));
-                }
-            }, { once: true });
-            // ────────────────────────────────────────────────
-            // Accordion Logic
-            // ────────────────────────────────────────────────
-            var acc = document.getElementsByClassName("accordion");
-            for (var i = 0; i < acc.length; i++) {
-                acc[i].addEventListener("click", function () {
-                    this.classList.toggle("active");
-                    var panel = this.nextElementSibling;
-                    if (panel.style.maxHeight) {
-                        panel.style.maxHeight = null;
-                    } else {
-                        panel.style.maxHeight = panel.scrollHeight + "px";
-                    }
-                });
-            }
-            function updateMemoryUI() {
-                const memoryList = document.getElementById('memory-list');
-                const memory = JSON.parse(localStorage.getItem('michelle_memory') || "{}");
-
-                if (Object.keys(memory).length === 0) {
-                    memoryList.innerHTML = '<li style="color: #888; font-style: italic;">No notes yet...</li>';
-                    return;
-                }
-
-                memoryList.innerHTML = '';
-                for (const [key, data] of Object.entries(memory)) {
-                    const li = document.createElement('li');
-                    li.style.marginBottom = "10px";
-                    li.style.padding = "5px";
-                    li.style.background = "#fff";
-                    li.style.borderRadius = "4px";
-
-                    const label = key.replace(/_/g, ' ').toUpperCase();
-                    // Access data.value instead of just data
-                    const val = typeof data === 'object' ? data.value : data;
-
-                    li.innerHTML = `<small style="color:#007bff; font-weight:bold;">${label}</small><br>${val}`;
-                    memoryList.appendChild(li);
-                }
-            }
-
-            // Call this once on page load
-            window.addEventListener('load', updateMemoryUI);
-            // On page load, try to restore the key
-            window.addEventListener('DOMContentLoaded', () => {
-                const savedKey = localStorage.getItem('michelle_api_key');
-                if (savedKey) document.getElementById('api-key').value = savedKey;
-            });
-            function updateFactWithTimestamp(key, value) {
-                const currentMemory = JSON.parse(localStorage.getItem('michelle_memory') || "{}");
-
-                // Store the value along with the current date
-                currentMemory[key] = {
-                    value: value,
-                    timestamp: new Date().getTime() // Current time in milliseconds
-                };
-
-                localStorage.setItem('michelle_memory', JSON.stringify(currentMemory));
-            }
-            async function describeImage(imageBase64, apiKey) {
-                try {
-                    const res = await fetch('https://api.poe.com/v1/chat/completions', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-                        body: JSON.stringify({
-                            model: 'gpt-4o-mini',
-                            messages: [
-                                {
-                                    role: "user", content: [
-                                        { type: "text", text: "Describe this image in one very short sentence for my memory." },
-                                        { type: "image_url", image_url: { url: imageBase64 } }
-                                    ]
-                                }
-                            ],
-                            stream: false
-                        })
-                    });
-                    const data = await res.json();
-                    return data?.choices?.[0]?.message?.content?.trim() || "An image was shared.";
-                } catch (err) {
-                    console.error("Failed to describe image:", err);
-                    return "A shared image.";
-                }
-            }
-            async function pruneOldImages(apiKey) {
-                let changed = false;
-
-                // We skip the very last message (messages.length - 1) because that is the "newest"
-                for (let i = 0; i < messages.length - 1; i++) {
-                    const msg = messages[i];
-
-                    // Check if this message contains an image array
-                    if (msg.role === 'user' && Array.isArray(msg.content)) {
-                        const imgIndex = msg.content.findIndex(p => p.type === 'image_url');
-                        const textIndex = msg.content.findIndex(p => p.type === 'text');
-
-                        if (imgIndex !== -1) {
-                            console.log("Archiving old image to text...");
-                            const base64 = msg.content[imgIndex].image_url.url;
-                            const description = await describeImage(base64, apiKey);
-
-                            // Convert the whole message content back into a simple string for storage efficiency
-                            const originalText = textIndex !== -1 ? msg.content[textIndex].text : "";
-                            msg.content = `[Image: ${description}] ${originalText}`.trim();
-
-                            changed = true;
-                        }
-                    }
-                }
-
-                if (changed) {
-                    localStorage.setItem('michelle_autosave', JSON.stringify(messages));
-                    console.log("History cleaned: Images converted to text descriptions.");
-                }
-            }
-        </script>
+        if (changed) {
+          localStorage.setItem('michelle_autosave', JSON.stringify(messages));
+          console.log("History cleaned: Images converted to text descriptions.");
+        }
+      }
+    </script>
 </body>
 
 </html>
