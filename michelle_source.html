@@ -50,6 +50,7 @@
             display: block;
             width: 100%;
             height: 100%;
+            transition: all 0.8s ease-in-out;
         }
 
         /* Update chat container to handle width better */
@@ -235,6 +236,42 @@
             transition: opacity 0.3s ease;
             border-bottom-left-radius: 2px;
         }
+
+        /* Focus Mode Styles */
+        body.focus-mode {
+            background-color: black !important;
+        }
+
+        body.focus-mode #live2d-container {
+            background: black !important;
+            /* Overrides the radial gradient */
+        }
+
+        /* Chat container styles for focus mode */
+        body.focus-mode #chat-container {
+            background: #121212 !important;
+            color: #ffffff !important;
+            border-left: 1px solid #333;
+        }
+
+        body.focus-mode #chat-history,
+        body.focus-mode .panel,
+        body.focus-mode .accordion {
+            background: #1e1e1e !important;
+            color: #e0e0e0 !important;
+            border-color: #444;
+        }
+
+        body.focus-mode .bot {
+            background: #2a2a2a !important;
+            color: #ffffff !important;
+        }
+
+        /* Apply this to the Live2D container when Focus Mode is active */
+        .model-focus-style {
+            background: #000000 !important;
+            transition: background 0.5s ease;
+        }
     </style>
 
     <!-- Live2D scripts -->
@@ -310,6 +347,9 @@
                     <button onclick="clearChat()"
                         style="background: #dc3545; font-size: 11px; margin:0; grid-column: span 2;">🗑️ Reset
                         Conversation</button>
+                    <button id="focus-mode-btn" onclick="toggleFocusMode()"
+                        style="background: #343a40; font-size: 11px; margin:0; grid-column: span 2;">🌙 Toggle Focus
+                        Mode</button>
                 </div>
 
                 <input type="file" id="file-upload" style="display: none;" accept=".json"
@@ -435,6 +475,7 @@
             let lastTypingTime = 0;
             let gazeTarget = { x: 0, y: 0 }; // 0 is center, 1 is right/down, -1 is left/up
             let model;
+            let fitmodel;
             async function initLive2D() {
                 const canvas = document.getElementById('canvas');
 
@@ -458,19 +499,27 @@
                     app.stage.addChild(model);
 
                     // This function handles the scaling so it doesn't crop
-                    const fitModel = () => {
+                    fitModel = () => {
                         if (!model) return;
 
-                        // Calculate scale to fit the container (adjust 0.9 to change "zoom")
-                        const scaleX = (app.screen.width / model.width) * 0.8;
-                        const scaleY = (app.screen.height / model.height) * 0.8;
+                        // Scale: 0.4 for Focus, 0.8 for Normal
+                        const scaleMultiplier = isFocusMode ? 0.4 : 0.8;
+                        const scaleX = (app.screen.width / model.width) * scaleMultiplier;
+                        const scaleY = (app.screen.height / model.height) * scaleMultiplier;
                         const finalScale = Math.min(scaleX, scaleY);
 
                         model.scale.set(finalScale);
-
-                        // Center the model
                         model.anchor.set(0.5, 0.5);
-                        model.position.set(app.screen.width / 2, app.screen.height / 1.5);
+
+                        if (isFocusMode) {
+                            // Move to bottom left
+                            model.position.set(app.screen.width * 0.2, app.screen.height * 0.85);
+                            document.getElementById('live2d-container').classList.add('model-focus-style');
+                        } else {
+                            // Center position
+                            model.position.set(app.screen.width / 2, app.screen.height / 1.5);
+                            document.getElementById('live2d-container').classList.remove('model-focus-style');
+                        }
                     };
 
                     // Call once on load
@@ -770,8 +819,28 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
                         currentBgRGB.b = lerp(currentBgRGB.b, targetBgColor.b, 0.05);
 
                         const rgbStr = `rgb(${Math.round(currentBgRGB.r)}, ${Math.round(currentBgRGB.g)}, ${Math.round(currentBgRGB.b)})`;
-                        document.getElementById('live2d-container').style.background = rgbStr;
-                        // Also update PIXI background to match
+                        // --- DYNAMIC BACKGROUND GLOW TRANSITION ---
+                        currentBgRGB.r = lerp(currentBgRGB.r, targetBgRGB.r, colorLerpSpeed);
+                        currentBgRGB.g = lerp(currentBgRGB.g, targetBgRGB.g, colorLerpSpeed);
+                        currentBgRGB.b = lerp(currentBgRGB.b, targetBgRGB.b, colorLerpSpeed);
+
+                        const colorStr = `rgb(${Math.round(currentBgRGB.r)}, ${Math.round(currentBgRGB.g)}, ${Math.round(currentBgRGB.b)})`;
+
+                        if (isFocusMode) {
+                            // Small circle around the model (bottom-left area)
+                            const posX = "25%";
+                            const posY = "80%";
+                            document.getElementById('live2d-container').style.background =
+                                `radial-gradient(circle at ${posX} ${posY}, ${colorStr} 0%, rgba(0,0,0,0) 40%, black 100%)`;
+                            if (app) app.renderer.background.color = 0x000000;
+                        } else {
+                            // Original full-screen glow
+                            document.getElementById('live2d-container').style.background =
+                                `radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, ${colorStr} 100%)`;
+                            if (app) {
+                                app.renderer.background.color = (Math.round(currentBgRGB.r) << 16) + (Math.round(currentBgRGB.g) << 8) + Math.round(currentBgRGB.b);
+                            }
+                        }
                         app.renderer.backgroundColor = (Math.round(currentBgRGB.r) << 16) + (Math.round(currentBgRGB.g) << 8) + Math.round(currentBgRGB.b);
                     }
                 }
@@ -1019,20 +1088,54 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
             let lastBlinkTime = 0;
             let blinkDuration = 150;
             let nextBlinkInterval = 3000;
+            let targetBgColor = { r: 240, g: 248, b: 255 }; // Initialize with default color
+            let isFocusMode = false;
 
+            function toggleFocusMode() {
+                isFocusMode = !isFocusMode;
+                document.body.classList.toggle('focus-mode');
+
+                // Immediate color reset to prevent flash
+                if (isFocusMode) {
+                    targetBgColor = { r: 0, g: 0, b: 0 };
+                    currentBgRGB = { r: 0, g: 0, b: 0 };
+                } else {
+                    targetBgColor = { r: 240, g: 248, b: 255 };
+                }
+
+                const btn = document.getElementById('focus-mode-btn');
+                if (btn) btn.textContent = isFocusMode ? "☀️ Exit Focus Mode" : "🌙 Toggle Focus Mode";
+
+                if (typeof fitModel === 'function') fitModel();
+            }
             function updateIdleAnimations(currentTime) {
                 if (!model?.internalModel?.coreModel) {
                     requestAnimationFrame(updateIdleAnimations);
                     return;
                 }
-                // --- SMOOTH BACKGROUND COLOR TRANSITION ---
-                // --- SMOOTH BACKGROUND GLOW TRANSITION ---
-                currentBgRGB.r = lerp(currentBgRGB.r, targetBgRGB.r, colorLerpSpeed);
-                currentBgRGB.g = lerp(currentBgRGB.g, targetBgRGB.g, colorLerpSpeed);
-                currentBgRGB.b = lerp(currentBgRGB.b, targetBgRGB.b, colorLerpSpeed);
+                // --- SMOOTH BACKGROUND TRANSITION ---
+                // If focus mode is ON and no specific emotion is playing, target is black (0,0,0)
+                let tR = targetBgColor.r, tG = targetBgColor.g, tB = targetBgColor.b;
 
-                // Create the RGB string for the outer glow color
+                currentBgRGB.r = lerp(currentBgRGB.r, tR, colorLerpSpeed);
+                currentBgRGB.g = lerp(currentBgRGB.g, tG, colorLerpSpeed);
+                currentBgRGB.b = lerp(currentBgRGB.b, tB, colorLerpSpeed);
+
                 const colorStr = `rgb(${Math.round(currentBgRGB.r)}, ${Math.round(currentBgRGB.g)}, ${Math.round(currentBgRGB.b)})`;
+
+                if (isFocusMode) {
+                    // Small circle glow around the bottom-left position with fading outline
+                    document.getElementById('live2d-container').style.background =
+                        `radial-gradient(circle at 20% 85%, ${colorStr} 0%, rgba(0,0,0,0) 40%, black 100%)`;
+                    if (app) app.renderer.background.color = 0x000000;
+                } else {
+                    // Default full screen glow
+                    document.getElementById('live2d-container').style.background =
+                        `radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, ${colorStr} 100%)`;
+                    if (app) {
+                        app.renderer.background.color = (Math.round(currentBgRGB.r) << 16) + (Math.round(currentBgRGB.g) << 8) + Math.round(currentBgRGB.b);
+                    }
+                }
 
                 // Apply as a radial gradient: white in the middle, emotion color on the edges
                 document.getElementById('live2d-container').style.background =
@@ -1072,7 +1175,41 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
                         nodStart = 0;
                     }
                 }
+                // Inside updateIdleAnimations(currentTime)
+                const isFocus = document.body.classList.contains('focus-mode');
 
+                // --- DYNAMIC BACKGROUND COLOR LOGIC ---
+                if (isFocus) {
+                    // If an emotion is set, lerp towards it; otherwise, lerp to pure black
+                    const targetR = targetBgColor ? targetBgColor.r : 0;
+                    const targetG = targetBgColor ? targetBgColor.g : 0;
+                    const targetB = targetBgColor ? targetBgColor.b : 0;
+
+                    currentBgRGB.r = lerp(currentBgRGB.r, targetR, colorLerpSpeed);
+                    currentBgRGB.g = lerp(currentBgRGB.g, targetG, colorLerpSpeed);
+                    currentBgRGB.b = lerp(currentBgRGB.b, targetB, colorLerpSpeed);
+
+                    const colorStr = `rgb(${Math.round(currentBgRGB.r)}, ${Math.round(currentBgRGB.g)}, ${Math.round(currentBgRGB.b)})`;
+
+                    // Focus Mode Glow: Small circle at the bottom-left where the model is moved
+                    document.getElementById('live2d-container').style.background =
+                        `radial-gradient(circle at 20% 80%, ${colorStr} 0%, rgba(0,0,0,0) 40%, black 100%)`;
+
+                    if (app) app.renderer.background.color = 0x000000;
+                } else {
+                    // Original Logic for Normal Mode
+                    currentBgRGB.r = lerp(currentBgRGB.r, targetBgColor ? targetBgColor.r : 240, colorLerpSpeed);
+                    currentBgRGB.g = lerp(currentBgRGB.g, targetBgColor ? targetBgColor.g : 248, colorLerpSpeed);
+                    currentBgRGB.b = lerp(currentBgRGB.b, targetBgColor ? targetBgColor.b : 255, colorLerpSpeed);
+
+                    const colorStr = `rgb(${Math.round(currentBgRGB.r)}, ${Math.round(currentBgRGB.g)}, ${Math.round(currentBgRGB.b)})`;
+                    document.getElementById('live2d-container').style.background =
+                        `radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, ${colorStr} 100%)`;
+
+                    if (app) {
+                        app.renderer.background.color = (Math.round(currentBgRGB.r) << 16) + (Math.round(currentBgRGB.g) << 8) + Math.round(currentBgRGB.b);
+                    }
+                }
                 // 4. Smooth Interpolation
                 let currentX = coreModel.getParameterValueById('ParamAngleX');
                 let currentY = coreModel.getParameterValueById('ParamAngleY');

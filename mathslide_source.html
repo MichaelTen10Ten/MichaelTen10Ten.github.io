@@ -1,75 +1,285 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <title>MathPalm</title>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <title>MathSlide</title>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
-    body { margin: 0; font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #111; color: white; text-align: center; }
-    #video-container { position: relative; width: 100vw; height: 100vh; background: #000; transition: background 0.3s; }
-    canvas { position: absolute; left: 0; top: 0; transform: rotateY(180deg); width: 100%; height: 100%; opacity: 0.7; z-index: 1; }
-    video { display: none; }
-    
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      overflow: hidden;
+      background: #111;
+      color: white;
+      text-align: center;
+    }
+
+    #video-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      transition: background 0.3s;
+    }
+
+    canvas {
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform: rotateY(180deg);
+      width: 100%;
+      height: 100%;
+      opacity: 0.7;
+      z-index: 1;
+    }
+
+    video {
+      display: none;
+    }
+
     /* Fever Mode */
     @keyframes fever-glow {
-      0% { box-shadow: inset 0 0 50px rgba(255, 204, 0, 0.5); }
-      50% { box-shadow: inset 0 0 100px rgba(255, 100, 0, 0.8); }
-      100% { box-shadow: inset 0 0 50px rgba(255, 204, 0, 0.5); }
+      0% {
+        box-shadow: inset 0 0 50px rgba(255, 204, 0, 0.5);
+      }
+
+      50% {
+        box-shadow: inset 0 0 100px rgba(255, 100, 0, 0.8);
+      }
+
+      100% {
+        box-shadow: inset 0 0 50px rgba(255, 204, 0, 0.5);
+      }
     }
-    .fever-active #video-container { animation: fever-glow 1s infinite; }
-    
+
+    .fever-active #video-container {
+      animation: fever-glow 1s infinite;
+    }
+
     /* Freeze Time */
-    .time-frozen { color: #00e5ff !important; text-shadow: 0 0 20px #00e5ff !important; animation: freeze-pulse 1s infinite; }
-    @keyframes freeze-pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+    .time-frozen {
+      color: #00e5ff !important;
+      text-shadow: 0 0 20px #00e5ff !important;
+      animation: freeze-pulse 1s infinite;
+    }
+
+    @keyframes freeze-pulse {
+      0% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.6;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
 
     /* UI Components */
-    .zone { position: absolute; top: 0; width: 22%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 7rem; font-weight: 900; z-index: 5; }
-    #left-zone { left: 0; background: rgba(100, 0, 0, 0.9); border-right: 4px solid white; }
-    #right-zone { right: 0; background: rgba(0, 0, 100, 0.9); border-left: 4px solid white; }
-    
-    #ui-layer { position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
-    #stats { position: absolute; top: 20px; width: 100%; display: flex; justify-content: center; gap: 20px; }
-    .stat-pill { background: rgba(0,0,0,0.8); padding: 10px 15px; border-radius: 50px; border: 2px solid rgba(255,255,255,0.2); font-size: 1.6rem; font-weight: 800; min-width: 140px; }
-    
-    #display-area { position: absolute; top: 140px; width: 100%; }
-    #feedback { font-size: 3.5rem; font-weight: bold; height: 4rem; text-shadow: 2px 2px 20px #000; }
-    #question-box { font-size: 8rem; font-weight: bold; text-shadow: 0 0 30px black; }
-    
-    #message { position: absolute; bottom: 60px; width: 100%; font-size: 2.2rem; color: #00ffcc; font-weight: bold; text-shadow: 2px 2px 10px black; }
-    #reset-box { position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%); background: black; color: white; padding: 10px 20px; font-size: 1.2rem; border: 2px solid white; z-index: 10; opacity: 0.2; }
+    .zone {
+      position: absolute;
+      top: 0;
+      width: 22%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7rem;
+      font-weight: 900;
+      z-index: 5;
+    }
+
+    #left-zone {
+      left: 0;
+      background: rgba(100, 0, 0, 0.9);
+      border-right: 4px solid white;
+    }
+
+    #right-zone {
+      right: 0;
+      background: rgba(0, 0, 100, 0.9);
+      border-left: 4px solid white;
+    }
+
+    #ui-layer {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    #stats {
+      position: absolute;
+      top: 20px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .stat-pill {
+      background: rgba(0, 0, 0, 0.8);
+      padding: 10px 15px;
+      border-radius: 50px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      font-size: 1.6rem;
+      font-weight: 800;
+      min-width: 140px;
+    }
+
+    #display-area {
+      position: absolute;
+      top: 140px;
+      width: 100%;
+    }
+
+    #feedback {
+      font-size: 3.5rem;
+      font-weight: bold;
+      height: 4rem;
+      text-shadow: 2px 2px 20px #000;
+    }
+
+    #question-box {
+      font-size: 8rem;
+      font-weight: bold;
+      text-shadow: 0 0 30px black;
+    }
+
+    #message {
+      position: absolute;
+      bottom: 60px;
+      width: 100%;
+      font-size: 2.2rem;
+      color: #00ffcc;
+      font-weight: bold;
+      text-shadow: 2px 2px 10px black;
+    }
+
+    #reset-box {
+      position: absolute;
+      bottom: 15%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: black;
+      color: white;
+      padding: 10px 20px;
+      font-size: 1.2rem;
+      border: 2px solid white;
+      z-index: 10;
+      opacity: 0.2;
+    }
 
     /* Menu & Instructions */
-    .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: all; padding: 20px; }
-    .main-container { display: flex; flex-direction: row; gap: 40px; align-items: flex-start; max-width: 1100px; }
-    .info-panel { background: rgba(255,255,255,0.05); padding: 30px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); text-align: left; width: 400px; }
-    .info-panel h2 { color: #00ffcc; margin-top: 0; }
-    .info-panel ul { list-style: none; padding: 0; }
-    .info-panel li { margin-bottom: 20px; font-size: 1.1rem; line-height: 1.4; }
-    .highlight { font-weight: bold; color: #ffcc00; }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: all;
+      padding: 20px;
+    }
 
-    .level-btn, .action-btn { background: #222; color: white; border: 2px solid #fff; padding: 15px 30px; margin: 8px; cursor: pointer; width: 350px; font-size: 1.4rem; border-radius: 12px; transition: 0.2s; }
-    .level-btn:hover, .action-btn:hover { background: #fff; color: #000; transform: scale(1.05); }
+    .main-container {
+      display: flex;
+      flex-direction: row;
+      gap: 40px;
+      align-items: flex-start;
+      max-width: 1100px;
+    }
 
-    .hidden { display: none !important; }
-    .correct { color: #00ff00; }
-    .wrong { color: #ff3333; }
+    .info-panel {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 30px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: left;
+      width: 400px;
+    }
+
+    .info-panel h2 {
+      color: #00ffcc;
+      margin-top: 0;
+    }
+
+    .info-panel ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .info-panel li {
+      margin-bottom: 20px;
+      font-size: 1.1rem;
+      line-height: 1.4;
+    }
+
+    .highlight {
+      font-weight: bold;
+      color: #ffcc00;
+    }
+
+    .level-btn,
+    .action-btn {
+      background: #222;
+      color: white;
+      border: 2px solid #fff;
+      padding: 15px 30px;
+      margin: 8px;
+      cursor: pointer;
+      width: 350px;
+      font-size: 1.4rem;
+      border-radius: 12px;
+      transition: 0.2s;
+    }
+
+    .level-btn:hover,
+    .action-btn:hover {
+      background: #fff;
+      color: #000;
+      transform: scale(1.05);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .correct {
+      color: #00ff00;
+    }
+
+    .wrong {
+      color: #ff3333;
+    }
   </style>
 </head>
+
 <body id="game-body">
 
   <div id="menu-overlay" class="overlay">
-    <h1 style="font-size: 4rem; margin-bottom: 10px; color: #fff;">MATHPALM</h1>
-    
+    <h1 style="font-size: 4rem; margin-bottom: 10px; color: #fff;">MATHSLIDE</h1>
+
     <div class="main-container">
       <div class="info-panel">
         <h2>HOW TO PLAY</h2>
         <ul>
-          <li>🔥 <span class="highlight">Combo System:</span> Answer 3 questions within 5 seconds to start a Multiplier. Every fast answer after that stacks the bonus!</li>
-          <li>❄️ <span class="highlight">Freeze Time:</span> Reach a <span class="highlight">10-Question Streak</span> to freeze the timer for 5 seconds.</li>
-          <li>🌈 <span class="highlight">Fever Mode:</span> Hit a x4 combo or higher to enter Fever Mode for maximum points.</li>
-          <li>✋ <span class="highlight">Controls:</span> Move hand left/right to select. Return to center to confirm next question.</li>
+          <li>🔥 <span class="highlight">Combo System:</span> Answer 3 questions within 5 seconds to start a Multiplier.
+            Every fast answer after that stacks the bonus!</li>
+          <li>❄️ <span class="highlight">Freeze Time:</span> Reach a <span class="highlight">10-Question Streak</span>
+            to freeze the timer for 5 seconds.</li>
+          <li>🌈 <span class="highlight">Fever Mode:</span> Hit a x4 combo or higher to enter Fever Mode for maximum
+            points.</li>
+          <li>✋ <span class="highlight">Controls:</span> Move hand left/right to select. Return to center to confirm
+            next question.</li>
         </ul>
       </div>
 
@@ -119,7 +329,8 @@
     </div>
   </div>
 
-  <div id="scorecard-capture" style="position: absolute; left: -9999px; top: -9999px; width: 600px; padding: 50px; background: #111; color: white; border-radius: 20px; text-align: center;">
+  <div id="scorecard-capture"
+    style="position: absolute; left: -9999px; top: -9999px; width: 600px; padding: 50px; background: #111; color: white; border-radius: 20px; text-align: center;">
     <h1 style="color: #ffcc00;">MATH PRO SCORECARD</h1>
     <p style="font-size: 2rem;">Level: <span id="dl-level"></span></p>
     <p style="font-size: 2rem;">Total Points: <span id="dl-score"></span></p>
@@ -131,7 +342,7 @@
     const videoElement = document.getElementById('input_video');
     const canvasElement = document.getElementById('output_canvas');
     const canvasCtx = canvasElement.getContext('2d');
-    
+
     let score = 0, rawCorrect = 0, totalAttempted = 0, timeLeft = 60, currentLevel = 1;
     let streak = 0, isTimeFrozen = false, freezeTimer = null;
     let currentQuestion = { ans: null, options: [] };
@@ -145,14 +356,14 @@
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.connect(gain); gain.connect(audioCtx.destination);
-      if(type === 'correct') {
+      if (type === 'correct') {
         osc.frequency.setValueAtTime(800 + (multiplier * 150), audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(1400, audioCtx.currentTime + 0.1);
-      } else if(type === 'freeze') {
+      } else if (type === 'freeze') {
         osc.type = 'square'; osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-      } else if(type === 'wrong') {
+      } else if (type === 'wrong') {
         osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-      } else if(type === 'countdown') {
+      } else if (type === 'countdown') {
         osc.frequency.setValueAtTime(500, audioCtx.currentTime);
       }
       osc.start(); osc.stop(audioCtx.currentTime + 0.15);
@@ -198,21 +409,21 @@
     function generateQuestion() {
       let a, b, q, ans, wrong;
       const r = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-      switch(currentLevel) {
-        case 1: a=r(1,9); b=r(1,9); if(a<b)[a,b]=[b,a]; let p1=Math.random()>0.5; ans=p1?a+b:a-b; q=`${a}${p1?'+':'-'}${b}`; wrong = ans + (Math.random() > 0.5 ? 1 : -1); break;
-        case 2: a=r(10,99); b=r(10,99); if(a<b)[a,b]=[b,a]; let p2=Math.random()>0.5; ans=p2?a+b:a-b; q=`${a}${p2?'+':'-'}${b}`; wrong = ans + (Math.random() > 0.5 ? (Math.random() > 0.5 ? 10 : 1) : -10); break;
-        case 3: a=r(2,9); b=r(2,9); ans=a*b; q=`${a} × ${b}`; wrong = ans + (Math.random() > 0.5 ? a : -b); break;
-        case 4: let c=r(2,5), fa=r(1,4), fb=r(fa+1,6); q=`${fa*c}/${fb*c}`; ans=`${fa}/${fb}`; wrong = Math.random() > 0.5 ? `${fa}/${fb+1}` : `${fa+1}/${fb}`; break;
-        case 5: a=r(100,999); b=r(100,999); if(a<b)[a,b]=[b,a]; let p5=Math.random()>0.5; ans=p5?a+b:a-b; q=`${a}${p5?'+':'-'}${b}`; wrong = ans + (Math.random() > 0.5 ? 100 : -10); break;
-        case 6: a=r(10,25); b=r(2,9); ans=a*b; q=`${a} × ${b}`; wrong = ans + (Math.random() > 0.5 ? b : -b); break;
+      switch (currentLevel) {
+        case 1: a = r(1, 9); b = r(1, 9); if (a < b) [a, b] = [b, a]; let p1 = Math.random() > 0.5; ans = p1 ? a + b : a - b; q = `${a}${p1 ? '+' : '-'}${b}`; wrong = ans + (Math.random() > 0.5 ? 1 : -1); break;
+        case 2: a = r(10, 99); b = r(10, 99); if (a < b) [a, b] = [b, a]; let p2 = Math.random() > 0.5; ans = p2 ? a + b : a - b; q = `${a}${p2 ? '+' : '-'}${b}`; wrong = ans + (Math.random() > 0.5 ? (Math.random() > 0.5 ? 10 : 1) : -10); break;
+        case 3: a = r(2, 9); b = r(2, 9); ans = a * b; q = `${a} × ${b}`; wrong = ans + (Math.random() > 0.5 ? a : -b); break;
+        case 4: let c = r(2, 5), fa = r(1, 4), fb = r(fa + 1, 6); q = `${fa * c}/${fb * c}`; ans = `${fa}/${fb}`; wrong = Math.random() > 0.5 ? `${fa}/${fb + 1}` : `${fa + 1}/${fb}`; break;
+        case 5: a = r(100, 999); b = r(100, 999); if (a < b) [a, b] = [b, a]; let p5 = Math.random() > 0.5; ans = p5 ? a + b : a - b; q = `${a}${p5 ? '+' : '-'}${b}`; wrong = ans + (Math.random() > 0.5 ? 100 : -10); break;
+        case 6: a = r(10, 25); b = r(2, 9); ans = a * b; q = `${a} × ${b}`; wrong = ans + (Math.random() > 0.5 ? b : -b); break;
       }
       if (currentLevel !== 4) {
-          let wrongNum = parseInt(wrong);
-          if (wrongNum <= 0) wrongNum = ans + 2;
-          if (wrongNum === ans) wrongNum = ans + 1;
-          wrong = wrongNum.toString();
+        let wrongNum = parseInt(wrong);
+        if (wrongNum <= 0) wrongNum = ans + 2;
+        if (wrongNum === ans) wrongNum = ans + 1;
+        wrong = wrongNum.toString();
       }
-      currentQuestion = { ans: ans.toString(), options: Math.random()>0.5 ? [ans.toString(), wrong.toString()] : [wrong.toString(), ans.toString()] };
+      currentQuestion = { ans: ans.toString(), options: Math.random() > 0.5 ? [ans.toString(), wrong.toString()] : [wrong.toString(), ans.toString()] };
       document.getElementById('question-box').innerText = q;
       document.getElementById('left-zone').innerText = currentQuestion.options[0];
       document.getElementById('right-zone').innerText = currentQuestion.options[1];
@@ -220,23 +431,31 @@
       document.getElementById('feedback').innerText = "";
     }
 
+    // UPDATED FOR POSE DETECTION
     function onResults(results) {
       canvasCtx.save();
       canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
       canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        const hand = results.multiHandLandmarks[0];
-        drawConnectors(canvasCtx, hand, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 4});
-        const x = 1 - hand[8].x; 
-        const isPalmOpen = hand[8].y < hand[6].y && hand[12].y < hand[10].y;
-        if (gameActive && isPalmOpen) {
+
+      if (results.poseLandmarks) {
+        // Draw Pose Skeleton
+        drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 4 });
+        drawLandmarks(canvasCtx, results.poseLandmarks, { color: '#FF0000', lineWidth: 2 });
+
+        // Use Nose (landmark 0) to detect body position
+        const nose = results.poseLandmarks[0];
+        const x = 1 - nose.x; // Mirrored coordinate
+
+        if (gameActive) {
           if (needsReset) {
-            if (x > 0.22 && x < 0.78) {
+            // User must return to the middle 30% of the screen
+            if (x > 0.35 && x < 0.65) {
               generateQuestion();
-              document.getElementById('message').innerText = "Pick an answer!";
+              document.getElementById('message').innerText = "Lean Left or Right!";
               document.getElementById('reset-box').style.opacity = "0.2";
             }
           } else {
+            // Check if nose entered a side zone
             if (x < 0.22) checkAnswer(currentQuestion.options[0]);
             else if (x > 0.78) checkAnswer(currentQuestion.options[1]);
           }
@@ -283,7 +502,7 @@
     }
 
     function startTimer() {
-      if(timerInterval) clearInterval(timerInterval);
+      if (timerInterval) clearInterval(timerInterval);
       timerInterval = setInterval(() => {
         if (!isTimeFrozen) {
           timeLeft--;
@@ -315,11 +534,27 @@
       });
     }
 
-    const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-    hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
-    hands.onResults(onResults);
-    const camera = new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 1280, height: 720 });
+    // INITIALIZE POSE INSTEAD OF HANDS
+    const pose = new Pose({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}` });
+    pose.setOptions({
+      modelComplexity: 1,
+      smoothLandmarks: true,
+      enableSegmentation: false,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+    pose.onResults(onResults);
+
+    // FIXED BLURRY CAMERA: Force higher resolution and specify the video source
+    const camera = new Camera(videoElement, {
+      onFrame: async () => {
+        await pose.send({ image: videoElement });
+      },
+      width: 1920,
+      height: 1080
+    });
     camera.start();
   </script>
 </body>
+
 </html>
