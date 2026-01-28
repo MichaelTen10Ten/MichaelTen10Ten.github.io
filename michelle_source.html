@@ -881,7 +881,7 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
           const res = await fetch('https://api.poe.com/v1/chat/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-            body: JSON.stringify({ model: 'gpt-4o-mini', messages, stream: false })
+            body: JSON.stringify({ model: 'gpt-5-mini', messages, stream: false })
           });
 
           const data = await res.json();
@@ -1133,7 +1133,7 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
           const res = await fetch('https://api.poe.com/v1/chat/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-            body: JSON.stringify({ model: 'gpt-4o-mini', messages: summaryRequest, stream: false })
+            body: JSON.stringify({ model: 'gpt-5-mini', messages: summaryRequest, stream: false })
           });
 
           const data = await res.json();
@@ -1210,7 +1210,7 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
               body: JSON.stringify({
-                model: 'gpt-4o-mini',
+                model: 'gpt-5-mini',
                 messages: [...messages, { role: "user", content: "I'm back! Can you greet me?" }],
                 stream: false
               })
@@ -1351,7 +1351,7 @@ RETURN ONLY JSON:
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
             body: JSON.stringify({
-              model: 'gpt-4o-mini',
+              model: 'gpt-5-mini',
               messages: [...history, cleanupPrompt],
               stream: false
             })
@@ -1381,7 +1381,7 @@ RETURN ONLY JSON:
           const res = await fetch('https://api.poe.com/v1/chat/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-            body: JSON.stringify({ model: 'gpt-4o-mini', messages: summaryRequest, stream: false })
+            body: JSON.stringify({ model: 'gpt-5-mini', messages: summaryRequest, stream: false })
           });
 
           const data = await res.json();
@@ -1490,7 +1490,7 @@ RETURN ONLY JSON:
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
             body: JSON.stringify({
-              model: 'gpt-4o-mini',
+              model: 'gpt-5-mini',
               messages: [
                 {
                   role: "user", content: [
