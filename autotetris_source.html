@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Neon AI Terminal - High-Def HUD</title>
+    <style>
+        :root {
+            --neon-main: #00ffff;
+            /* Reactive variable */
+            --neon-pink: #ff00ff;
+        }
+
+        body {
+            margin: 0;
+            background: #020202;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            transition: filter 0.5s ease;
+        }
+
+        /* CYBER-GRID BACKGROUND */
+        body::before {
+            content: "";
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background-image:
+                linear-gradient(var(--neon-main) 1px, transparent 1px),
+                linear-gradient(90deg, var(--neon-main) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.05;
+            transform: perspective(500px) rotateX(60deg);
+            animation: grid-scroll 10s linear infinite;
+            z-index: -1;
+            transition: background-image 0.5s ease;
+        }
+
+        @keyframes grid-scroll {
+            from {
+                background-position: 0 0;
+            }
+
+            to {
+                background-position: 0 100px;
+            }
+        }
+
+        #container {
+            display: flex;
+            gap: 20px;
+            padding: 25px;
+            border: 1px solid var(--neon-main);
+            background: rgba(0, 8, 8, 0.95);
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            transition: border-color 0.5s ease, box-shadow 0.5s ease;
+        }
+
+        canvas {
+            border: 1px solid #1a1a1a;
+        }
+
+        #ui-panel {
+            display: flex;
+            flex-direction: column;
+            color: var(--neon-main);
+            width: 140px;
+            font-size: 10px;
+            text-transform: uppercase;
+            transition: color 0.5s ease;
+        }
+
+        .stat-box {
+            margin-bottom: 15px;
+            padding: 8px;
+            border-left: 2px solid var(--neon-pink);
+            background: rgba(255, 0, 255, 0.03);
+        }
+
+        .val {
+            color: #fff;
+            font-weight: bold;
+            display: block;
+            font-size: 16px;
+            margin-top: 5px;
+        }
+
+        .label {
+            color: var(--neon-pink);
+            letter-spacing: 1px;
+            font-size: 9px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="container">
+        <canvas id="tetris"></canvas>
+        <div id="ui-panel">
+            <div class="stat-box">
+                <div class="label">UNITS_PLACED</div>
+                <span id="stat-blocks" class="val">0</span>
+            </div>
+            <div class="stat-box">
+                <div class="label" id="line-label">LINES_VOIDED</div>
+                <span id="stat-lines" class="val">0</span>
+            </div>
+            <div class="stat-box">
+                <div class="label">HUD_THEME</div>
+                <span id="stat-theme" class="val">CYAN_HUD</span>
+            </div>
+            <div class="stat-box" style="border-left-color: var(--neon-main); background: rgba(0,255,255,0.03);">
+                <div class="label">NEXT_PROC</div>
+                <canvas id="next-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('tetris');
+        const context = canvas.getContext('2d');
+        const nextCanvas = document.getElementById('next-canvas');
+        const nextContext = nextCanvas.getContext('2d');
+
+        // --- 1. HIGH-DPI SCALING LOGIC ---
+        const dpr = window.devicePixelRatio || 1;
+        const gridW = 10, gridH = 20;
+        const screenHeight = window.innerHeight * 0.8;
+        const blockSize = screenHeight / gridH;
+
+        // Set internal resolution based on DPR
+        canvas.width = (blockSize * gridW) * dpr;
+        canvas.height = screenHeight * dpr;
+        nextCanvas.width = (blockSize * 4) * dpr;
+        nextCanvas.height = (blockSize * 12) * dpr;
+
+        // Scale visual display back down via CSS
+        canvas.style.width = `${blockSize * gridW}px`;
+        canvas.style.height = `${screenHeight}px`;
+        nextCanvas.style.width = `${blockSize * 4/2.5}px`;
+        nextCanvas.style.height = `${blockSize * 12/2.5}px`;
+
+        // Scale context so we can keep using simple grid coordinates
+        context.scale(blockSize * dpr, blockSize * dpr);
+        nextContext.scale(blockSize * dpr, blockSize * dpr);
+
+        const colors = [null, '#ff0055', '#00ff99', '#00d9ff', '#ff8800', '#ff00ff', '#ffff00', '#7700ff'];
+        let arena = Array.from({ length: gridH }, () => new Array(gridW).fill(0));
+        let player = { pos: { x: 0, y: 0 }, matrix: null };
+        let bag = [], nextPieces = [], particles = [], targetMove = { x: 0, rotation: 0 };
+        let totalBlocks = 0, totalLines = 0;
+
+        // --- 2. COLOR MOOD CYCLING ---
+        let currentHue = 180; // Start at Cyan
+        function shiftMood() {
+            currentHue = (currentHue + 60) % 360;
+            document.documentElement.style.setProperty('--neon-main', `hsl(${currentHue}, 100%, 50%)`);
+            document.getElementById('stat-theme').innerText = `HUE_${currentHue}`;
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x; this.y = y; this.color = color;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 1) * 0.5;
+                this.life = 1.0;
+            }
+            update() { this.x += this.vx; this.y += this.vy; this.vy += 0.02; this.life -= 0.02; }
+            draw(ctx) { ctx.globalAlpha = this.life; ctx.fillStyle = this.color; ctx.fillRect(this.x, this.y, 0.2, 0.2); ctx.globalAlpha = 1; }
+        }
+
+        function createPiece(type) {
+            const p = {
+                'I': [[0, 5, 0, 0], [0, 5, 0, 0], [0, 5, 0, 0], [0, 5, 0, 0]],
+                'L': [[0, 3, 0], [0, 3, 0], [0, 3, 3]],
+                'J': [[0, 4, 0], [0, 4, 0], [4, 4, 0]],
+                'O': [[2, 2], [2, 2]],
+                'Z': [[7, 7, 0], [0, 7, 7], [0, 0, 0]],
+                'S': [[0, 6, 6], [6, 6, 0], [0, 0, 0]],
+                'T': [[0, 1, 0], [1, 1, 1], [0, 0, 0]]
+            };
+            return p[type];
+        }
+
+        function refillBag() {
+            const types = ['I', 'L', 'J', 'O', 'Z', 'S', 'T'];
+            for (let i = types.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [types[i], types[j]] = [types[j], types[i]];
+            }
+            bag = types;
+        }
+
+        function getNextFromBag() {
+            if (bag.length === 0) refillBag();
+            return createPiece(bag.pop());
+        }
+
+        function rotate(matrix) {
+            for (let y = 0; y < matrix.length; ++y) {
+                for (let x = 0; x < y; ++x) [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
+            }
+            matrix.forEach(row => row.reverse());
+        }
+
+        function collide(arena, p) {
+            const [m, o] = [p.matrix, p.pos];
+            for (let y = 0; y < m.length; ++y) {
+                for (let x = 0; x < m[y].length; ++x) {
+                    if (m[y][x] !== 0 && (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) return true;
+                }
+            }
+            return false;
+        }
+
+        function calculateBestMove() {
+            let bestScore = -Infinity;
+            let best = { x: 0, rotation: 0 };
+            const originalMatrix = player.matrix.map(row => [...row]);
+            for (let r = 0; r < 4; r++) {
+                for (let x = -2; x < gridW; x++) {
+                    let testP = { pos: { x, y: 0 }, matrix: player.matrix.map(row => [...row]) };
+                    if (collide(arena, testP)) continue;
+                    while (!collide(arena, testP)) testP.pos.y++;
+                    testP.pos.y--;
+                    const testArena = arena.map(row => [...row]);
+                    testP.matrix.forEach((row, py) => {
+                        row.forEach((v, px) => { if (v !== 0 && testArena[py + testP.pos.y]) testArena[py + testP.pos.y][px + testP.pos.x] = v; });
+                    });
+                    let score = getHeuristics(testArena);
+                    if (score > bestScore) { bestScore = score; best = { x, rotation: r }; }
+                }
+                rotate(player.matrix);
+            }
+            player.matrix = originalMatrix;
+            return best;
+        }
+
+        function getHeuristics(t) {
+            let holes = 0, lines = 0, heights = new Array(gridW).fill(0);
+            for (let x = 0; x < gridW; x++) {
+                let colHasBlock = false;
+                for (let y = 0; y < gridH; y++) {
+                    if (t[y][x] !== 0) {
+                        if (!colHasBlock) { heights[x] = gridH - y; colHasBlock = true; }
+                    } else if (colHasBlock) holes++;
+                }
+            }
+            t.forEach(row => { if (row.every(c => c !== 0)) lines++; });
+            let bump = 0;
+            for (let x = 0; x < heights.length - 1; x++) bump += Math.abs(heights[x] - heights[x + 1]);
+            return (-0.6 * heights.reduce((a, b) => a + b, 0)) + (2.0 * lines) - (1.5 * holes) - (0.2 * bump);
+        }
+
+        function playerReset() {
+            while (nextPieces.length < 4) nextPieces.push(getNextFromBag());
+            player.matrix = nextPieces.shift();
+            player.pos = { x: (gridW / 2 | 0) - (player.matrix[0].length / 2 | 0), y: 0 };
+            totalBlocks++;
+            document.getElementById('stat-blocks').innerText = totalBlocks;
+            if (collide(arena, player)) {
+                arena.forEach(row => row.fill(0));
+                totalBlocks = 0; totalLines = 0;
+                document.getElementById('stat-blocks').innerText = "0";
+                document.getElementById('stat-lines').innerText = "0";
+            }
+            targetMove = calculateBestMove();
+        }
+
+        function drawMatrix(ctx, matrix, offset, isGhost = false) {
+            matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        ctx.fillStyle = isGhost ? colors[value] + '22' : colors[value];
+                        if (!isGhost) { ctx.shadowBlur = 10 * dpr; ctx.shadowColor = colors[value]; }
+                        ctx.fillRect(x + offset.x + 0.05, y + offset.y + 0.05, 0.9, 0.9);
+                        ctx.shadowBlur = 0;
+                    }
+                });
+            });
+        }
+
+        function update(time = 0) {
+            context.fillStyle = '#050505';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            drawMatrix(context, arena, { x: 0, y: 0 });
+            let ghostY = player.pos.y;
+            while (!collide(arena, { pos: { x: player.pos.x, y: ghostY + 1 }, matrix: player.matrix })) ghostY++;
+            drawMatrix(context, player.matrix, { x: player.pos.x, y: ghostY }, true);
+            drawMatrix(context, player.matrix, player.pos);
+            particles = particles.filter(p => p.life > 0);
+            particles.forEach(p => { p.update(); p.draw(context); });
+            nextContext.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+            nextPieces.forEach((m, i) => drawMatrix(nextContext, m, { x: 0.5, y: i * 4 + 0.5 }));
+            requestAnimationFrame(update);
+        }
+
+        setInterval(() => {
+            if (targetMove.rotation > 0) { rotate(player.matrix); targetMove.rotation--; }
+            else if (player.pos.x < targetMove.x) player.pos.x++;
+            else if (player.pos.x > targetMove.x) player.pos.x--;
+        }, 200);
+
+        setInterval(() => {
+            player.pos.y++;
+            if (collide(arena, player)) {
+                player.pos.y--;
+                player.matrix.forEach((row, y) => {
+                    row.forEach((v, x) => { if (v !== 0) arena[y + player.pos.y][x + player.pos.x] = v; });
+                });
+                let cleared = 0;
+                for (let y = arena.length - 1; y >= 0; y--) {
+                    if (arena[y].every(c => c !== 0)) {
+                        for (let x = 0; x < gridW; x++) {
+                            for (let i = 0; i < 4; i++) particles.push(new Particle(x, y, colors[arena[y][x]]));
+                        }
+                        arena.splice(y, 1);
+                        arena.unshift(new Array(gridW).fill(0));
+                        cleared++; y++;
+                    }
+                }
+                if (cleared > 0) {
+                    totalLines += cleared;
+                    document.getElementById('stat-lines').innerText = totalLines;
+                    shiftMood(); // CHANGE THEME ON SUCCESS
+                }
+                playerReset();
+            }
+        }, 100);
+
+        playerReset();
+        update();
+    </script>
+</body>
+
+</html>
