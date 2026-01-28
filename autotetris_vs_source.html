@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cyber-Duels: AI Tetris</title>
+    <style>
+        :root {
+            --neon-main: #00ffff;
+            --neon-pink: #ff00ff;
+            --bg-dark: #020202;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            color: var(--neon-main);
+        }
+
+        #battlefield {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 10px;
+            height: 98vh;
+            justify-content: center;
+        }
+
+        .game-wrapper {
+            display: flex;
+            gap: 12px;
+            padding: 15px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            background: rgba(0, 10, 10, 0.9);
+            position: relative;
+        }
+
+        canvas {
+            border: 1px solid #1a1a1a;
+            background: #000;
+        }
+
+        .side-hud {
+            display: flex;
+            flex-direction: column;
+            width: 80px;
+        }
+
+        .stat {
+            margin-bottom: 8px;
+            border-left: 2px solid var(--neon-pink);
+            padding-left: 6px;
+        }
+
+        .stat label { font-size: 8px; color: var(--neon-pink); letter-spacing: 1px; }
+        .stat span { display: block; font-weight: bold; font-size: 12px; color: #fff; }
+
+        .multiplier-tag {
+            font-size: 9px;
+            color: #00ff00;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+
+        .bot-name {
+            position: absolute;
+            bottom: -10px;
+            left: 15px;
+            background: var(--neon-main);
+            color: #000;
+            padding: 2px 10px;
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+            z-index: 5;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="battlefield">
+        <div id="p1-root" class="game-wrapper">
+            <canvas id="p1-canvas"></canvas>
+            <div class="side-hud">
+                <div class="stat"><label>SENT</label><span id="p1-sent">0</span></div>
+                <div class="stat"><label>BLOCKS</label><span id="p1-blocks">0</span></div>
+                <div id="p1-speed" class="multiplier-tag">SPD: 100%</div>
+                <canvas id="p1-next"></canvas>
+            </div>
+            <div class="bot-name" id="p1-name">BOOTING...</div>
+        </div>
+
+        <div id="p2-root" class="game-wrapper">
+            <canvas id="p2-canvas"></canvas>
+            <div class="side-hud">
+                <div class="stat"><label>SENT</label><span id="p2-sent">0</span></div>
+                <div class="stat"><label>BLOCKS</label><span id="p2-blocks">0</span></div>
+                <div id="p2-speed" class="multiplier-tag">SPD: 100%</div>
+                <canvas id="p2-next"></canvas>
+            </div>
+            <div class="bot-name" id="p2-name">BOOTING...</div>
+        </div>
+    </div>
+
+    <script>
+        const COLORS = [null, '#ff0055', '#00ff99', '#00d9ff', '#ff8800', '#ff00ff', '#ffff00', '#7700ff', '#555555'];
+        const NAMES = ["Unit", "Core", "Node", "Proxy", "Daemon", "Vektor", "Cyber", "Null", "Protocol", "Flux"];
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.vx = (Math.random() - 0.5) * 0.4;
+                this.vy = (Math.random() - 0.5) * 0.4;
+                this.life = 1.0;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= 0.02;
+            }
+        }
+
+        class TetrisGame {
+            constructor(canvasId, nextId, statsPrefix) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.nextCanvas = document.getElementById(nextId);
+                this.nextCtx = this.nextCanvas.getContext('2d');
+                this.statsPrefix = statsPrefix;
+                this.opponent = null;
+
+                this.gravityInterval = 160;
+                this.rotationInterval = 160;
+                this.lastGravityTime = 0;
+                this.lastRotationTime = 0;
+                
+                this.particles = [];
+
+                const gridW = 10, gridH = 20;
+                const availableHeight = (window.innerHeight * 0.45);
+                this.blockSize = Math.floor(availableHeight / gridH);
+                
+                this.canvas.width = gridW * this.blockSize;
+                this.canvas.height = gridH * this.blockSize;
+                this.ctx.scale(this.blockSize, this.blockSize);
+
+                this.nextBlockSize = this.blockSize * 0.6; 
+                this.nextCanvas.width = 4 * this.nextBlockSize;
+                this.nextCanvas.height = 10 * this.nextBlockSize;
+                this.nextCtx.scale(this.nextBlockSize, this.nextBlockSize);
+
+                this.reset(true);
+            }
+
+            reset(isFullReset = false) {
+                this.arena = Array.from({ length: 20 }, () => new Array(10).fill(0));
+                this.player = { pos: { x: 0, y: 0 }, matrix: null };
+                this.nextPieces = [];
+                this.sentLines = 0;
+                this.blocksPlaced = 0;
+                this.particles = [];
+
+                if (isFullReset) {
+                    this.name = NAMES[Math.floor(Math.random() * NAMES.length)] + "-" + Math.floor(1000 + Math.random() * 9000);
+                    this.gravityInterval = 160;
+                    this.rotationInterval = 160;
+                }
+
+                document.getElementById(`${this.statsPrefix}-name`).innerText = this.name;
+                document.getElementById(`${this.statsPrefix}-sent`).innerText = "0";
+                document.getElementById(`${this.statsPrefix}-blocks`).innerText = "0";
+                this.updateSpeedUI();
+                this.playerReset();
+            }
+
+            upgrade() {
+                this.gravityInterval *= 0.8;
+                this.rotationInterval *= 0.9;
+                this.updateSpeedUI();
+            }
+
+            updateSpeedUI() {
+                const speedPct = Math.floor((160 / this.gravityInterval) * 100);
+                document.getElementById(`${this.statsPrefix}-speed`).innerText = `SPD: ${speedPct}%`;
+            }
+
+            createPiece(type) {
+                const p = {
+                    'I': [[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0]],
+                    'L': [[0, 2, 0], [0, 2, 0], [0, 2, 2]],
+                    'J': [[0, 3, 0], [0, 3, 0], [3, 3, 0]],
+                    'O': [[4, 4], [4, 4]],
+                    'Z': [[5, 5, 0], [0, 5, 5], [0, 0, 0]],
+                    'S': [[0, 6, 6], [6, 6, 0], [0, 0, 0]],
+                    'T': [[0, 7, 0], [7, 7, 7], [0, 0, 0]]
+                };
+                return p[type];
+            }
+
+            rotate(matrix) {
+                for (let y = 0; y < matrix.length; ++y) {
+                    for (let x = 0; x < y; ++x) [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
+                }
+                matrix.forEach(row => row.reverse());
+            }
+
+            collide(arena, p) {
+                const [m, o] = [p.matrix, p.pos];
+                for (let y = 0; y < m.length; ++y) {
+                    for (let x = 0; x < m[y].length; ++x) {
+                        if (m[y][x] !== 0 && (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) return true;
+                    }
+                }
+                return false;
+            }
+
+            receiveGarbage(count) {
+                for (let i = 0; i < count; i++) {
+                    const row = new Array(10).fill(8);
+                    row[Math.floor(Math.random() * 10)] = 0;
+                    this.arena.shift();
+                    this.arena.push(row);
+                }
+            }
+
+            getHeuristics(t) {
+                let holes = 0, lines = 0, heights = new Array(10).fill(0);
+                for (let x = 0; x < 10; x++) {
+                    let colHasBlock = false;
+                    for (let y = 0; y < 20; y++) {
+                        if (t[y][x] !== 0) {
+                            if (!colHasBlock) { heights[x] = 20 - y; colHasBlock = true; }
+                        } else if (colHasBlock) holes++;
+                    }
+                }
+                t.forEach(row => { if (row.every(c => c !== 0)) lines++; });
+                const currentMaxHeight = Math.max(...heights);
+                let lineReward = 0;
+                if (currentMaxHeight > 14) lineReward = lines * 20;
+                else {
+                    if (lines >= 4) lineReward = 150;
+                    else if (lines >= 2) lineReward = 30;
+                    else if (lines === 1) lineReward = -20; 
+                }
+                let bump = 0;
+                for (let x = 0; x < heights.length - 1; x++) bump += Math.abs(heights[x] - heights[x + 1]);
+                return lineReward - (0.4 * currentMaxHeight) - (8.0 * holes) - (0.5 * bump);
+            }
+
+            calculateBestMove() {
+                let bestScore = -Infinity;
+                let best = { x: 0, rotation: 0 };
+                const originalMatrix = this.player.matrix.map(row => [...row]);
+                for (let r = 0; r < 4; r++) {
+                    for (let x = -2; x < 10; x++) {
+                        let testP = { pos: { x, y: 0 }, matrix: this.player.matrix.map(row => [...row]) };
+                        if (this.collide(this.arena, testP)) continue;
+                        while (!this.collide(this.arena, testP)) testP.pos.y++;
+                        testP.pos.y--;
+                        const testArena = this.arena.map(row => [...row]);
+                        testP.matrix.forEach((row, py) => {
+                            row.forEach((v, px) => { if (v !== 0 && testArena[py + testP.pos.y]) testArena[py + testP.pos.y][px + testP.pos.x] = v; });
+                        });
+                        let score = this.getHeuristics(testArena);
+                        if (score > bestScore) { bestScore = score; best = { x, rotation: r }; }
+                    }
+                    this.rotate(this.player.matrix);
+                }
+                this.player.matrix = originalMatrix;
+                return best;
+            }
+
+            playerReset() {
+                const types = 'ILJOTSZ';
+                while (this.nextPieces.length < 4) this.nextPieces.push(this.createPiece(types[types.length * Math.random() | 0]));
+                this.player.matrix = this.nextPieces.shift();
+                this.player.pos = { x: 5 - (this.player.matrix[0].length / 2 | 0), y: 0 };
+                
+                if (this.collide(this.arena, this.player)) {
+                    if(this.opponent) this.opponent.upgrade();
+                    this.reset(true); 
+                }
+                this.target = this.calculateBestMove();
+            }
+
+            draw() {
+                const currentMaxHeight = this.arena.reduce((max, row, i) => row.some(v => v !== 0) ? Math.max(max, 20 - i) : max, 0);
+                this.ctx.fillStyle = currentMaxHeight > 14 ? '#1a0000' : '#050505';
+                this.ctx.fillRect(0, 0, 10, 20);
+
+                this.drawMatrix(this.ctx, this.arena, { x: 0, y: 0 });
+                this.drawMatrix(this.ctx, this.player.matrix, this.player.pos, true);
+
+                // Particles
+                this.particles.forEach((p, i) => {
+                    p.update();
+                    if (p.life <= 0) this.particles.splice(i, 1);
+                    else {
+                        this.ctx.globalAlpha = p.life;
+                        this.ctx.fillStyle = p.color;
+                        this.ctx.fillRect(p.x, p.y, 0.2, 0.2);
+                        this.ctx.globalAlpha = 1;
+                    }
+                });
+
+                // Next
+                this.nextCtx.fillStyle = '#000';
+                this.nextCtx.fillRect(0, 0, 4, 10);
+                this.nextPieces.forEach((m, i) => this.drawMatrix(this.nextCtx, m, { x: 0.5, y: i * 3 + 0.5 }));
+            }
+
+            drawMatrix(ctx, matrix, offset, glow = false) {
+                matrix.forEach((row, y) => {
+                    row.forEach((value, x) => {
+                        if (value !== 0) {
+                            ctx.fillStyle = COLORS[value];
+                            if(glow) { ctx.shadowBlur = 4; ctx.shadowColor = COLORS[value]; }
+                            ctx.fillRect(x + offset.x + 0.05, y + offset.y + 0.05, 0.9, 0.9);
+                            ctx.shadowBlur = 0;
+                        }
+                    });
+                });
+            }
+
+            tick(now) {
+                if (now - this.lastRotationTime > this.rotationInterval) {
+                    if (this.target.rotation > 0) { this.rotate(this.player.matrix); this.target.rotation--; }
+                    if (this.player.pos.x < this.target.x) this.player.pos.x++;
+                    else if (this.player.pos.x > this.target.x) this.player.pos.x--;
+                    this.lastRotationTime = now;
+                }
+
+                if (now - this.lastGravityTime > this.gravityInterval) {
+                    this.player.pos.y++;
+                    if (this.collide(this.arena, this.player)) {
+                        this.player.pos.y--;
+                        this.blocksPlaced++;
+                        document.getElementById(`${this.statsPrefix}-blocks`).innerText = this.blocksPlaced;
+
+                        this.player.matrix.forEach((row, y) => {
+                            row.forEach((v, x) => { if (v !== 0) this.arena[y + this.player.pos.y][x + this.player.pos.x] = v; });
+                        });
+
+                        let cleared = 0;
+                        for (let y = this.arena.length - 1; y >= 0; y--) {
+                            if (this.arena[y].every(c => c !== 0)) {
+                                // Block breaking effect
+                                for (let x = 0; x < 10; x++) {
+                                    for (let i = 0; i < 4; i++) {
+                                        this.particles.push(new Particle(x + Math.random(), y + Math.random(), COLORS[this.arena[y][x]]));
+                                    }
+                                }
+                                this.arena.splice(y, 1);
+                                this.arena.unshift(new Array(10).fill(0));
+                                cleared++; y++;
+                            }
+                        }
+
+                        if (cleared >= 2 && this.opponent) {
+                            const sent = cleared - 1;
+                            this.sentLines += sent;
+                            document.getElementById(`${this.statsPrefix}-sent`).innerText = this.sentLines;
+                            this.opponent.receiveGarbage(sent);
+                        }
+                        this.playerReset();
+                    }
+                    this.lastGravityTime = now;
+                }
+            }
+        }
+
+        const game1 = new TetrisGame('p1-canvas', 'p1-next', 'p1');
+        const game2 = new TetrisGame('p2-canvas', 'p2-next', 'p2');
+        game1.opponent = game2;
+        game2.opponent = game1;
+
+        function run(now) {
+            game1.tick(now);
+            game2.tick(now);
+            game1.draw();
+            game2.draw();
+            requestAnimationFrame(run);
+        }
+        requestAnimationFrame(run);
+    </script>
+</body>
+</html>
