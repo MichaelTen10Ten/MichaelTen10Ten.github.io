@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Cyber-Duels: AI Tetris</title>
+    <title>Cyber-Duels: Bag-System & Tetris-Hunter</title>
     <style>
         :root {
             --neon-main: #00ffff;
@@ -61,6 +61,13 @@
         .stat label { font-size: 8px; color: var(--neon-pink); letter-spacing: 1px; }
         .stat span { display: block; font-weight: bold; font-size: 12px; color: #fff; }
 
+        .preview-label {
+            font-size: 8px;
+            color: var(--neon-main);
+            margin-bottom: 2px;
+            opacity: 0.7;
+        }
+
         .multiplier-tag {
             font-size: 9px;
             color: #00ff00;
@@ -86,22 +93,32 @@
 
     <div id="battlefield">
         <div id="p1-root" class="game-wrapper">
-            <canvas id="p1-canvas"></canvas>
             <div class="side-hud">
+                <div class="preview-label">HOLD</div>
+                <canvas id="p1-hold" width="40" height="40" style="margin-bottom:10px"></canvas>
                 <div class="stat"><label>SENT</label><span id="p1-sent">0</span></div>
                 <div class="stat"><label>BLOCKS</label><span id="p1-blocks">0</span></div>
                 <div id="p1-speed" class="multiplier-tag">SPD: 100%</div>
+            </div>
+            <canvas id="p1-canvas"></canvas>
+            <div class="side-hud">
+                <div class="preview-label">NEXT</div>
                 <canvas id="p1-next"></canvas>
             </div>
             <div class="bot-name" id="p1-name">BOOTING...</div>
         </div>
 
         <div id="p2-root" class="game-wrapper">
-            <canvas id="p2-canvas"></canvas>
             <div class="side-hud">
+                <div class="preview-label">HOLD</div>
+                <canvas id="p2-hold" width="40" height="40" style="margin-bottom:10px"></canvas>
                 <div class="stat"><label>SENT</label><span id="p2-sent">0</span></div>
                 <div class="stat"><label>BLOCKS</label><span id="p2-blocks">0</span></div>
                 <div id="p2-speed" class="multiplier-tag">SPD: 100%</div>
+            </div>
+            <canvas id="p2-canvas"></canvas>
+            <div class="side-hud">
+                <div class="preview-label">NEXT</div>
                 <canvas id="p2-next"></canvas>
             </div>
             <div class="bot-name" id="p2-name">BOOTING...</div>
@@ -114,59 +131,72 @@
 
         class Particle {
             constructor(x, y, color) {
-                this.x = x;
-                this.y = y;
-                this.color = color;
+                this.x = x; this.y = y; this.color = color;
                 this.vx = (Math.random() - 0.5) * 0.4;
                 this.vy = (Math.random() - 0.5) * 0.4;
                 this.life = 1.0;
             }
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.life -= 0.02;
-            }
+            update() { this.x += this.vx; this.y += this.vy; this.life -= 0.02; }
         }
 
         class TetrisGame {
-            constructor(canvasId, nextId, statsPrefix) {
+            constructor(canvasId, nextId, holdId, statsPrefix) {
                 this.canvas = document.getElementById(canvasId);
                 this.ctx = this.canvas.getContext('2d');
                 this.nextCanvas = document.getElementById(nextId);
                 this.nextCtx = this.nextCanvas.getContext('2d');
+                this.holdCanvas = document.getElementById(holdId);
+                this.holdCtx = this.holdCanvas.getContext('2d');
                 this.statsPrefix = statsPrefix;
                 this.opponent = null;
 
                 this.gravityInterval = 160;
-                this.rotationInterval = 160;
+                this.rotationInterval = 120;
                 this.lastGravityTime = 0;
                 this.lastRotationTime = 0;
-                
                 this.particles = [];
 
-                const gridW = 10, gridH = 20;
-                const availableHeight = (window.innerHeight * 0.45);
-                this.blockSize = Math.floor(availableHeight / gridH);
-                
-                this.canvas.width = gridW * this.blockSize;
-                this.canvas.height = gridH * this.blockSize;
+                this.blockSize = Math.floor((window.innerHeight * 0.45) / 20);
+                this.canvas.width = 10 * this.blockSize;
+                this.canvas.height = 20 * this.blockSize;
                 this.ctx.scale(this.blockSize, this.blockSize);
 
-                this.nextBlockSize = this.blockSize * 0.6; 
-                this.nextCanvas.width = 4 * this.nextBlockSize;
-                this.nextCanvas.height = 10 * this.nextBlockSize;
-                this.nextCtx.scale(this.nextBlockSize, this.nextBlockSize);
+                this.sideBlockSize = this.blockSize * 0.6;
+                [this.nextCanvas, this.holdCanvas].forEach(c => {
+                    c.width = 4 * this.sideBlockSize;
+                    c.height = (c === this.nextCanvas ? 10 : 4) * this.sideBlockSize;
+                    c.getContext('2d').scale(this.sideBlockSize, this.sideBlockSize);
+                });
 
+                this.bag = [];
                 this.reset(true);
+            }
+
+            // 7-BAG SYSTEM
+            generateBag() {
+                const pieces = ['I', 'L', 'J', 'O', 'Z', 'S', 'T'];
+                for (let i = pieces.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
+                }
+                return pieces;
+            }
+
+            getNextFromBag() {
+                if (this.bag.length === 0) this.bag = this.generateBag();
+                return this.bag.pop();
             }
 
             reset(isFullReset = false) {
                 this.arena = Array.from({ length: 20 }, () => new Array(10).fill(0));
                 this.player = { pos: { x: 0, y: 0 }, matrix: null };
                 this.nextPieces = [];
+                this.holdPiece = null;
+                this.canHold = true;
                 this.sentLines = 0;
                 this.blocksPlaced = 0;
                 this.particles = [];
+                this.bag = [];
 
                 if (isFullReset) {
                     this.name = NAMES[Math.floor(Math.random() * NAMES.length)] + "-" + Math.floor(1000 + Math.random() * 9000);
@@ -226,8 +256,7 @@
                 for (let i = 0; i < count; i++) {
                     const row = new Array(10).fill(8);
                     row[Math.floor(Math.random() * 10)] = 0;
-                    this.arena.shift();
-                    this.arena.push(row);
+                    this.arena.shift(); this.arena.push(row);
                 }
             }
 
@@ -243,25 +272,32 @@
                 }
                 t.forEach(row => { if (row.every(c => c !== 0)) lines++; });
                 const currentMaxHeight = Math.max(...heights);
+                
                 let lineReward = 0;
-                if (currentMaxHeight > 14) lineReward = lines * 20;
-                else {
-                    if (lines >= 4) lineReward = 150;
-                    else if (lines >= 2) lineReward = 30;
-                    else if (lines === 1) lineReward = -20; 
+                // TETRIS HUNTER LOGIC
+                if (lines >= 4) {
+                    lineReward = 1000; // Extreme priority for Tetris
+                } else if (currentMaxHeight < 14) {
+                    lineReward = lines * -50; // Heavily penalize non-tetris clears when safe
+                } else {
+                    lineReward = lines * 100; // Survive if too tall
                 }
+
                 let bump = 0;
                 for (let x = 0; x < heights.length - 1; x++) bump += Math.abs(heights[x] - heights[x + 1]);
-                return lineReward - (0.4 * currentMaxHeight) - (8.0 * holes) - (0.5 * bump);
+                
+                return {
+                    score: lineReward - (0.5 * currentMaxHeight) - (15.0 * holes) - (1.0 * bump),
+                    hasHoles: holes > 0
+                };
             }
 
-            calculateBestMove() {
-                let bestScore = -Infinity;
-                let best = { x: 0, rotation: 0 };
-                const originalMatrix = this.player.matrix.map(row => [...row]);
+            getBestMoveForMatrix(matrix) {
+                let best = { score: -Infinity, x: 0, rotation: 0, hasHoles: false };
+                const original = matrix.map(row => [...row]);
                 for (let r = 0; r < 4; r++) {
-                    for (let x = -2; x < 10; x++) {
-                        let testP = { pos: { x, y: 0 }, matrix: this.player.matrix.map(row => [...row]) };
+                    for (let x = -3; x < 10; x++) {
+                        let testP = { pos: { x, y: 0 }, matrix: matrix.map(row => [...row]) };
                         if (this.collide(this.arena, testP)) continue;
                         while (!this.collide(this.arena, testP)) testP.pos.y++;
                         testP.pos.y--;
@@ -269,37 +305,82 @@
                         testP.matrix.forEach((row, py) => {
                             row.forEach((v, px) => { if (v !== 0 && testArena[py + testP.pos.y]) testArena[py + testP.pos.y][px + testP.pos.x] = v; });
                         });
-                        let score = this.getHeuristics(testArena);
-                        if (score > bestScore) { bestScore = score; best = { x, rotation: r }; }
+                        let result = this.getHeuristics(testArena);
+                        if (result.score > best.score) { 
+                            best = { score: result.score, x, rotation: r, hasHoles: result.hasHoles }; 
+                        }
                     }
-                    this.rotate(this.player.matrix);
+                    this.rotate(matrix);
                 }
-                this.player.matrix = originalMatrix;
+                matrix.length = 0;
+                original.forEach(row => matrix.push([...row]));
                 return best;
             }
 
             playerReset() {
-                const types = 'ILJOTSZ';
-                while (this.nextPieces.length < 4) this.nextPieces.push(this.createPiece(types[types.length * Math.random() | 0]));
+                while (this.nextPieces.length < 4) {
+                    this.nextPieces.push(this.createPiece(this.getNextFromBag()));
+                }
+                
                 this.player.matrix = this.nextPieces.shift();
                 this.player.pos = { x: 5 - (this.player.matrix[0].length / 2 | 0), y: 0 };
-                
+                this.canHold = true;
+
                 if (this.collide(this.arena, this.player)) {
                     if(this.opponent) this.opponent.upgrade();
-                    this.reset(true); 
+                    this.reset(true);
+                    return;
                 }
-                this.target = this.calculateBestMove();
+
+                let currentMove = this.getBestMoveForMatrix(this.player.matrix);
+                
+                // Swap if a better move exists or to avoid holes
+                if (this.canHold) {
+                    let holdScore = -Infinity;
+                    if (this.holdPiece) {
+                        const move = this.getBestMoveForMatrix(this.holdPiece);
+                        holdScore = move.score;
+                        if (holdScore > currentMove.score) {
+                            this.handleHold();
+                            currentMove = move;
+                        }
+                    } else {
+                        // If no hold piece, swap if current piece is bad (creates holes)
+                        if (currentMove.hasHoles) {
+                            this.handleHold();
+                            currentMove = this.getBestMoveForMatrix(this.player.matrix);
+                        }
+                    }
+                }
+                
+                this.target = currentMove;
+            }
+
+            handleHold() {
+                if (!this.canHold) return;
+                const current = this.player.matrix;
+                if (!this.holdPiece) {
+                    this.holdPiece = current;
+                    this.player.matrix = this.nextPieces.shift();
+                } else {
+                    this.player.matrix = this.holdPiece;
+                    this.holdPiece = current;
+                }
+                this.player.pos = { x: 5 - (this.player.matrix[0].length / 2 | 0), y: 0 };
+                this.canHold = false;
             }
 
             draw() {
                 const currentMaxHeight = this.arena.reduce((max, row, i) => row.some(v => v !== 0) ? Math.max(max, 20 - i) : max, 0);
                 this.ctx.fillStyle = currentMaxHeight > 14 ? '#1a0000' : '#050505';
                 this.ctx.fillRect(0, 0, 10, 20);
-
                 this.drawMatrix(this.ctx, this.arena, { x: 0, y: 0 });
                 this.drawMatrix(this.ctx, this.player.matrix, this.player.pos, true);
 
-                // Particles
+                [this.nextCtx, this.holdCtx].forEach(c => { c.fillStyle = '#000'; c.fillRect(0,0,4,10); });
+                this.nextPieces.forEach((m, i) => this.drawMatrix(this.nextCtx, m, { x: 0.5, y: i * 3 + 0.5 }));
+                if (this.holdPiece) this.drawMatrix(this.holdCtx, this.holdPiece, { x: 0.5, y: 0.5 });
+
                 this.particles.forEach((p, i) => {
                     p.update();
                     if (p.life <= 0) this.particles.splice(i, 1);
@@ -307,14 +388,9 @@
                         this.ctx.globalAlpha = p.life;
                         this.ctx.fillStyle = p.color;
                         this.ctx.fillRect(p.x, p.y, 0.2, 0.2);
-                        this.ctx.globalAlpha = 1;
                     }
                 });
-
-                // Next
-                this.nextCtx.fillStyle = '#000';
-                this.nextCtx.fillRect(0, 0, 4, 10);
-                this.nextPieces.forEach((m, i) => this.drawMatrix(this.nextCtx, m, { x: 0.5, y: i * 3 + 0.5 }));
+                this.ctx.globalAlpha = 1;
             }
 
             drawMatrix(ctx, matrix, offset, glow = false) {
@@ -337,38 +413,29 @@
                     else if (this.player.pos.x > this.target.x) this.player.pos.x--;
                     this.lastRotationTime = now;
                 }
-
                 if (now - this.lastGravityTime > this.gravityInterval) {
                     this.player.pos.y++;
                     if (this.collide(this.arena, this.player)) {
                         this.player.pos.y--;
                         this.blocksPlaced++;
                         document.getElementById(`${this.statsPrefix}-blocks`).innerText = this.blocksPlaced;
-
                         this.player.matrix.forEach((row, y) => {
                             row.forEach((v, x) => { if (v !== 0) this.arena[y + this.player.pos.y][x + this.player.pos.x] = v; });
                         });
-
                         let cleared = 0;
                         for (let y = this.arena.length - 1; y >= 0; y--) {
                             if (this.arena[y].every(c => c !== 0)) {
-                                // Block breaking effect
                                 for (let x = 0; x < 10; x++) {
-                                    for (let i = 0; i < 4; i++) {
-                                        this.particles.push(new Particle(x + Math.random(), y + Math.random(), COLORS[this.arena[y][x]]));
-                                    }
+                                    for (let i = 0; i < 4; i++) this.particles.push(new Particle(x + Math.random(), y + Math.random(), COLORS[this.arena[y][x]]));
                                 }
-                                this.arena.splice(y, 1);
-                                this.arena.unshift(new Array(10).fill(0));
+                                this.arena.splice(y, 1); this.arena.unshift(new Array(10).fill(0));
                                 cleared++; y++;
                             }
                         }
-
                         if (cleared >= 2 && this.opponent) {
-                            const sent = cleared - 1;
-                            this.sentLines += sent;
+                            this.sentLines += (cleared - 1);
                             document.getElementById(`${this.statsPrefix}-sent`).innerText = this.sentLines;
-                            this.opponent.receiveGarbage(sent);
+                            this.opponent.receiveGarbage(cleared - 1);
                         }
                         this.playerReset();
                     }
@@ -377,16 +444,13 @@
             }
         }
 
-        const game1 = new TetrisGame('p1-canvas', 'p1-next', 'p1');
-        const game2 = new TetrisGame('p2-canvas', 'p2-next', 'p2');
-        game1.opponent = game2;
-        game2.opponent = game1;
+        const game1 = new TetrisGame('p1-canvas', 'p1-next', 'p1-hold', 'p1');
+        const game2 = new TetrisGame('p2-canvas', 'p2-next', 'p2-hold', 'p2');
+        game1.opponent = game2; game2.opponent = game1;
 
         function run(now) {
-            game1.tick(now);
-            game2.tick(now);
-            game1.draw();
-            game2.draw();
+            game1.tick(now); game2.tick(now);
+            game1.draw(); game2.draw();
             requestAnimationFrame(run);
         }
         requestAnimationFrame(run);
