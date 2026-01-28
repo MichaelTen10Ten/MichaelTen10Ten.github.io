@@ -213,7 +213,7 @@
 
             upgrade() {
                 this.gravityInterval *= 0.8;
-                this.rotationInterval *= 0.9;
+                this.rotationInterval *= 0.7;
                 this.updateSpeedUI();
             }
 
@@ -277,7 +277,7 @@
                 // TETRIS HUNTER LOGIC
                 if (lines >= 4) {
                     lineReward = 1000; // Extreme priority for Tetris
-                } else if (currentMaxHeight < 14) {
+                } else if (currentMaxHeight < 8) {
                     lineReward = lines * -50; // Heavily penalize non-tetris clears when safe
                 } else {
                     lineReward = lines * 100; // Survive if too tall
