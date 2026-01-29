@@ -2,7 +2,7 @@
 
 It was supposed to be the best day of the year. The final exam was over, the weight of the semester finally lifted, and the air smelled of freedom. But that relief vanished the moment I got home and realized my backpack was missing. I must have left it under my desk.
 
-By the time I made it back to the school gates, the world had slipped into a heavy, unnatural darkness. It was nearly 11:00 PM.
+By the time I made it back to the school gates, the world had slipped into a heavy, unnatural darkness. It was nearly 8:00 PM.
 
 I slipped inside. The corridors were hollow, swallowing the sound of my footsteps. Not a soul was in sight. I took the stairs two at a time, my heart hammering against my ribs—not out of fear, but out of habit. If the Vice Principal caught a student sneaking in this late, there’d be hell to pay.
 
@@ -16,7 +16,7 @@ The voice drifted from the far end of the hallway, thin and ethereal. My blood r
 
 I spun around to the front of the room. On the empty blackboard, invisible chalk began to screech against the slate, carving out twisted, jagged characters:
 
-**[DISMISSAL TIME HAS ARRIVED]**
+**[Time to Leave School]**
 
 I didn't wait. I grabbed my bag and bolted for the exit, my breath coming in ragged gasps. But as I reached the stairwell, a crisp, new poster pinned to the wall caught the moonlight. It hadn't been there ten minutes ago.
 
@@ -28,9 +28,6 @@ I didn't wait. I grabbed my bag and bolted for the exit, my breath coming in rag
 > 3. **The Goal:** Have a productive day.
 > 
 > 
-
-
-
 
 A single, low chime echoed through the hollow halls. It wasn't the bright, mechanical ring of a school bell; it sounded like a heavy iron tolling deep underground. *The fifteen minutes have started.*
 
