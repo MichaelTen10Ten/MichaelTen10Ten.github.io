@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Cyber-Duels: Bag-System & Tetris-Hunter</title>
@@ -58,8 +59,18 @@
             padding-left: 6px;
         }
 
-        .stat label { font-size: 8px; color: var(--neon-pink); letter-spacing: 1px; }
-        .stat span { display: block; font-weight: bold; font-size: 12px; color: #fff; }
+        .stat label {
+            font-size: 8px;
+            color: var(--neon-pink);
+            letter-spacing: 1px;
+        }
+
+        .stat span {
+            display: block;
+            font-weight: bold;
+            font-size: 12px;
+            color: #fff;
+        }
 
         .preview-label {
             font-size: 8px;
@@ -87,8 +98,28 @@
             text-transform: uppercase;
             z-index: 5;
         }
+
+        .garbage-container {
+            width: 6px;
+            height: 100%;
+            /* Match canvas height */
+            background: #111;
+            position: relative;
+            border: 1px solid #333;
+            margin-right: 4px;
+        }
+
+        .garbage-bar {
+            width: 100%;
+            background: #ff0000;
+            box-shadow: 0 0 8px #ff0000;
+            position: absolute;
+            bottom: 0;
+            transition: height 0.2s ease-out;
+        }
     </style>
 </head>
+
 <body>
 
     <div id="battlefield">
@@ -99,6 +130,10 @@
                 <div class="stat"><label>SENT</label><span id="p1-sent">0</span></div>
                 <div class="stat"><label>BLOCKS</label><span id="p1-blocks">0</span></div>
                 <div id="p1-speed" class="multiplier-tag">SPD: 100%</div>
+
+            </div>
+            <div class="garbage-container">
+                <div id="p1-garbage-bar" class="garbage-bar"></div>
             </div>
             <canvas id="p1-canvas"></canvas>
             <div class="side-hud">
@@ -115,6 +150,10 @@
                 <div class="stat"><label>SENT</label><span id="p2-sent">0</span></div>
                 <div class="stat"><label>BLOCKS</label><span id="p2-blocks">0</span></div>
                 <div id="p2-speed" class="multiplier-tag">SPD: 100%</div>
+
+            </div>
+            <div class="garbage-container">
+                <div id="p2-garbage-bar" class="garbage-bar"></div>
             </div>
             <canvas id="p2-canvas"></canvas>
             <div class="side-hud">
@@ -131,12 +170,19 @@
 
         class Particle {
             constructor(x, y, color) {
-                this.x = x; this.y = y; this.color = color;
-                this.vx = (Math.random() - 0.5) * 0.4;
-                this.vy = (Math.random() - 0.5) * 0.4;
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                // Faster, more explosive movement
+                this.vx = (Math.random() - 0.5) * 0.8;
+                this.vy = (Math.random() - 0.5) * 0.8;
                 this.life = 1.0;
             }
-            update() { this.x += this.vx; this.y += this.vy; this.life -= 0.02; }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= 0.04; // Disappear slightly faster for performance
+            }
         }
 
         class TetrisGame {
@@ -152,6 +198,8 @@
 
                 this.gravityInterval = 160;
                 this.rotationInterval = 120;
+                this.moveInterval = 50;
+                this.lastMoveTime = 0;
                 this.lastGravityTime = 0;
                 this.lastRotationTime = 0;
                 this.particles = [];
@@ -188,6 +236,7 @@
             }
 
             reset(isFullReset = false) {
+                this.pendingGarbage = 0;
                 this.arena = Array.from({ length: 20 }, () => new Array(10).fill(0));
                 this.player = { pos: { x: 0, y: 0 }, matrix: null };
                 this.nextPieces = [];
@@ -199,6 +248,8 @@
                 this.bag = [];
 
                 if (isFullReset) {
+                    // Inside reset(isFullReset)
+                    this.comboCount = -1; // -1 means no combo, 0 is the first clear, 1+ is the streak
                     this.name = NAMES[Math.floor(Math.random() * NAMES.length)] + "-" + Math.floor(1000 + Math.random() * 9000);
                     this.gravityInterval = 160;
                     this.rotationInterval = 160;
@@ -212,8 +263,8 @@
             }
 
             upgrade() {
-                this.gravityInterval *= 0.8;
-                this.rotationInterval *= 0.7;
+                // Reduce the interval (make it faster)
+                this.gravityInterval = Math.max(this.gravityInterval * 0.9, 30); // Cap at 30ms
                 this.updateSpeedUI();
             }
 
@@ -253,65 +304,128 @@
             }
 
             receiveGarbage(count) {
-                for (let i = 0; i < count; i++) {
-                    const row = new Array(10).fill(8);
-                    row[Math.floor(Math.random() * 10)] = 0;
-                    this.arena.shift(); this.arena.push(row);
-                }
+                this.pendingGarbage += count;
+                this.updateGarbageUI();
             }
 
             getHeuristics(t) {
-                let holes = 0, lines = 0, heights = new Array(10).fill(0);
+                let holes = 0;
+                let lines = 0;
+                let heights = new Array(10).fill(0);
+                let transitions = 0; // Horizontal/Vertical changes (empty to full)
+                let wells = 0;
+
+                // 1. Calculate Heights and Holes
                 for (let x = 0; x < 10; x++) {
                     let colHasBlock = false;
                     for (let y = 0; y < 20; y++) {
                         if (t[y][x] !== 0) {
-                            if (!colHasBlock) { heights[x] = 20 - y; colHasBlock = true; }
-                        } else if (colHasBlock) holes++;
+                            if (!colHasBlock) {
+                                heights[x] = 20 - y;
+                                colHasBlock = true;
+                            }
+                        } else if (colHasBlock) {
+                            holes++; // Found an empty space below a block
+                        }
                     }
                 }
-                t.forEach(row => { if (row.every(c => c !== 0)) lines++; });
-                const currentMaxHeight = Math.max(...heights);
-                
-                let lineReward = 0;
-                // TETRIS HUNTER LOGIC
-                if (lines >= 4) {
-                    lineReward = 1000; // Extreme priority for Tetris
-                } else if (currentMaxHeight < 8) {
-                    lineReward = lines * -50; // Heavily penalize non-tetris clears when safe
-                } else {
-                    lineReward = lines * 100; // Survive if too tall
+
+                // 2. Count Full Lines
+                t.forEach(row => {
+                    if (row.every(c => c !== 0)) lines++;
+                });
+
+                // 3. Calculate Bumpiness (Difference between adjacent columns)
+                let bumpiness = 0;
+                for (let x = 0; x < heights.length - 1; x++) {
+                    bumpiness += Math.abs(heights[x] - heights[x + 1]);
                 }
 
-                let bump = 0;
-                for (let x = 0; x < heights.length - 1; x++) bump += Math.abs(heights[x] - heights[x + 1]);
-                
+                // 4. Calculate Column Transitions (Vertical stability)
+                // A transition is when a cell is different from the one above it
+                for (let x = 0; x < 10; x++) {
+                    for (let y = 0; y < 19; y++) {
+                        if ((t[y][x] === 0) !== (t[y + 1][x] === 0)) transitions++;
+                    }
+                }
+
+                // 5. Strategy-Based Line Reward
+                let lineReward = 0;
+                const maxHeight = Math.max(...heights);
+
+                if (lines === 4) {
+                    lineReward = 800; // Major priority for Tetris
+                } else if (lines > 0) {
+                    if (maxHeight > 15) {
+                        lineReward = lines * 100; // Emergency: Clear anything to survive
+                    } else {
+                        lineReward = lines * -50; // Discourage small clears if board is low
+                    }
+                }
+
+                // Weighted Formula
+                // Higher negative weights = AI tries harder to avoid these states
+                const score =
+                    lineReward +
+                    (heights.reduce((a, b) => a + b, 0) * -0.5) + // Aggregate Height
+                    (holes * -25.0) +                             // Holes (Heavy penalty)
+                    (bumpiness * -1.5) +                          // Smooth surface
+                    (transitions * -3.0) +                        // Vertical stability
+                    (maxHeight * -1.0);                           // Absolute height penalty
+
                 return {
-                    score: lineReward - (0.5 * currentMaxHeight) - (15.0 * holes) - (1.0 * bump),
+                    score: score,
                     hasHoles: holes > 0
                 };
             }
 
-            getBestMoveForMatrix(matrix) {
-                let best = { score: -Infinity, x: 0, rotation: 0, hasHoles: false };
+            getBestMoveForMatrix(matrix, isLookahead = false) {
+                let best = { score: -Infinity, x: 0, rotation: 0 };
                 const original = matrix.map(row => [...row]);
+
                 for (let r = 0; r < 4; r++) {
                     for (let x = -3; x < 10; x++) {
                         let testP = { pos: { x, y: 0 }, matrix: matrix.map(row => [...row]) };
+
                         if (this.collide(this.arena, testP)) continue;
+
+                        // Drop piece to bottom
                         while (!this.collide(this.arena, testP)) testP.pos.y++;
                         testP.pos.y--;
+
+                        // Simulate the arena after placement
                         const testArena = this.arena.map(row => [...row]);
                         testP.matrix.forEach((row, py) => {
-                            row.forEach((v, px) => { if (v !== 0 && testArena[py + testP.pos.y]) testArena[py + testP.pos.y][px + testP.pos.x] = v; });
+                            row.forEach((v, px) => {
+                                if (v !== 0 && testArena[py + testP.pos.y]) {
+                                    testArena[py + testP.pos.y][px + testP.pos.x] = v;
+                                }
+                            });
                         });
-                        let result = this.getHeuristics(testArena);
-                        if (result.score > best.score) { 
-                            best = { score: result.score, x, rotation: r, hasHoles: result.hasHoles }; 
+
+                        let currentScore = this.getHeuristics(testArena).score;
+
+                        // --- DEEP LOOKAHEAD LOGIC ---
+                        // If we aren't already looking ahead, simulate the NEXT piece too
+                        if (!isLookahead && this.nextPieces.length > 0) {
+                            const nextPieceMatrix = this.nextPieces[0];
+                            // Temporary swap arena to the simulated state to check next move
+                            const tempArena = this.arena;
+                            this.arena = testArena;
+                            const nextMove = this.getBestMoveForMatrix(nextPieceMatrix, true);
+                            this.arena = tempArena; // Restore original arena
+
+                            currentScore += nextMove.score;
+                        }
+
+                        if (currentScore > best.score) {
+                            best = { score: currentScore, x, rotation: r };
                         }
                     }
                     this.rotate(matrix);
                 }
+
+                // Restore original rotation
                 matrix.length = 0;
                 original.forEach(row => matrix.push([...row]));
                 return best;
@@ -321,39 +435,41 @@
                 while (this.nextPieces.length < 4) {
                     this.nextPieces.push(this.createPiece(this.getNextFromBag()));
                 }
-                
+
                 this.player.matrix = this.nextPieces.shift();
                 this.player.pos = { x: 5 - (this.player.matrix[0].length / 2 | 0), y: 0 };
-                this.canHold = true;
 
                 if (this.collide(this.arena, this.player)) {
-                    if(this.opponent) this.opponent.upgrade();
+                    if (this.opponent) this.opponent.upgrade();
                     this.reset(true);
                     return;
                 }
 
-                let currentMove = this.getBestMoveForMatrix(this.player.matrix);
-                
-                // Swap if a better move exists or to avoid holes
+                // --- STRATEGIC HOLD DECISION ---
+                let currentBest = this.getBestMoveForMatrix(this.player.matrix);
+
                 if (this.canHold) {
-                    let holdScore = -Infinity;
+                    let holdBest = { score: -Infinity };
+
                     if (this.holdPiece) {
-                        const move = this.getBestMoveForMatrix(this.holdPiece);
-                        holdScore = move.score;
-                        if (holdScore > currentMove.score) {
-                            this.handleHold();
-                            currentMove = move;
-                        }
+                        // Compare current piece score vs. existing hold piece score
+                        holdBest = this.getBestMoveForMatrix(this.holdPiece);
                     } else {
-                        // If no hold piece, swap if current piece is bad (creates holes)
-                        if (currentMove.hasHoles) {
-                            this.handleHold();
-                            currentMove = this.getBestMoveForMatrix(this.player.matrix);
-                        }
+                        // If hold is empty, check if the NEXT piece in queue is better than current
+                        holdBest = this.getBestMoveForMatrix(this.nextPieces[0]);
+                    }
+
+                    // Decision: Swap if the alternative is significantly better
+                    // or if the current piece forces a "hole" (bad heuristic score)
+                    if (holdBest.score > currentBest.score) {
+                        this.handleHold();
+                        // Recalculate best move for the new piece we just swapped in
+                        currentBest = this.getBestMoveForMatrix(this.player.matrix);
                     }
                 }
-                
-                this.target = currentMove;
+
+                this.target = currentBest;
+                this.canHold = true; // Reset hold for the next piece placement
             }
 
             handleHold() {
@@ -363,31 +479,46 @@
                     this.holdPiece = current;
                     this.player.matrix = this.nextPieces.shift();
                 } else {
+                    const temp = this.player.matrix;
                     this.player.matrix = this.holdPiece;
-                    this.holdPiece = current;
+                    this.holdPiece = temp;
                 }
                 this.player.pos = { x: 5 - (this.player.matrix[0].length / 2 | 0), y: 0 };
-                this.canHold = false;
+                this.canHold = false; // Prevents infinite swapping
             }
 
             draw() {
+                const maxHeight = this.arena.reduce((max, row, i) => row.some(v => v !== 0) ? Math.max(max, 20 - i) : max, 0);
                 const currentMaxHeight = this.arena.reduce((max, row, i) => row.some(v => v !== 0) ? Math.max(max, 20 - i) : max, 0);
                 this.ctx.fillStyle = currentMaxHeight > 14 ? '#1a0000' : '#050505';
                 this.ctx.fillRect(0, 0, 10, 20);
                 this.drawMatrix(this.ctx, this.arena, { x: 0, y: 0 });
                 this.drawMatrix(this.ctx, this.player.matrix, this.player.pos, true);
 
-                [this.nextCtx, this.holdCtx].forEach(c => { c.fillStyle = '#000'; c.fillRect(0,0,4,10); });
+                [this.nextCtx, this.holdCtx].forEach(c => { c.fillStyle = '#000'; c.fillRect(0, 0, 4, 10); });
                 this.nextPieces.forEach((m, i) => this.drawMatrix(this.nextCtx, m, { x: 0.5, y: i * 3 + 0.5 }));
                 if (this.holdPiece) this.drawMatrix(this.holdCtx, this.holdPiece, { x: 0.5, y: 0.5 });
-
+                if (maxHeight > 13) {
+                    this.ctx.shadowBlur = 15;
+                    this.ctx.shadowColor = '#ff0000';
+                    this.canvas.style.borderColor = '#ff0000';
+                } else {
+                    this.ctx.shadowBlur = 0;
+                    this.canvas.style.borderColor = '#1a1a1a';
+                }
                 this.particles.forEach((p, i) => {
                     p.update();
-                    if (p.life <= 0) this.particles.splice(i, 1);
-                    else {
+                    if (p.life <= 0) {
+                        this.particles.splice(i, 1);
+                    } else {
+                        this.ctx.save();
                         this.ctx.globalAlpha = p.life;
                         this.ctx.fillStyle = p.color;
-                        this.ctx.fillRect(p.x, p.y, 0.2, 0.2);
+                        // Add a slight glow to particles
+                        this.ctx.shadowBlur = 5;
+                        this.ctx.shadowColor = p.color;
+                        this.ctx.fillRect(p.x, p.y, 0.15, 0.15);
+                        this.ctx.restore();
                     }
                 });
                 this.ctx.globalAlpha = 1;
@@ -398,7 +529,7 @@
                     row.forEach((value, x) => {
                         if (value !== 0) {
                             ctx.fillStyle = COLORS[value];
-                            if(glow) { ctx.shadowBlur = 4; ctx.shadowColor = COLORS[value]; }
+                            if (glow) { ctx.shadowBlur = 4; ctx.shadowColor = COLORS[value]; }
                             ctx.fillRect(x + offset.x + 0.05, y + offset.y + 0.05, 0.9, 0.9);
                             ctx.shadowBlur = 0;
                         }
@@ -407,40 +538,193 @@
             }
 
             tick(now) {
-                if (now - this.lastRotationTime > this.rotationInterval) {
-                    if (this.target.rotation > 0) { this.rotate(this.player.matrix); this.target.rotation--; }
-                    if (this.player.pos.x < this.target.x) this.player.pos.x++;
-                    else if (this.player.pos.x > this.target.x) this.player.pos.x--;
-                    this.lastRotationTime = now;
+                // 1. AI Movement/Rotation speed (Independent of gravity)
+                if (now - this.lastMoveTime > (this.gravityInterval / 3)) {
+                    this.executeMove();
+                    this.lastMoveTime = now;
                 }
+
+                // 2. Natural Gravity (The 'Lock' Timer)
                 if (now - this.lastGravityTime > this.gravityInterval) {
                     this.player.pos.y++;
+
                     if (this.collide(this.arena, this.player)) {
                         this.player.pos.y--;
-                        this.blocksPlaced++;
-                        document.getElementById(`${this.statsPrefix}-blocks`).innerText = this.blocksPlaced;
-                        this.player.matrix.forEach((row, y) => {
-                            row.forEach((v, x) => { if (v !== 0) this.arena[y + this.player.pos.y][x + this.player.pos.x] = v; });
-                        });
-                        let cleared = 0;
-                        for (let y = this.arena.length - 1; y >= 0; y--) {
-                            if (this.arena[y].every(c => c !== 0)) {
-                                for (let x = 0; x < 10; x++) {
-                                    for (let i = 0; i < 4; i++) this.particles.push(new Particle(x + Math.random(), y + Math.random(), COLORS[this.arena[y][x]]));
-                                }
-                                this.arena.splice(y, 1); this.arena.unshift(new Array(10).fill(0));
-                                cleared++; y++;
-                            }
-                        }
-                        if (cleared >= 2 && this.opponent) {
-                            this.sentLines += (cleared - 1);
-                            document.getElementById(`${this.statsPrefix}-sent`).innerText = this.sentLines;
-                            this.opponent.receiveGarbage(cleared - 1);
-                        }
-                        this.playerReset();
+                        this.lockPiece();
                     }
                     this.lastGravityTime = now;
                 }
+            }
+            lockPiece() {
+                this.blocksPlaced++;
+                document.getElementById(`${this.statsPrefix}-blocks`).innerText = this.blocksPlaced;
+
+                // Lock piece into arena
+                this.player.matrix.forEach((row, y) => {
+                    row.forEach((v, x) => {
+                        if (v !== 0) this.arena[y + this.player.pos.y][x + this.player.pos.x] = v;
+                    });
+                });
+
+                let cleared = 0;
+                for (let y = this.arena.length - 1; y >= 0; y--) {
+                    if (this.arena[y].every(c => c !== 0)) {
+                        // Generate Particles for the cleared line
+                        for (let x = 0; x < 10; x++) {
+                            const color = COLORS[this.arena[y][x]];
+                            for (let i = 0; i < 6; i++) { // Increased particle count
+                                this.particles.push(new Particle(x + 0.5, y + 0.5, color));
+                            }
+                        }
+
+                        this.arena.splice(y, 1);
+                        this.arena.unshift(new Array(10).fill(0));
+                        cleared++;
+                        y++;
+                    }
+                }
+
+                if (cleared > 0) {
+                    this.applyShake(cleared);
+
+                    // --- NEW: GARBAGE CANCELING ---
+                    // If you clear lines, they subtract from your pending garbage first!
+                    let linesToCancel = cleared === 4 ? 4 : cleared - 1;
+                    // (Include combo bonus in canceling if you like)
+
+                    if (this.pendingGarbage > 0) {
+                        const canceled = Math.min(this.pendingGarbage, linesToCancel);
+                        this.pendingGarbage -= canceled;
+                        linesToCancel -= canceled;
+                        this.updateGarbageUI();
+                    }
+
+                    // Send remaining lines to opponent
+                    if (linesToCancel > 0) {
+                        this.handleCombatLogic(cleared);
+                    }
+                } else {
+                    this.comboCount = -1;
+
+                    // --- NEW: GARBAGE ENTRY ---
+                    // If no lines were cleared, pending garbage enters the board
+                    if (this.pendingGarbage > 0) {
+                        this.enterGarbage(this.pendingGarbage);
+                        this.pendingGarbage = 0;
+                        this.updateGarbageUI();
+                    }
+                }
+
+                this.playerReset();
+            }
+            applyShake(cleared) {
+                // A Tetris (4 lines) shakes harder than a single
+                const intensity = cleared === 4 ? 8 : cleared * 2;
+                this.canvas.style.transform = `translate(${(Math.random() - 0.5) * intensity}px, ${(Math.random() - 0.5) * intensity}px)`;
+
+                setTimeout(() => {
+                    this.canvas.style.transform = 'translate(0, 0)';
+                }, 100);
+            }
+            executeMove() {
+                if (!this.target) return;
+
+                // 1. Rotate
+                if (this.target.rotation > 0) {
+                    const prevMatrix = this.player.matrix.map(row => [...row]);
+                    this.rotate(this.player.matrix);
+                    if (this.collide(this.arena, this.player)) {
+                        this.player.matrix = prevMatrix;
+                    } else {
+                        this.target.rotation--;
+                    }
+                }
+
+                // 2. Move Horizontal
+                if (this.player.pos.x < this.target.x) {
+                    this.player.pos.x++;
+                    if (this.collide(this.arena, this.player)) this.player.pos.x--;
+                } else if (this.player.pos.x > this.target.x) {
+                    this.player.pos.x--;
+                    if (this.collide(this.arena, this.player)) this.player.pos.x++;
+                }
+
+                // 3. AI "Fast Fall"
+                // Only drop if aligned horizontally and rotation is done
+                if (this.player.pos.x === this.target.x && this.target.rotation === 0) {
+                    this.player.pos.y++;
+                    if (this.collide(this.arena, this.player)) {
+                        this.player.pos.y--;
+                        // This allows the AI to 'slam' the piece down when ready
+                    }
+                }
+            }
+            showComboEffect(count, sent) {
+                const nameTag = document.getElementById(`${this.statsPrefix}-name`);
+                const originalName = this.name;
+
+                // Flash magenta for combos, cyan for single hits
+                nameTag.style.background = count > 1 ? "#ff00ff" : "#00ffff";
+                nameTag.innerText = `COMBO ${count} (+${sent} LINES)`;
+
+                // Reset after a short delay
+                if (this.effectTimeout) clearTimeout(this.effectTimeout);
+                this.effectTimeout = setTimeout(() => {
+                    nameTag.innerText = originalName;
+                    nameTag.style.background = "var(--neon-main)";
+                }, 600);
+            }
+            handleCombatLogic(cleared) {
+                this.comboCount++;
+
+                // 1. Base Garbage Calculation
+                // Tetris = 4, Triple = 2, Double = 1, Single = 0
+                let baseGarbage = cleared === 4 ? 4 : cleared - 1;
+
+                // 2. Continuous Combo Bonus
+                // This ensures that even a 'Single' sends garbage if it's part of a combo
+                let comboBonus = 0;
+                if (this.comboCount > 0) {
+                    // Sends 1 extra at combo 1-2, 2 extra at combo 3-4, etc.
+                    // Even a single line clear (base 0) + combo bonus (1) = 1 line sent!
+                    comboBonus = Math.ceil(this.comboCount / 2);
+                }
+
+                // 3. Back-to-Back Tetris Bonus
+                // If the last clear was a Tetris and this one is too, add +1
+                if (cleared === 4) {
+                    if (this.lastWasTetris) baseGarbage += 1;
+                    this.lastWasTetris = true;
+                } else {
+                    this.lastWasTetris = false;
+                }
+
+                let totalSent = baseGarbage + comboBonus;
+
+                if (totalSent > 0 && this.opponent) {
+                    this.sentLines += totalSent;
+                    document.getElementById(`${this.statsPrefix}-sent`).innerText = this.sentLines;
+                    this.opponent.receiveGarbage(totalSent);
+
+                    // Visual feedback
+                    this.showComboEffect(this.comboCount, totalSent);
+                }
+            }
+            updateGarbageUI() {
+                const bar = document.getElementById(`${this.statsPrefix}-garbage-bar`);
+                // Scale: 20 lines = 100% height
+                const heightPct = Math.min((this.pendingGarbage / 20) * 100, 100);
+                bar.style.height = `${heightPct}%`;
+            }
+            enterGarbage(count) {
+                const lines = Math.min(count, 12); // Cap at 12 to prevent instant death
+                for (let i = 0; i < lines; i++) {
+                    const row = new Array(10).fill(8); // Grey garbage blocks
+                    row[Math.floor(Math.random() * 10)] = 0; // The "well" to escape
+                    this.arena.shift();
+                    this.arena.push(row);
+                }
+                this.applyShake(lines);
             }
         }
 
@@ -456,4 +740,5 @@
         requestAnimationFrame(run);
     </script>
 </body>
+
 </html>
