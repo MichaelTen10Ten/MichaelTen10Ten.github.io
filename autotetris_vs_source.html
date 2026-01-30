@@ -203,10 +203,11 @@
                 this.lastGravityTime = 0;
                 this.lastRotationTime = 0;
                 this.particles = [];
+                this.gridHeight = 30;
 
-                this.blockSize = Math.floor((window.innerHeight * 0.45) / 20);
+                this.blockSize = Math.floor((window.innerHeight * 0.45) /this.gridHeight);
                 this.canvas.width = 10 * this.blockSize;
-                this.canvas.height = 20 * this.blockSize;
+                this.canvas.height =this.gridHeight * this.blockSize;
                 this.ctx.scale(this.blockSize, this.blockSize);
 
                 this.sideBlockSize = this.blockSize * 0.6;
@@ -237,7 +238,7 @@
 
             reset(isFullReset = false) {
                 this.pendingGarbage = 0;
-                this.arena = Array.from({ length: 20 }, () => new Array(10).fill(0));
+                this.arena = Array.from({ length:this.gridHeight }, () => new Array(10).fill(0));
                 this.player = { pos: { x: 0, y: 0 }, matrix: null };
                 this.nextPieces = [];
                 this.holdPiece = null;
@@ -318,10 +319,10 @@
                 // 1. Calculate Heights and Holes
                 for (let x = 0; x < 10; x++) {
                     let colHasBlock = false;
-                    for (let y = 0; y < 20; y++) {
+                    for (let y = 0; y <this.gridHeight; y++) {
                         if (t[y][x] !== 0) {
                             if (!colHasBlock) {
-                                heights[x] = 20 - y;
+                                heights[x] =this.gridHeight - y;
                                 colHasBlock = true;
                             }
                         } else if (colHasBlock) {
@@ -344,7 +345,7 @@
                 // 4. Calculate Column Transitions (Vertical stability)
                 // A transition is when a cell is different from the one above it
                 for (let x = 0; x < 10; x++) {
-                    for (let y = 0; y < 19; y++) {
+                    for (let y = 0; y < this.gridHeight-1; y++) {
                         if ((t[y][x] === 0) !== (t[y + 1][x] === 0)) transitions++;
                     }
                 }
@@ -356,7 +357,7 @@
                 if (lines === 4) {
                     lineReward = 800; // Major priority for Tetris
                 } else if (lines > 0) {
-                    if (maxHeight > 15) {
+                    if (maxHeight > this.gridHeight*0.75) {
                         lineReward = lines * 100; // Emergency: Clear anything to survive
                     } else {
                         lineReward = lines * -50; // Discourage small clears if board is low
@@ -488,10 +489,10 @@
             }
 
             draw() {
-                const maxHeight = this.arena.reduce((max, row, i) => row.some(v => v !== 0) ? Math.max(max, 20 - i) : max, 0);
-                const currentMaxHeight = this.arena.reduce((max, row, i) => row.some(v => v !== 0) ? Math.max(max, 20 - i) : max, 0);
+                const maxHeight = this.arena.reduce((max, row, i) => row.some(v => v !== 0) ? Math.max(max,this.gridHeight - i) : max, 0);
+                const currentMaxHeight = this.arena.reduce((max, row, i) => row.some(v => v !== 0) ? Math.max(max,this.gridHeight - i) : max, 0);
                 this.ctx.fillStyle = currentMaxHeight > 14 ? '#1a0000' : '#050505';
-                this.ctx.fillRect(0, 0, 10, 20);
+                this.ctx.fillRect(0, 0, 10,this.gridHeight);
                 this.drawMatrix(this.ctx, this.arena, { x: 0, y: 0 });
                 this.drawMatrix(this.ctx, this.player.matrix, this.player.pos, true);
 
@@ -712,8 +713,8 @@
             }
             updateGarbageUI() {
                 const bar = document.getElementById(`${this.statsPrefix}-garbage-bar`);
-                // Scale: 20 lines = 100% height
-                const heightPct = Math.min((this.pendingGarbage / 20) * 100, 100);
+                // Scale:this.gridHeight lines = 100% height
+                const heightPct = Math.min((this.pendingGarbage /this.gridHeight) * 100, 100);
                 bar.style.height = `${heightPct}%`;
             }
             enterGarbage(count) {
