@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Source Shooter - Bottom Fire</title>
+    <style>
+        body { background: #000; color: #fff; font-family: 'Courier New', monospace; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        #side-panel { width: 320px; background: #111; border-right: 2px solid #333; padding: 20px; display: flex; flex-direction: column; gap: 15px; box-sizing: border-box; }
+        textarea { flex-grow: 1; background: #000; color: #0f0; border: 1px solid #444; padding: 10px; font-family: monospace; font-size: 11px; resize: none; }
+        button { background: #0f0; color: #000; border: none; padding: 15px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        button:hover { background: #fff; }
+
+        #game-container { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 10px; background: #050505; position: relative; }
+        
+        canvas { background: #000; border: 2px solid #333; order: 1; }
+
+        /* HUD and Input at the Bottom */
+        .bottom-ui { width: 100%; max-width: 500px; display: flex; flex-direction: column; align-items: center; order: 2; margin-top: 10px; }
+        .hud { width: 100%; display: flex; justify-content: space-between; padding: 10px; background: #222; border-radius: 5px; margin-bottom: 5px; box-sizing: border-box;}
+        .hp-bar-bg { width: 100%; height: 10px; background: #333; margin-top: 5px; }
+        #hp-fill { width: 100%; height: 100%; background: #0f0; transition: width 0.2s; }
+
+        .input-box { font-size: 36px; color: #ff0; height: 50px; font-weight: bold; letter-spacing: 2px; text-shadow: 0 0 10px #ff0; }
+        
+        .stat-label { font-size: 11px; color: #aaa; display: block; text-transform: uppercase; }
+        .stat-val { font-size: 18px; color: #0f0; }
+        #level-overlay { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; color: #0f0; font-weight: bold; display: none; pointer-events: none; text-shadow: 0 0 20px #0f0; z-index: 100; }
+    </style>
+</head>
+<body>
+
+<div id="side-panel">
+    <h2>SOURCE SHOOTER</h2>
+    <p style="font-size: 11px; color: #888;">Input moved to bottom. Ghost trace fires upward.</p>
+    <textarea id="wordInput"></textarea>
+    <button onclick="startGame()">Initialize Game</button>
+</div>
+
+<div id="game-container">
+    <div id="level-overlay">LEVEL UP!</div>
+    
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="bottom-ui">
+        <div class="input-box" id="displayBuffer">_</div>
+        <div class="hud">
+            <div><span class="stat-label">Score</span><span id="score" class="stat-val">0</span></div>
+            <div><span class="stat-label">Level</span><span id="level" class="stat-val">1</span></div>
+            <div><span class="stat-label">Combo</span><span id="combo" class="stat-val">x1</span></div>
+            <div style="width: 150px;">
+                <span class="stat-label">Shield</span>
+                <div class="hp-bar-bg"><div id="hp-fill"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="game-logic">
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const levelEl = document.getElementById('level');
+const comboEl = document.getElementById('combo');
+const hpFillEl = document.getElementById('hp-fill');
+const bufferEl = document.getElementById('displayBuffer');
+const wordInput = document.getElementById('wordInput');
+const levelOverlay = document.getElementById('level-overlay');
+
+canvas.width = 500;
+canvas.height = 700;
+
+let words = [], particles = [];
+let wordPool = [];
+let score = 0, combo = 1, hp = 100, currentLevel = 1, currentInput = "", gameRunning = false, spawnTimer;
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(freq, type, duration, vol) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + duration);
+}
+
+const sounds = {
+    type: () => playSound(600, 'sine', 0.05, 0.05),
+    match: () => playSound(1000, 'sine', 0.15, 0.1),
+    error: () => playSound(100, 'sawtooth', 0.2, 0.05),
+    level: () => playSound(440, 'square', 0.5, 0.1),
+    damage: () => playSound(60, 'triangle', 0.4, 0.2)
+};
+
+window.onload = () => {
+    const source = document.getElementById('game-logic').innerHTML;
+    const cleanSource = source.replace(/[^a-zA-Z]/g, ' ').split(/\s+/).filter(w => w.length > 3);
+    wordInput.value = [...new Set(cleanSource)].join(' ');
+};
+
+class Particle {
+    constructor(targetWord, char) {
+        this.x = canvas.width / 2;
+        this.y = canvas.height; // START AT THE BOTTOM
+        this.target = targetWord;
+        this.char = char;
+        this.speed = 20; // Faster "bullet" speed
+        this.alive = true;
+    }
+    update() {
+        let dx = this.target.x - this.x;
+        let dy = this.target.y - this.y;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 20) { this.alive = false; return; }
+        this.x += (dx / dist) * this.speed;
+        this.y += (dy / dist) * this.speed;
+    }
+    draw() {
+        ctx.fillStyle = "#0ff"; // Cyan tracers
+        ctx.font = "bold 18px monospace";
+        ctx.fillText(this.char, this.x, this.y);
+    }
+}
+
+class FallingWord {
+    constructor(text) {
+        this.text = text;
+        ctx.font = "bold 22px monospace";
+        const wordWidth = ctx.measureText(this.text).width;
+        this.x = Math.random() * (canvas.width - wordWidth - 20) + 10;
+        this.y = -20;
+        const speedDivisor = Math.max(5, this.text.length);
+        this.speed = (5 + (currentLevel * 1.2)) / speedDivisor;
+    }
+    draw() {
+        let distToBottom = (canvas.height - this.y) / canvas.height;
+        ctx.fillStyle = distToBottom < 0.2 ? "#f00" : "#fff";
+        ctx.font = "bold 22px monospace";
+        ctx.fillText(this.text, this.x, this.y);
+        if (currentInput && this.text.toLowerCase().startsWith(currentInput.toLowerCase())) {
+            ctx.fillStyle = "#f0f"; 
+            ctx.fillText(this.text.substring(0, currentInput.length), this.x, this.y);
+        }
+    }
+    update() { this.y += this.speed; }
+}
+
+function startGame() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const custom = wordInput.value.split(/[\s,]+/).filter(w => w.length > 0);
+    wordPool = custom.length > 0 ? custom : ["system"];
+    words = []; particles = []; score = 0; combo = 1; hp = 100; currentLevel = 1; currentInput = "";
+    gameRunning = true;
+    updateUI(); spawnWord(); requestAnimationFrame(gameLoop);
+}
+
+function spawnWord() {
+    if (!gameRunning) return;
+    words.push(new FallingWord(wordPool[Math.floor(Math.random() * wordPool.length)]));
+    spawnTimer = setTimeout(spawnWord, Math.max(500, 2000 - (currentLevel * 150)));
+}
+
+function checkLevelUp() {
+    let newLevel = Math.floor(score / 500) + 1;
+    if (newLevel > currentLevel) {
+        currentLevel = newLevel;
+        sounds.level();
+        levelOverlay.innerText = "LEVEL " + currentLevel;
+        levelOverlay.style.display = "block";
+        setTimeout(() => levelOverlay.style.display = "none", 2000);
+    }
+}
+
+window.addEventListener('keydown', (e) => {
+    if (!gameRunning) return;
+    if (e.key === "Backspace") { currentInput = currentInput.slice(0, -1); sounds.type(); }
+    else if (e.key.length === 1) {
+        let nextChar = e.key.toLowerCase();
+        let potentialMatch = words.find(w => w.text.toLowerCase().startsWith(currentInput.toLowerCase() + nextChar));
+        
+        if (!potentialMatch) {
+            sounds.error(); combo = 1; currentInput = "";
+        } else {
+            particles.push(new Particle(potentialMatch, e.key));
+            currentInput += e.key;
+            sounds.type();
+        }
+    }
+
+    let matchIdx = words.findIndex(w => w.text.toLowerCase() === currentInput.toLowerCase());
+    if (matchIdx !== -1) {
+        sounds.match(); score += (10 * combo); combo++;
+        words.splice(matchIdx, 1); currentInput = "";
+        checkLevelUp();
+    }
+    updateUI();
+});
+
+function updateUI() {
+    scoreEl.innerText = score;
+    levelEl.innerText = currentLevel;
+    comboEl.innerText = "x" + combo;
+    hpFillEl.style.width = hp + "%";
+    bufferEl.innerText = currentInput || "_";
+    hpFillEl.style.background = hp > 50 ? "#0f0" : (hp > 25 ? "#ff0" : "#f00");
+}
+
+function gameLoop() {
+    if (!gameRunning) return;
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update();
+        particles[i].draw();
+        if (!particles[i].alive) particles.splice(i, 1);
+    }
+
+    for (let i = words.length - 1; i >= 0; i--) {
+        words[i].update();
+        words[i].draw();
+        if (words[i].y > canvas.height) {
+            sounds.damage();
+            hp -= words[i].text.length;
+            combo = 1;
+            words.splice(i, 1);
+            if (hp <= 0) { hp = 0; gameRunning = false; alert("SYSTEM OVERRUN\nScore: " + score); }
+            updateUI();
+        }
+    }
+    requestAnimationFrame(gameLoop);
+}
+</script>
+</body>
+</html>
