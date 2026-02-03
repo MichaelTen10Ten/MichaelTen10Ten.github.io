@@ -3,26 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extended 2-Octave Piano</title>
+    <title>Drag & Play Piano</title>
     <style>
-        body { background: #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; color: white; font-family: system-ui, sans-serif; }
-        .piano-container { display: flex; padding: 20px; background: #333; border-radius: 10px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        body { background: #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; color: white; font-family: system-ui, sans-serif; overflow: hidden; }
+        .piano-container { display: flex; padding: 20px; background: #333; border-radius: 10px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); user-select: none; }
         
-        .key { width: 45px; height: 180px; background: white; border: 1px solid #ccc; border-radius: 0 0 5px 5px; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 10px; color: #333; font-size: 0.8rem; transition: 0.1s; user-select: none; position: relative; }
+        .key { width: 45px; height: 180px; background: white; border: 1px solid #ccc; border-radius: 0 0 5px 5px; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 10px; color: #333; font-size: 0.8rem; transition: background 0.1s; position: relative; }
         .key.black { width: 30px; height: 110px; background: #222; color: white; margin-left: -15px; margin-right: -15px; z-index: 2; border: none; }
         
-        /* Highlight colors */
-        .key:active, .key.active { background: #00d1ff !important; transform: translateY(2px); }
-        .key.black:active, .key.black.active { background: #0099ff !important; }
+        /* Interactive colors */
+        .key:hover { background: #eee; }
+        .key.black:hover { background: #444; }
+        .key.active { background: #00d1ff !important; transform: translateY(2px); }
+        .key.black.active { background: #0099ff !important; }
         
         .label { pointer-events: none; font-weight: bold; text-transform: uppercase; }
-        .sub-label { font-size: 0.6rem; color: #888; }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
-    <h2 style="margin-bottom: 5px;">Extended JS Piano</h2>
-    <p style="margin-bottom: 20px; color: #aaa;">Bottom: Z to M | Top: Q(,) to I</p>
+    <h2 style="margin-bottom: 5px;">Glissando Piano</h2>
+    <p style="margin-bottom: 20px; color: #aaa;">Click and Drag across the keys to play!</p>
 
     <div class="piano-container" id="piano">
         <div class="key" data-note="261.63" data-bind='["z"]'><span class="label">Z</span></div>
@@ -50,15 +51,19 @@
         <div class="key" data-note="880.00" data-bind='["y"]'><span class="label">Y</span></div>
         <div class="key black" data-note="932.33" data-bind='["7"]'><span class="label">7</span></div>
         <div class="key" data-note="987.77" data-bind='["u"]'><span class="label">U</span></div>
-        
-        <div class="key" data-note="1046.50" data-bind='["i"]'><span class="label">I</span><span class="sub-label">High C</span></div>
+        <div class="key" data-note="1046.50" data-bind='["i"]'><span class="label">I</span></div>
     </div>
 
 <script>
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const pressedKeys = new Set();
+    let isMouseDown = false;
 
-    function playNote(frequency) {
+    // Set mouse state globally
+    window.addEventListener('mousedown', () => isMouseDown = true);
+    window.addEventListener('mouseup', () => isMouseDown = false);
+
+    function playNote(frequency, element) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
         
         const osc = audioCtx.createOscillator();
@@ -67,17 +72,21 @@
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(parseFloat(frequency), audioCtx.currentTime);
 
-        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.2);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1);
 
         osc.connect(gain);
         gain.connect(audioCtx.destination);
 
         osc.start();
-        osc.stop(audioCtx.currentTime + 1.2);
+        osc.stop(audioCtx.currentTime + 1);
+
+        // Visual trigger
+        element.classList.add('active');
+        setTimeout(() => element.classList.remove('active'), 200);
     }
 
-    // Find key element by searching the JSON arrays in data-bind
+    // Key Element Helper
     function getKeyElement(key) {
         return Array.from(document.querySelectorAll('.key')).find(el => {
             const binds = JSON.parse(el.dataset.bind);
@@ -85,29 +94,35 @@
         });
     }
 
-    // Click support
+    // Drag and Click Logic
     document.querySelectorAll('.key').forEach(key => {
-        key.addEventListener('mousedown', () => playNote(key.dataset.note));
+        // Initial Click
+        key.addEventListener('mousedown', (e) => {
+            playNote(key.dataset.note, key);
+        });
+
+        // Slide Over
+        key.addEventListener('mouseenter', () => {
+            if (isMouseDown) {
+                playNote(key.dataset.note, key);
+            }
+        });
     });
 
-    // Keyboard support
+    // Keyboard Logic
     window.addEventListener('keydown', (e) => {
-        const key = e.key.toLowerCase();
-        if (pressedKeys.has(key)) return;
-
-        const el = getKeyElement(key);
+        const keyChar = e.key.toLowerCase();
+        if (pressedKeys.has(keyChar)) return;
+        
+        const el = getKeyElement(keyChar);
         if (el) {
-            pressedKeys.add(key);
-            el.classList.add('active');
-            playNote(el.dataset.note);
+            pressedKeys.add(keyChar);
+            playNote(el.dataset.note, el);
         }
     });
 
     window.addEventListener('keyup', (e) => {
-        const key = e.key.toLowerCase();
-        pressedKeys.delete(key);
-        const el = getKeyElement(key);
-        if (el) el.classList.remove('active');
+        pressedKeys.delete(e.key.toLowerCase());
     });
 </script>
 </body>
