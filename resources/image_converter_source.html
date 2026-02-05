@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch Image Converter & Zipper</title>
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .card { background: #1e293b; padding: 2rem; border-radius: 12px; width: 100%; max-width: 600px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .drop-zone { border: 2px dashed #334155; padding: 30px; border-radius: 8px; cursor: pointer; margin-bottom: 20px; transition: 0.3s; }
+        .drop-zone:hover { border-color: #38bdf8; background: #1e293b; }
+        .file-list { text-align: left; margin-top: 20px; max-height: 200px; overflow-y: auto; background: #0f172a; padding: 10px; border-radius: 5px; font-size: 0.85rem; }
+        .controls { margin-top: 20px; display: none; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 15px; }
+        button { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background: #38bdf8; color: #0f172a; transition: 0.2s; }
+        button:hover { background: #7dd3fc; }
+        button.zip-btn { background: #10b981; color: white; width: 100%; margin-top: 15px; grid-column: 1 / -1; }
+        .status { margin-top: 10px; color: #94a3b8; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Batch Image Converter</h2>
+    <div class="drop-zone" onclick="document.getElementById('upload').click()">
+        Click or Drag Images (JPG, PNG, WebP, HEIC)
+        <input type="file" id="upload" accept="image/*,.heic" multiple hidden>
+    </div>
+
+    <div id="fileList" class="file-list" style="display:none;"></div>
+    <div id="status" class="status"></div>
+
+    <div id="controls" class="controls">
+        <h3>Convert all to:</h3>
+        <div class="grid" id="buttonGroup">
+            <button onclick="processAll('jpeg')">JPG</button>
+            <button onclick="processAll('png')">PNG</button>
+            <button onclick="processAll('webp')">WebP</button>
+            <button onclick="processAll('svg')">SVG</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const upload = document.getElementById('upload');
+    const fileListDisplay = document.getElementById('fileList');
+    const controls = document.getElementById('controls');
+    const status = document.getElementById('status');
+    let uploadedFiles = [];
+
+    upload.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        uploadedFiles = files;
+        fileListDisplay.innerHTML = '<strong>Selected Files:</strong><br>' + files.map(f => f.name).join('<br>');
+        fileListDisplay.style.display = 'block';
+        controls.style.display = 'block';
+        status.innerText = `${files.length} file(s) ready.`;
+    });
+
+    async function processAll(targetExt) {
+        const zip = new JSZip();
+        status.innerText = "Processing... please wait.";
+        
+        for (let file of uploadedFiles) {
+            let currentFile = file;
+            let fileName = file.name.split('.')[0];
+
+            // Handle HEIC Conversion first
+            if (file.name.toLowerCase().endsWith('.heic')) {
+                try {
+                    const blob = await heic2any({ blob: file, toType: "image/jpeg" });
+                    currentFile = new File([blob], `${fileName}.jpg`, { type: "image/jpeg" });
+                } catch (e) {
+                    console.error("HEIC Error:", e);
+                    continue; 
+                }
+            }
+
+            const imgData = await fileToDataURL(currentFile);
+            const convertedBlob = await convertImage(imgData, targetExt);
+            
+            zip.file(`${fileName}.${targetExt}`, convertedBlob);
+        }
+
+        status.innerText = "Generating ZIP...";
+        const content = await zip.generateAsync({ type: "blob" });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = `converted_images_${targetExt}.zip`;
+        link.click();
+        
+        status.innerText = "Done!";
+    }
+
+    function fileToDataURL(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function convertImage(imgData, ext) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = imgData;
+            img.onload = () => {
+                if (ext === 'svg') {
+                    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${img.width}" height="${img.height}"><image href="${imgData}" width="${img.width}" height="${img.height}"/></svg>`;
+                    resolve(new Blob([svgContent], { type: 'image/svg+xml' }));
+                } else {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    canvas.toBlob((blob) => resolve(blob), `image/${ext === 'jpeg' ? 'jpeg' : ext}`);
+                }
+            };
+        });
+    }
+</script>
+
+</body>
+</html>
