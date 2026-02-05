@@ -512,7 +512,21 @@
         }
       }, 1000);
     }
+    // Function to upload data to ThingSpeak
+    function uploadToThingSpeak(level, points, correct, accuracy) {
+      const apiKey = "0KPYMRVALYLOGJGT"; // Your API Key
+      // ThingSpeak uses field1, field2, etc. 
+      // Mapping: Field1=Level, Field2=Points, Field3=Correct, Field4=Accuracy
+      const url = `https://api.thingspeak.com/update?api_key=${apiKey}&field1=${level}&field2=${points}&field3=${correct}&field4=${accuracy}`;
 
+      fetch(url)
+        .then(response => {
+          if (response.ok) {
+            console.log("Data uploaded to ThingSpeak successfully!");
+          }
+        })
+        .catch(error => console.error("Error uploading to ThingSpeak:", error));
+    }
     function showResults() {
       document.getElementById('ui-layer').classList.add('hidden');
       document.getElementById('result-overlay').classList.remove('hidden');
@@ -523,6 +537,8 @@
       document.getElementById('dl-score').innerText = score;
       document.getElementById('dl-correct').innerText = rawCorrect;
       document.getElementById('dl-accuracy').innerText = acc + "%";
+      // --- NEW: UPLOAD DATA ---
+      uploadToThingSpeak(currentLevel, score, rawCorrect, acc);
     }
 
     function downloadScorecard() {
