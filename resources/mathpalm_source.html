@@ -3,31 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MathPalm Pro | Hand-Tracked Arithmetic</title>
+    <title>MathPalm Pro | Hand-Tracked Mental Math</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
     <style>
         :root {
-            --neon-blue: #00f2ff;
-            --neon-pink: #ff007a;
-            --neon-green: #00ff88;
-            --glass: rgba(255, 255, 255, 0.1);
+            --primary: #00f2ff;
+            --accent: #7000ff;
+            --correct: #00ff88;
+            --wrong: #ff3e3e;
+            --bg: #050505;
+            --panel: rgba(20, 20, 25, 0.85);
         }
 
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
             font-family: 'Outfit', 'Segoe UI', sans-serif;
-            background: #050505;
+            background: var(--bg);
             color: white;
             overflow: hidden;
         }
 
-        /* Video & Canvas */
+        /* Video Background */
         #video-container {
             position: relative;
             width: 100vw;
@@ -41,303 +43,407 @@
         
         canvas {
             position: absolute;
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             object-fit: cover;
-            transform: scaleX(-1); /* Mirror effect */
+            transform: scaleX(-1); /* Mirror view */
             filter: brightness(0.4) contrast(1.2);
         }
 
-        /* Overlay Systems */
-        .overlay {
+        /* HUD Styling */
+        #hud {
             position: absolute;
             inset: 0;
-            background: rgba(0,0,0,0.85);
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .stat-group {
+            background: var(--panel);
+            padding: 15px 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
             backdrop-filter: blur(10px);
-            z-index: 1000;
+        }
+
+        .stat-label { font-size: 0.8rem; text-transform: uppercase; color: #aaa; letter-spacing: 1px; }
+        .stat-value { font-size: 1.8rem; font-weight: 800; display: block; }
+
+        /* Game Zones */
+        .zone {
+            position: absolute;
+            width: 200px;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: opacity 0.4s;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .hidden { display: none !important; opacity: 0; }
+        .zone.active {
+            background: var(--primary);
+            border-style: solid;
+            box-shadow: 0 0 30px var(--primary);
+            transform: scale(1.1);
+            color: black;
+        }
 
-        /* UI Elements */
-        #game-ui {
+        /* Position hitboxes with gaps */
+        #zone-0 { top: 15%; left: 10%; }   /* TL */
+        #zone-1 { top: 15%; right: 10%; }  /* TR */
+        #zone-2 { bottom: 15%; left: 10%; } /* BL */
+        #zone-3 { bottom: 15%; right: 10%; } /* BR */
+
+        .zone-label { font-size: 3.5rem; font-weight: 900; }
+
+        /* Central Question Area */
+        #question-area {
             position: absolute;
-            inset: 0;
-            pointer-events: none;
-            z-index: 10;
-        }
-
-        .stat-bar {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 20px;
-            pointer-events: none;
-        }
-
-        .pill {
-            background: var(--glass);
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 10px 25px;
-            border-radius: 100px;
-            backdrop-filter: blur(5px);
-            font-weight: 800;
-            font-size: 1.2rem;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-
-        /* Target Zones */
-        .zone {
-            position: absolute;
-            width: 250px;
-            height: 180px;
-            border: 3px dashed rgba(255,255,255,0.2);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 4rem;
-            font-weight: 900;
-            transition: all 0.3s;
-        }
-
-        .zone.active { border-color: var(--neon-blue); background: rgba(0, 242, 255, 0.1); transform: scale(1.05); }
-        
-        /* Adjusted Positions with Gaps */
-        #zone-0 { top: 15%; left: 10%; color: var(--neon-pink); }
-        #zone-1 { top: 15%; right: 10%; color: var(--neon-blue); }
-        #zone-2 { bottom: 15%; left: 10%; color: var(--neon-green); }
-        #zone-3 { bottom: 15%; right: 10%; color: #ffcc00; }
-
-        .neutral-indicator {
-            position: absolute;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 100px;
-            height: 100px;
-            border: 2px solid rgba(255,255,255,0.1);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.5);
+            text-align: center;
         }
 
-        #question-display {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 8rem;
+        #question-text {
+            font-size: 7rem;
             font-weight: 900;
-            text-shadow: 0 0 30px rgba(255,255,255,0.5);
+            margin: 0;
+            text-shadow: 0 0 20px rgba(255,255,255,0.5);
         }
 
         #feedback-text {
-            position: absolute;
-            top: 58%;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: 700;
-            height: 3rem;
+            height: 2.5rem;
+            text-transform: uppercase;
         }
 
-        /* Buttons & Levels */
-        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 30px; }
-        
-        button {
-            background: transparent;
-            color: white;
-            border: 2px solid white;
-            padding: 15px 30px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            border-radius: 10px;
-            transition: 0.3s;
-        }
-
-        button:hover { background: white; color: black; transform: translateY(-3px); }
-
-        /* Fever & Freeze Effects */
-        @keyframes fever {
-            0% { box-shadow: inset 0 0 100px var(--neon-pink); }
-            50% { box-shadow: inset 0 0 150px var(--neon-blue); }
-            100% { box-shadow: inset 0 0 100px var(--neon-pink); }
-        }
-        .fever-mode #video-container { animation: fever 1.5s infinite; }
-        .time-frozen { color: var(--neon-blue); text-shadow: 0 0 20px var(--neon-blue); }
-
-        /* Scorecard (Hidden) */
-        #scorecard-render {
+        /* Overlays */
+        .overlay {
             position: fixed;
-            left: -2000px;
-            width: 600px;
-            background: linear-gradient(135deg, #050505, #1a1a1a);
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(20px);
+        }
+
+        .menu-card {
+            background: var(--panel);
             padding: 40px;
-            border: 5px solid var(--neon-blue);
+            border-radius: 30px;
+            border: 1px solid var(--primary);
             text-align: center;
+            max-width: 600px;
+        }
+
+        .btn {
+            background: none;
+            border: 2px solid white;
+            color: white;
+            padding: 12px 30px;
+            margin: 10px;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: white;
+            color: black;
+        }
+
+        .btn-primary {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary);
+            color: black;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Center Dot (Visualizer) */
+        #hand-dot {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 50%;
+            z-index: 1000;
+            box-shadow: 0 0 15px var(--primary);
+            pointer-events: none;
+            transition: transform 0.1s;
+        }
+
+        #deadzone-hint {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 150px;
+            height: 150px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.5); opacity: 0; }
         }
     </style>
 </head>
 <body>
 
     <div id="menu-overlay" class="overlay">
-        <h1 style="font-size: 5rem; margin-bottom: 0; letter-spacing: 10px;">MATH<span style="color:var(--neon-blue)">PALM</span></h1>
-        <p style="color: #888; margin-bottom: 30px;">AI GESTURE-BASED ARITHMETIC REACTION GAME</p>
-        
-        <div class="btn-group">
-            <button onclick="startGame(1)">Lvl 1: Simple +/-</button>
-            <button onclick="startGame(2)">Lvl 2: Double +/-</button>
-            <button onclick="startGame(3)">Lvl 3: Times Tables</button>
-            <button onclick="startGame(4)">Lvl 4: Fractions</button>
-            <button onclick="startGame(5)">Lvl 5: Triple +/-</button>
-            <button onclick="startGame(6)">Lvl 6: Pro Mix</button>
+        <div class="menu-card">
+            <h1 style="font-size: 3rem; margin-bottom: 0;">MATHPALM <span style="color:var(--primary)">PRO</span></h1>
+            <p style="color: #888; margin-bottom: 30px;">Use your palm center to navigate and solve.</p>
+            
+            <div id="level-list">
+                <button class="btn btn-primary" onclick="startGame(1)">Lvl 1: Single Digit +/-</button>
+                <button class="btn" onclick="startGame(2)">Lvl 2: Double Digit +/-</button>
+                <button class="btn" onclick="startGame(3)">Lvl 3: Single Digit ×</button>
+                <button class="btn" onclick="startGame(4)">Lvl 4: Double Digit ×</button>
+                <button class="btn" onclick="startGame(5)">Lvl 5: Simplify Fractions</button>
+                <button class="btn" onclick="startGame(6)">Lvl 6: The Gauntlet (Mixed)</button>
+            </div>
         </div>
     </div>
 
     <div id="countdown-overlay" class="overlay hidden">
-        <div id="count-num" style="font-size: 15rem; font-weight: 900; color: var(--neon-blue);">3</div>
+        <h1 id="count-num" style="font-size: 15rem;">3</h1>
     </div>
 
     <div id="result-overlay" class="overlay hidden">
-        <h1 style="font-size: 3.5rem;">MISSION COMPLETE</h1>
-        <div id="final-stats" style="font-size: 1.8rem; margin: 20px 0; line-height: 1.6;"></div>
-        <div style="display: flex; gap: 15px;">
-            <button onclick="location.reload()">MAIN MENU</button>
-            <button onclick="downloadScorecard()" style="border-color: var(--neon-green);">DOWNLOAD SCORECARD</button>
+        <div class="menu-card" id="scorecard-area">
+            <h2 style="color: var(--primary)">SESSION COMPLETE</h2>
+            <div style="display: flex; justify-content: space-around; margin: 30px 0;">
+                <div><span class="stat-label">Points</span><br><span class="stat-value" id="res-score">0</span></div>
+                <div><span class="stat-label">Accuracy</span><br><span class="stat-value" id="res-acc">0%</span></div>
+                <div><span class="stat-label">Correct</span><br><span class="stat-value" id="res-correct">0</span></div>
+            </div>
+            <button class="btn btn-primary" onclick="location.reload()">MAIN MENU</button>
+            <button class="btn" onclick="downloadCapture()">SAVE SCORECARD</button>
         </div>
     </div>
 
     <div id="video-container">
         <video id="input_video"></video>
         <canvas id="output_canvas"></canvas>
+        <div id="hand-dot"></div>
+        <div id="deadzone-hint"></div>
 
-        <div id="game-ui" class="hidden">
-            <div class="stat-bar">
-                <div class="pill">SCORE: <span id="ui-score">0</span></div>
-                <div class="pill">STREAK: <span id="ui-streak">0</span></div>
-                <div class="pill" id="ui-timer-pill">TIME: <span id="ui-timer">60</span>s</div>
-                <div class="pill" style="color:var(--neon-blue)">x<span id="ui-mult">1</span></div>
+        <div id="hud" class="hidden">
+            <div class="stats-bar">
+                <div class="stat-group">
+                    <span class="stat-label">Score</span>
+                    <span class="stat-value" id="ui-score">0000</span>
+                </div>
+                <div class="stat-group" style="text-align: center;">
+                    <span class="stat-label">Time Remaining</span>
+                    <span class="stat-value" id="ui-timer">60</span>
+                </div>
+                <div class="stat-group" style="text-align: right;">
+                    <span class="stat-label">Accuracy</span>
+                    <span class="stat-value" id="ui-accuracy">0%</span>
+                </div>
             </div>
 
-            <div id="question-display">--</div>
-            <div id="feedback-text"></div>
+            <div id="question-area">
+                <div id="feedback-text"></div>
+                <h2 id="question-text">Ready?</h2>
+            </div>
 
-            <div id="zone-0" class="zone">?</div>
-            <div id="zone-1" class="zone">?</div>
-            <div id="zone-2" class="zone">?</div>
-            <div id="zone-3" class="zone">?</div>
-
-            <div class="neutral-indicator" id="neutral-node">CENTER HAND</div>
+            <div id="zone-0" class="zone"><span class="zone-label">?</span></div>
+            <div id="zone-1" class="zone"><span class="zone-label">?</span></div>
+            <div id="zone-2" class="zone"><span class="zone-label">?</span></div>
+            <div id="zone-3" class="zone"><span class="zone-label">?</span></div>
         </div>
-    </div>
-
-    <div id="scorecard-render">
-        <h1 style="color:var(--neon-blue)">MATHPALM PRO RESULTS</h1>
-        <hr style="border: 1px solid #333">
-        <h2 id="sc-level">Level: 1</h2>
-        <h1 id="sc-score" style="font-size: 4rem; margin: 10px 0;">0000</h1>
-        <p id="sc-acc" style="font-size: 1.5rem;">Accuracy: 0%</p>
-        <p style="color: #666; margin-top: 20px;">Analyzed by MediaPipe AI</p>
     </div>
 
     <script>
         // --- CONFIG & STATE ---
-        const config = {
-            thingspeakKey: "0KPYMRVALYLOGJGT",
-            gameDuration: 60,
-            deadzoneSize: 0.15, // Center gap percentage
-            feverThreshold: 4
-        };
-
-        let state = {
+        const API_KEY = "0KPYMRVALYLOGJGT";
+        let gameState = {
             active: false,
             score: 0,
-            streak: 0,
-            multiplier: 1,
+            correct: 0,
+            attempted: 0,
             timeLeft: 60,
-            correctAnswers: 0,
-            totalAttempts: 0,
             currentLevel: 1,
-            needsNeutral: false,
-            answerHistory: [],
-            isFrozen: false,
-            currentAns: ""
+            needsReset: true,
+            currentAns: null,
+            options: []
         };
 
-        // --- AUDIO ENGINE ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function beep(freq, duration, type = 'sine') {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
+        const audio = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type = 'sine', duration = 0.1) {
+            const osc = audio.createOscillator();
+            const gain = audio.createGain();
             osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.frequency.setValueAtTime(freq, audio.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.00001, audio.currentTime + duration);
             osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            gain.connect(audio.destination);
             osc.start();
-            osc.stop(audioCtx.currentTime + duration);
+            osc.stop(audio.currentTime + duration);
         }
 
-        // --- MATH LOGIC ---
-        function generateQuestion() {
+        // --- MATH ENGINE ---
+        function generateMath() {
+            let a, b, q, ans, lvl = gameState.currentLevel;
+            if (lvl === 6) lvl = Math.floor(Math.random() * 5) + 1;
+
             const r = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-            let a, b, q, ans;
 
-            switch(state.currentLevel) {
-                case 1: a = r(1, 15); b = r(1, 15); ans = a + b; q = `${a}+${b}`; break;
-                case 2: a = r(20, 99); b = r(10, 50); ans = a - b; q = `${a}-${b}`; break;
-                case 3: a = r(2, 12); b = r(2, 12); ans = a * b; q = `${a}×${b}`; break;
-                case 4: let c = r(2, 5), fa = r(1, 4), fb = r(fa + 1, 6); q = `${fa*c}/${fb*c}`; ans = `${fa}/${fb}`; break;
-                case 5: a = r(100, 500); b = r(100, 500); ans = a + b; q = `${a}+${b}`; break;
-                case 6: a = r(12, 30); b = r(3, 9); ans = a * b; q = `${a}×${b}`; break;
+            switch(lvl) {
+                case 1: // +/- 1 Digit
+                    a = r(1, 9); b = r(1, 9);
+                    if (Math.random() > 0.5) { q = `${a} + ${b}`; ans = a + b; }
+                    else { if(a < b) [a,b] = [b,a]; q = `${a} - ${b}`; ans = a - b; }
+                    break;
+                case 2: // +/- 2 Digit
+                    a = r(10, 99); b = r(10, 99);
+                    if (Math.random() > 0.5) { q = `${a} + ${b}`; ans = a + b; }
+                    else { if(a < b) [a,b] = [b,a]; q = `${a} - ${b}`; ans = a - b; }
+                    break;
+                case 3: // 1 Digit Mult
+                    a = r(2, 12); b = r(2, 9); q = `${a} × ${b}`; ans = a * b;
+                    break;
+                case 4: // 2 Digit Mult
+                    a = r(10, 50); b = r(2, 9); q = `${a} × ${b}`; ans = a * b;
+                    break;
+                case 5: // Fractions
+                    let common = r(2, 5); let n = r(1, 5); let d = r(n + 1, 6);
+                    q = `${n * common} / ${d * common}`; ans = `${n}/${d}`;
+                    break;
             }
 
-            state.currentAns = ans.toString();
-            let options = [state.currentAns];
-            while(options.length < 4) {
-                let off = r(-10, 10);
-                let w = (state.currentLevel === 4) ? `${r(1,5)}/${r(2,6)}` : (parseInt(ans) + (off === 0 ? 5 : off)).toString();
-                if(!options.includes(w)) options.push(w);
+            // Generate unique options
+            let opts = [ans.toString()];
+            while(opts.length < 4) {
+                let off = r(-10, 10); if(off === 0) off = 2;
+                let wrong = (lvl === 5) ? `${r(1,5)}/${r(6,9)}` : (parseInt(ans) + off).toString();
+                if(!opts.includes(wrong) && (lvl === 5 || parseInt(wrong) >= 0)) opts.push(wrong);
             }
-            options.sort(() => Math.random() - 0.5);
-
-            document.getElementById('question-display').innerText = q;
-            options.forEach((opt, i) => {
-                const z = document.getElementById(`zone-${i}`);
-                z.innerText = opt;
-                z.dataset.val = opt;
-                z.classList.remove('active');
-            });
             
-            state.needsNeutral = false;
-            document.getElementById('feedback-text').innerText = "";
-            document.getElementById('neutral-node').style.borderColor = "rgba(255,255,255,0.1)";
+            gameState.options = opts.sort(() => Math.random() - 0.5);
+            gameState.currentAns = ans.toString();
+            
+            document.getElementById('question-text').innerText = q;
+            gameState.options.forEach((opt, i) => {
+                document.getElementById(`zone-${i}`).querySelector('.zone-label').innerText = opt;
+            });
         }
 
-        // --- HAND TRACKING LOGIC ---
-        function getPalmCenter(landmarks) {
-            // Average of Wrist(0), Index_mcp(5), Middle_mcp(9), Ring_mcp(13), Pinky_mcp(17)
-            const indices = [0, 5, 9, 13, 17];
-            let x = 0, y = 0;
-            indices.forEach(i => {
-                x += landmarks[i].x;
-                y += landmarks[i].y;
-            });
-            return { x: x / 5, y: y / 5 };
+        // --- GAME LOGIC ---
+        function startGame(level) {
+            gameState.currentLevel = level;
+            document.getElementById('menu-overlay').classList.add('hidden');
+            const cd = document.getElementById('countdown-overlay');
+            cd.classList.remove('hidden');
+            
+            let count = 3;
+            const timer = setInterval(() => {
+                playTone(440, 'square', 0.05);
+                document.getElementById('count-num').innerText = count;
+                if(count === 0) {
+                    clearInterval(timer);
+                    cd.classList.add('hidden');
+                    initSession();
+                }
+                count--;
+            }, 1000);
         }
+
+        function initSession() {
+            gameState.active = true;
+            gameState.score = 0;
+            gameState.correct = 0;
+            gameState.attempted = 0;
+            gameState.timeLeft = 60;
+            gameState.needsReset = true;
+            
+            document.getElementById('hud').classList.remove('hidden');
+            generateMath();
+            
+            const gameTimer = setInterval(() => {
+                gameState.timeLeft--;
+                document.getElementById('ui-timer').innerText = gameState.timeLeft;
+                if(gameState.timeLeft <= 0) {
+                    clearInterval(gameTimer);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function handleSelection(index) {
+            if(!gameState.active || gameState.needsReset) return;
+
+            const selected = gameState.options[index];
+            gameState.attempted++;
+            
+            if(selected === gameState.currentAns) {
+                gameState.correct++;
+                gameState.score += 100;
+                playTone(880, 'sine', 0.2);
+                document.getElementById('feedback-text').innerText = "Correct!";
+                document.getElementById('feedback-text').style.color = "var(--correct)";
+            } else {
+                playTone(150, 'sawtooth', 0.3);
+                document.getElementById('feedback-text').innerText = "Wrong!";
+                document.getElementById('feedback-text').style.color = "var(--wrong)";
+            }
+
+            updateUI();
+            gameState.needsReset = true;
+            document.getElementById('question-text').innerText = "RETURN TO CENTER";
+        }
+
+        function updateUI() {
+            document.getElementById('ui-score').innerText = gameState.score.toString().padStart(4, '0');
+            const acc = gameState.attempted > 0 ? Math.round((gameState.correct / gameState.attempted) * 100) : 0;
+            document.getElementById('ui-accuracy').innerText = acc + "%";
+        }
+
+        function endGame() {
+            gameState.active = false;
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('result-overlay').classList.remove('hidden');
+            
+            const acc = gameState.attempted > 0 ? Math.round((gameState.correct / gameState.attempted) * 100) : 0;
+            document.getElementById('res-score').innerText = gameState.score;
+            document.getElementById('res-acc').innerText = acc + "%";
+            document.getElementById('res-correct').innerText = gameState.correct;
+
+            // Upload to ThingSpeak
+            fetch(`https://api.thingspeak.com/update?api_key=${API_KEY}&field1=${gameState.currentLevel}&field2=${gameState.score}&field3=${gameState.correct}&field4=${acc}`);
+        }
+
+        // --- VISION ENGINE ---
+        const videoElement = document.getElementById('input_video');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const dot = document.getElementById('hand-dot');
 
         function onResults(results) {
             canvasCtx.save();
@@ -345,186 +451,67 @@
             canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                const hand = results.multiHandLandmarks[0];
-                const center = getPalmCenter(hand);
+                const landmarks = results.multiHandLandmarks[0];
                 
-                // Draw Tracking Point
-                canvasCtx.fillStyle = state.needsNeutral ? "white" : "cyan";
-                canvasCtx.beginPath();
-                canvasCtx.arc(center.x * canvasElement.width, center.y * canvasElement.height, 15, 0, 2 * Math.PI);
-                canvasCtx.fill();
+                // Calculate Palm Centroid (Average of several base points for stability)
+                // Points: 0 (wrist), 5 (index base), 17 (pinky base)
+                const cx = (landmarks[0].x + landmarks[5].x + landmarks[17].x) / 3;
+                const cy = (landmarks[0].y + landmarks[5].y + landmarks[17].y) / 3;
 
-                if (state.active) {
-                    processInput(center.x, center.y);
+                // Mirror for UI
+                const uiX = 1 - cx;
+                const uiY = cy;
+
+                // Move visual dot
+                dot.style.left = (uiX * 100) + "%";
+                dot.style.top = (uiY * 100) + "%";
+
+                if (gameState.active) {
+                    // Check Reset Zone (Center Circle)
+                    const distFromCenter = Math.sqrt(Math.pow(uiX - 0.5, 2) + Math.pow(uiY - 0.5, 2));
+                    
+                    if (gameState.needsReset) {
+                        if (distFromCenter < 0.12) {
+                            gameState.needsReset = false;
+                            document.getElementById('feedback-text').innerText = "";
+                            generateMath();
+                        }
+                    } else {
+                        // Hitbox Detection (Smaller, tighter boxes)
+                        // TL: x < 0.3, y < 0.35
+                        // TR: x > 0.7, y < 0.35
+                        // BL: x < 0.3, y > 0.65
+                        // BR: x > 0.7, y > 0.65
+                        
+                        let zoneIdx = -1;
+                        if (uiX < 0.3 && uiY < 0.35) zoneIdx = 0;
+                        else if (uiX > 0.7 && uiY < 0.35) zoneIdx = 1;
+                        else if (uiX < 0.3 && uiY > 0.65) zoneIdx = 2;
+                        else if (uiX > 0.7 && uiY > 0.65) zoneIdx = 3;
+
+                        // Visual feedback for zones
+                        document.querySelectorAll('.zone').forEach((z, i) => {
+                            if(i === zoneIdx) z.classList.add('active');
+                            else z.classList.remove('active');
+                        });
+
+                        if (zoneIdx !== -1) handleSelection(zoneIdx);
+                    }
                 }
             }
             canvasCtx.restore();
         }
 
-        function processInput(x, y) {
-            // Mirror logic: 0 is left, 1 is right in raw MP, but mirror display flips it.
-            // We use raw: TopLeft(>0.7, <0.4), TopRight(<0.3, <0.4), etc.
-            
-            const inCenterX = x > 0.4 && x < 0.6;
-            const inCenterY = y > 0.4 && y < 0.6;
+        const hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
 
-            if (state.needsNeutral) {
-                if (inCenterX && inCenterY) {
-                    state.needsNeutral = false;
-                    generateQuestion();
-                }
-                return;
-            }
-
-            let selectedZone = -1;
-            // Top Left
-            if (x > 0.65 && y < 0.4) selectedZone = 0;
-            // Top Right
-            else if (x < 0.35 && y < 0.4) selectedZone = 1;
-            // Bottom Left
-            else if (x > 0.65 && y > 0.6) selectedZone = 2;
-            // Bottom Right
-            else if (x < 0.35 && y > 0.6) selectedZone = 3;
-
-            if (selectedZone !== -1) {
-                handleSelection(selectedZone);
-            }
-        }
-
-        function handleSelection(index) {
-            const zone = document.getElementById(`zone-${index}`);
-            const val = zone.dataset.val;
-            state.totalAttempts++;
-
-            if (val === state.currentAns) {
-                state.score += (10 * state.multiplier);
-                state.streak++;
-                state.correctAnswers++;
-                
-                // Multiplier Logic (3 correct in 5s)
-                const now = Date.now();
-                state.answerHistory.push(now);
-                state.answerHistory = state.answerHistory.filter(t => now - t < 5000);
-                state.multiplier = Math.max(1, state.answerHistory.length - 1);
-
-                document.getElementById('feedback-text').innerText = state.multiplier > 1 ? `COMBO x${state.multiplier}!` : "CORRECT";
-                document.getElementById('feedback-text').style.color = "var(--neon-green)";
-                beep(800 + (state.multiplier * 100), 0.2);
-
-                if (state.streak % 10 === 0) triggerFreeze();
-            } else {
-                state.streak = 0;
-                state.multiplier = 1;
-                state.answerHistory = [];
-                document.getElementById('feedback-text').innerText = "WRONG";
-                document.getElementById('feedback-text').style.color = "var(--neon-pink)";
-                beep(150, 0.3, 'sawtooth');
-            }
-
-            // UI Refresh
-            document.getElementById('ui-score').innerText = state.score;
-            document.getElementById('ui-streak').innerText = state.streak;
-            document.getElementById('ui-mult').innerText = state.multiplier;
-            document.body.classList.toggle('fever-mode', state.multiplier >= config.feverThreshold);
-            
-            state.needsNeutral = true;
-            document.getElementById('neutral-node').style.borderColor = "var(--neon-blue)";
-            zone.classList.add('active');
-        }
-
-        // --- GAME FLOW ---
-        function startGame(level) {
-            state.currentLevel = level;
-            document.getElementById('menu-overlay').classList.add('hidden');
-            document.getElementById('countdown-overlay').classList.remove('hidden');
-            
-            let count = 3;
-            const timer = setInterval(() => {
-                beep(400, 0.1);
-                document.getElementById('count-num').innerText = count;
-                if (count <= 0) {
-                    clearInterval(timer);
-                    document.getElementById('countdown-overlay').classList.add('hidden');
-                    initGameSession();
-                }
-                count--;
-            }, 1000);
-        }
-
-        function initGameSession() {
-            state.score = 0;
-            state.timeLeft = config.gameDuration;
-            state.active = true;
-            state.streak = 0;
-            state.correctAnswers = 0;
-            state.totalAttempts = 0;
-            
-            document.getElementById('game-ui').classList.remove('hidden');
-            generateQuestion();
-
-            const clock = setInterval(() => {
-                if (!state.isFrozen) {
-                    state.timeLeft--;
-                    document.getElementById('ui-timer').innerText = state.timeLeft;
-                    if (state.timeLeft <= 0) {
-                        clearInterval(clock);
-                        endGame();
-                    }
-                }
-            }, 1000);
-        }
-
-        function triggerFreeze() {
-            state.isFrozen = true;
-            beep(1000, 0.5, 'square');
-            document.getElementById('ui-timer-pill').classList.add('time-frozen');
-            setTimeout(() => {
-                state.isFrozen = false;
-                document.getElementById('ui-timer-pill').classList.remove('time-frozen');
-            }, 5000);
-        }
-
-        function endGame() {
-            state.active = false;
-            document.getElementById('game-ui').classList.add('hidden');
-            document.getElementById('result-overlay').classList.remove('hidden');
-            
-            const acc = state.totalAttempts > 0 ? Math.round((state.correctAnswers / state.totalAttempts) * 100) : 0;
-            document.getElementById('final-stats').innerHTML = `
-                Score: ${state.score}<br>
-                Accuracy: ${acc}%<br>
-                Correct: ${state.correctAnswers} / ${state.totalAttempts}
-            `;
-
-            // Prepare scorecard
-            document.getElementById('sc-level').innerText = `Level: ${state.currentLevel}`;
-            document.getElementById('sc-score').innerText = state.score;
-            document.getElementById('sc-acc').innerText = `Accuracy: ${acc}%`;
-
-            uploadToThingSpeak(state.currentLevel, state.score, state.correctAnswers, acc);
-        }
-
-        function uploadToThingSpeak(l, s, c, a) {
-            const url = `https://api.thingspeak.com/update?api_key=${config.thingspeakKey}&field1=${l}&field2=${s}&field3=${c}&field4=${a}`;
-            fetch(url).then(() => console.log("Logged to Cloud")).catch(e => console.error(e));
-        }
-
-        function downloadScorecard() {
-            html2canvas(document.getElementById('scorecard-render')).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `MathPalm_Score_${state.score}.png`;
-                link.href = canvas.toDataURL();
-                link.click();
-            });
-        }
-
-        // --- MEDIA PIPE INIT ---
-        const videoElement = document.getElementById('input_video');
-        const canvasElement = document.getElementById('output_canvas');
-        const canvasCtx = canvasElement.getContext('2d');
-        const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
-        
-        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.8,
+            minTrackingConfidence: 0.8
+        });
         hands.onResults(onResults);
 
         const camera = new Camera(videoElement, {
@@ -532,6 +519,15 @@
             width: 1280, height: 720
         });
         camera.start();
+
+        function downloadCapture() {
+            html2canvas(document.getElementById('scorecard-area')).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'MathPalm_Scorecard.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
     </script>
 </body>
 </html>
