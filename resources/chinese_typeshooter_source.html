@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>倉頡練習 - 自由切換模式</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #1a1a2e;
+            color: #fff;
+            font-family: "Microsoft JhengHei", sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #hud { margin-top: 15px; font-size: 24px; color: #00d2ff; }
+        #game-container {
+            position: relative;
+            width: 850px;
+            height: 600px;
+            background-color: #16213e;
+            border: 4px solid #0f3460;
+            margin-top: 10px;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .word-box {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 160px;
+            padding: 10px;
+            border-radius: 10px;
+            transition: transform 0.1s;
+        }
+        /* 正在輸入中的字稍微放大或發光 */
+        .typing { filter: drop-shadow(0 0 10px #e94560); transform: scale(1.1); }
+        
+        .char { font-size: 50px; font-weight: bold; margin-bottom: 5px; }
+        .code-container {
+            display: flex; gap: 8px; background: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px; border-radius: 8px; opacity: 0; transition: opacity 0.3s;
+        }
+        .code-pair { display: flex; flex-direction: column; align-items: center; }
+        .root { font-size: 12px; color: #f1c40f; }
+        .key { font-size: 18px; color: #777; font-weight: bold; }
+        .correct .root, .correct .key { color: #00ff41; }
+
+        #ui-layer {
+            position: absolute; inset: 0; background: rgba(26, 26, 46, 0.95);
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100;
+        }
+        button { padding: 15px 50px; font-size: 24px; background: #e94560; color: white; border: none; border-radius: 50px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="hud">得分: <span id="score">0</span> | 生命: <span id="lives">5</span></div>
+
+    <div id="game-container">
+        <div id="ui-layer">
+            <h2>倉頡自由切換強訓</h2>
+            <p>你可以隨時改打另一個字，但每個字的碼必須依序完成</p>
+            <button id="start-btn">開始</button>
+        </div>
+    </div>
+
+    <script>
+        const cjDict = { 'A':'日','B':'月','C':'金','D':'木','E':'水','F':'火','G':'土','H':'竹','I':'戈','J':'十','K':'大','L':'中','M':'一','N':'弓','O':'人','P':'心','Q':'手','R':'廿','S':'尸','T':'廿','U':'山','V':'女','W':'田','X':'難','Y':'卜','Z':'重' };
+        
+        const wordDb = [
+            {char:'我', code:'HQI'}, {char:'你', code:'ONF'}, {char:'他', code:'OY'},
+        ];
+
+        let score = 0, lives = 5, activeWords = [], isPlaying = false, speed = 1.0;
+
+        function spawn() {
+            if (!isPlaying) return;
+            const data = wordDb[Math.floor(Math.random() * wordDb.length)];
+            const div = document.createElement('div');
+            div.className = 'word-box';
+            let codeHtml = data.code.split('').map(l => `<div class="code-pair"><span class="root">${cjDict[l]||l}</span><span class="key">${l}</span></div>`).join('');
+            div.innerHTML = `<div class="char">${data.char}</div><div class="code-container">${codeHtml}</div>`;
+            div.style.left = Math.random() * 650 + 'px';
+            div.style.top = '-120px';
+            document.getElementById('game-container').appendChild(div);
+            activeWords.push({ el: div, code: data.code, currentIndex: 0, y: -120 });
+            setTimeout(spawn, Math.max(1000, 3000 - score * 5));
+        }
+
+        function update() {
+            if (!isPlaying) return;
+            for (let i = activeWords.length - 1; i >= 0; i--) {
+                let w = activeWords[i];
+                w.y += speed;
+                w.el.style.top = w.y + 'px';
+                if (w.y > 100) w.el.querySelector('.code-container').style.opacity = 1;
+
+                if (w.y > 550) {
+                    document.getElementById('game-container').removeChild(w.el);
+                    activeWords.splice(i, 1);
+                    lives--;
+                    document.getElementById('lives').innerText = lives;
+                    if (lives <= 0) location.reload();
+                }
+            }
+            requestAnimationFrame(update);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (!isPlaying) return;
+            const key = e.key.toUpperCase();
+            if (!/^[A-Z]$/.test(key)) return;
+
+            let anyMatched = false;
+
+            // 檢查畫面上所有字，看看按下的鍵是否符合任何一個字的「下一個碼」
+            activeWords.forEach(w => {
+                if (w.code[w.currentIndex] === key) {
+                    // 匹配成功，前進一格
+                    const pairs = w.el.querySelectorAll('.code-pair');
+                    pairs[w.currentIndex].classList.add('correct');
+                    w.currentIndex++;
+                    w.el.classList.add('typing');
+                    anyMatched = true;
+
+                    // 檢查是否完成全碼
+                    if (w.currentIndex === w.code.length) {
+                        score += 10;
+                        document.getElementById('score').innerText = score;
+                        document.getElementById('game-container').removeChild(w.el);
+                        activeWords = activeWords.filter(item => item !== w);
+                    }
+                } else if (w.currentIndex > 0) {
+                    // 如果這個字已經開始打了，但這一步按錯了，則重置這個字
+                    // 這樣實現了「同一個字必須連續答對」的邏輯
+                    w.currentIndex = 0;
+                    w.el.classList.remove('typing');
+                    w.el.querySelectorAll('.code-pair').forEach(p => p.classList.remove('correct'));
+                }
+            });
+
+            // 如果按下的一個鍵連任何一個字的首碼或進度都沒對上，可以加個音效提示
+            if (!anyMatched) {
+                console.log("Miss!"); 
+            }
+        });
+
+        document.getElementById('start-btn').onclick = () => {
+            isPlaying = true;
+            document.getElementById('ui-layer').style.display = 'none';
+            spawn(); update();
+        };
+    </script>
+</body>
+</html>
