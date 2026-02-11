@@ -1,553 +1,537 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-  <title>MathPalm</title>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
-  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      overflow: hidden;
-      background: #111;
-      color: white;
-      text-align: center;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathPalm Pro | Hand-Tracked Arithmetic</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-pink: #ff007a;
+            --neon-green: #00ff88;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
 
-    #video-container {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      background: #000;
-      transition: background 0.3s;
-    }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Outfit', 'Segoe UI', sans-serif;
+            background: #050505;
+            color: white;
+            overflow: hidden;
+        }
 
-    canvas {
-      position: absolute;
-      left: 0;
-      top: 0;
-      transform: rotateY(180deg);
-      width: 100%;
-      height: 100%;
-      opacity: 0.7;
-      z-index: 1;
-    }
+        /* Video & Canvas */
+        #video-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-    video {
-      display: none;
-    }
+        video { display: none; }
+        
+        canvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror effect */
+            filter: brightness(0.4) contrast(1.2);
+        }
 
-    /* Fever Mode */
-    @keyframes fever-glow {
-      0% {
-        box-shadow: inset 0 0 50px rgba(255, 204, 0, 0.5);
-      }
+        /* Overlay Systems */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.4s;
+        }
 
-      50% {
-        box-shadow: inset 0 0 100px rgba(255, 100, 0, 0.8);
-      }
+        .hidden { display: none !important; opacity: 0; }
 
-      100% {
-        box-shadow: inset 0 0 50px rgba(255, 204, 0, 0.5);
-      }
-    }
+        /* UI Elements */
+        #game-ui {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
 
-    .fever-active #video-container {
-      animation: fever-glow 1s infinite;
-    }
+        .stat-bar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            pointer-events: none;
+        }
 
-    /* Freeze Time */
-    .time-frozen {
-      color: #00e5ff !important;
-      text-shadow: 0 0 20px #00e5ff !important;
-      animation: freeze-pulse 1s infinite;
-    }
+        .pill {
+            background: var(--glass);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 10px 25px;
+            border-radius: 100px;
+            backdrop-filter: blur(5px);
+            font-weight: 800;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
 
-    @keyframes freeze-pulse {
-      0% {
-        opacity: 1;
-      }
+        /* Target Zones */
+        .zone {
+            position: absolute;
+            width: 250px;
+            height: 180px;
+            border: 3px dashed rgba(255,255,255,0.2);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            font-weight: 900;
+            transition: all 0.3s;
+        }
 
-      50% {
-        opacity: 0.6;
-      }
+        .zone.active { border-color: var(--neon-blue); background: rgba(0, 242, 255, 0.1); transform: scale(1.05); }
+        
+        /* Adjusted Positions with Gaps */
+        #zone-0 { top: 15%; left: 10%; color: var(--neon-pink); }
+        #zone-1 { top: 15%; right: 10%; color: var(--neon-blue); }
+        #zone-2 { bottom: 15%; left: 10%; color: var(--neon-green); }
+        #zone-3 { bottom: 15%; right: 10%; color: #ffcc00; }
 
-      100% {
-        opacity: 1;
-      }
-    }
+        .neutral-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.5);
+        }
 
-    /* UI Components */
-    .zone {
-      position: absolute;
-      top: 0;
-      width: 22%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 7rem;
-      font-weight: 900;
-      z-index: 5;
-    }
+        #question-display {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8rem;
+            font-weight: 900;
+            text-shadow: 0 0 30px rgba(255,255,255,0.5);
+        }
 
-    #left-zone {
-      left: 0;
-      background: rgba(100, 0, 0, 0.9);
-      border-right: 4px solid white;
-    }
+        #feedback-text {
+            position: absolute;
+            top: 58%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2.5rem;
+            font-weight: 700;
+            height: 3rem;
+        }
 
-    #right-zone {
-      right: 0;
-      background: rgba(0, 0, 100, 0.9);
-      border-left: 4px solid white;
-    }
+        /* Buttons & Levels */
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 30px; }
+        
+        button {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: 0.3s;
+        }
 
-    #ui-layer {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 100;
-    }
+        button:hover { background: white; color: black; transform: translateY(-3px); }
 
-    #stats {
-      position: absolute;
-      top: 20px;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-    }
+        /* Fever & Freeze Effects */
+        @keyframes fever {
+            0% { box-shadow: inset 0 0 100px var(--neon-pink); }
+            50% { box-shadow: inset 0 0 150px var(--neon-blue); }
+            100% { box-shadow: inset 0 0 100px var(--neon-pink); }
+        }
+        .fever-mode #video-container { animation: fever 1.5s infinite; }
+        .time-frozen { color: var(--neon-blue); text-shadow: 0 0 20px var(--neon-blue); }
 
-    .stat-pill {
-      background: rgba(0, 0, 0, 0.8);
-      padding: 10px 15px;
-      border-radius: 50px;
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      font-size: 1.6rem;
-      font-weight: 800;
-      min-width: 140px;
-    }
-
-    #display-area {
-      position: absolute;
-      top: 140px;
-      width: 100%;
-    }
-
-    #feedback {
-      font-size: 3.5rem;
-      font-weight: bold;
-      height: 4rem;
-      text-shadow: 2px 2px 20px #000;
-    }
-
-    #question-box {
-      font-size: 8rem;
-      font-weight: bold;
-      text-shadow: 0 0 30px black;
-    }
-
-    #message {
-      position: absolute;
-      bottom: 60px;
-      width: 100%;
-      font-size: 2.2rem;
-      color: #00ffcc;
-      font-weight: bold;
-      text-shadow: 2px 2px 10px black;
-    }
-
-    #reset-box {
-      position: absolute;
-      bottom: 15%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: black;
-      color: white;
-      padding: 10px 20px;
-      font-size: 1.2rem;
-      border: 2px solid white;
-      z-index: 10;
-      opacity: 0.2;
-    }
-
-    /* Menu & Instructions */
-    .overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.95);
-      z-index: 200;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      pointer-events: all;
-      padding: 20px;
-    }
-
-    .main-container {
-      display: flex;
-      flex-direction: row;
-      gap: 40px;
-      align-items: flex-start;
-      max-width: 1100px;
-    }
-
-    .info-panel {
-      background: rgba(255, 255, 255, 0.05);
-      padding: 30px;
-      border-radius: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      text-align: left;
-      width: 400px;
-    }
-
-    .info-panel h2 {
-      color: #00ffcc;
-      margin-top: 0;
-    }
-
-    .info-panel ul {
-      list-style: none;
-      padding: 0;
-    }
-
-    .info-panel li {
-      margin-bottom: 20px;
-      font-size: 1.1rem;
-      line-height: 1.4;
-    }
-
-    .highlight {
-      font-weight: bold;
-      color: #ffcc00;
-    }
-
-    .level-btn,
-    .action-btn {
-      background: #222;
-      color: white;
-      border: 2px solid #fff;
-      padding: 15px 30px;
-      margin: 8px;
-      cursor: pointer;
-      width: 350px;
-      font-size: 1.4rem;
-      border-radius: 12px;
-      transition: 0.2s;
-    }
-
-    .level-btn:hover,
-    .action-btn:hover {
-      background: #fff;
-      color: #000;
-      transform: scale(1.05);
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .correct {
-      color: #00ff00;
-    }
-
-    .wrong {
-      color: #ff3333;
-    }
-  </style>
+        /* Scorecard (Hidden) */
+        #scorecard-render {
+            position: fixed;
+            left: -2000px;
+            width: 600px;
+            background: linear-gradient(135deg, #050505, #1a1a1a);
+            padding: 40px;
+            border: 5px solid var(--neon-blue);
+            text-align: center;
+        }
+    </style>
 </head>
+<body>
 
-<body id="game-body">
-
-  <div id="menu-overlay" class="overlay">
-    <h1 style="font-size: 4rem; margin-bottom: 10px; color: #fff;">MATHPALM</h1>
-
-    <div class="main-container">
-      <div class="info-panel">
-        <h2>HOW TO PLAY</h2>
-        <ul>
-          <li>🔥 <span class="highlight">Combo System:</span> Answer 3 questions within 5 seconds to start a Multiplier.
-            Every fast answer after that stacks the bonus!</li>
-          <li>❄️ <span class="highlight">Freeze Time:</span> Reach a <span class="highlight">10-Question Streak</span>
-            to freeze the timer for 5 seconds.</li>
-          <li>🌈 <span class="highlight">Fever Mode:</span> Hit a x4 combo or higher to enter Fever Mode for maximum
-            points.</li>
-          <li>✋ <span class="highlight">Controls:</span> Move hand left/right to select. Return to center to confirm
-            next question.</li>
-        </ul>
-      </div>
-
-      <div id="level-selection">
-        <h2 style="text-align: center;">SELECT LEVEL</h2>
-        <button class="level-btn" onclick="selectLevel(1)">1. +/- (1 Digit)</button>
-        <button class="level-btn" onclick="selectLevel(2)">2. +/- (2 Digits)</button>
-        <button class="level-btn" onclick="selectLevel(3)">3. Multiply (1 Digit)</button>
-        <button class="level-btn" onclick="selectLevel(4)">4. Fractions (Simplify)</button>
-        <button class="level-btn" onclick="selectLevel(5)">5. +/- (3 Digits)</button>
-        <button class="level-btn" onclick="selectLevel(6)">6. Multiply (2 Digits)</button>
-      </div>
+    <div id="menu-overlay" class="overlay">
+        <h1 style="font-size: 5rem; margin-bottom: 0; letter-spacing: 10px;">MATH<span style="color:var(--neon-blue)">PALM</span></h1>
+        <p style="color: #888; margin-bottom: 30px;">AI GESTURE-BASED ARITHMETIC REACTION GAME</p>
+        
+        <div class="btn-group">
+            <button onclick="startGame(1)">Lvl 1: Simple +/-</button>
+            <button onclick="startGame(2)">Lvl 2: Double +/-</button>
+            <button onclick="startGame(3)">Lvl 3: Times Tables</button>
+            <button onclick="startGame(4)">Lvl 4: Fractions</button>
+            <button onclick="startGame(5)">Lvl 5: Triple +/-</button>
+            <button onclick="startGame(6)">Lvl 6: Pro Mix</button>
+        </div>
     </div>
-  </div>
 
-  <div id="countdown-overlay" class="overlay hidden">
-    <div id="start-countdown" style="font-size: 15rem; font-weight: 900;">3</div>
-  </div>
-
-  <div id="result-overlay" class="overlay hidden">
-    <h1 style="font-size: 4rem;">SESSION ENDED</h1>
-    <div style="font-size: 3rem; color: #ffcc00;" id="final-score">Score: 0</div>
-    <div style="font-size: 2.5rem; margin-bottom: 30px;" id="final-accuracy">Accuracy: 0%</div>
-    <button class="action-btn" onclick="runPreGameCountdown()">PLAY AGAIN</button>
-    <button class="action-btn" onclick="downloadScorecard()">DOWNLOAD SCORECARD</button>
-    <button class="action-btn" onclick="location.reload()">MAIN MENU</button>
-  </div>
-
-  <div id="video-container">
-    <video id="input_video"></video>
-    <canvas id="output_canvas"></canvas>
-    <div id="ui-layer" class="hidden">
-      <div id="stats">
-        <div class="stat-pill">STREAK: <span id="streak">0</span></div>
-        <div class="stat-pill">SCORE: <span id="score">0</span></div>
-        <div class="stat-pill" id="combo-pill">COMBO: <span id="combo-mult">1</span>x</div>
-        <div class="stat-pill">TIME: <span id="timer">60</span>s</div>
-      </div>
-      <div id="display-area">
-        <div id="feedback"></div>
-        <div id="question-box"></div>
-      </div>
-      <div id="left-zone" class="zone"></div>
-      <div id="right-zone" class="zone"></div>
-      <div id="reset-box">RESET</div>
-      <div id="message">Show Full Palm</div>
+    <div id="countdown-overlay" class="overlay hidden">
+        <div id="count-num" style="font-size: 15rem; font-weight: 900; color: var(--neon-blue);">3</div>
     </div>
-  </div>
 
-  <div id="scorecard-capture"
-    style="position: absolute; left: -9999px; top: -9999px; width: 600px; padding: 50px; background: #111; color: white; border-radius: 20px; text-align: center;">
-    <h1 style="color: #ffcc00;">MATH PRO SCORECARD</h1>
-    <p style="font-size: 2rem;">Level: <span id="dl-level"></span></p>
-    <p style="font-size: 2rem;">Total Points: <span id="dl-score"></span></p>
-    <p style="font-size: 2rem;">Correct: <span id="dl-correct"></span></p>
-    <p style="font-size: 2rem;">Accuracy: <span id="dl-accuracy"></span></p>
-  </div>
+    <div id="result-overlay" class="overlay hidden">
+        <h1 style="font-size: 3.5rem;">MISSION COMPLETE</h1>
+        <div id="final-stats" style="font-size: 1.8rem; margin: 20px 0; line-height: 1.6;"></div>
+        <div style="display: flex; gap: 15px;">
+            <button onclick="location.reload()">MAIN MENU</button>
+            <button onclick="downloadScorecard()" style="border-color: var(--neon-green);">DOWNLOAD SCORECARD</button>
+        </div>
+    </div>
 
-  <script>
-    const videoElement = document.getElementById('input_video');
-    const canvasElement = document.getElementById('output_canvas');
-    const canvasCtx = canvasElement.getContext('2d');
+    <div id="video-container">
+        <video id="input_video"></video>
+        <canvas id="output_canvas"></canvas>
 
-    let score = 0, rawCorrect = 0, totalAttempted = 0, timeLeft = 60, currentLevel = 1;
-    let streak = 0, isTimeFrozen = false, freezeTimer = null;
-    let currentQuestion = { ans: null, options: [] };
-    let needsReset = false, gameActive = false, timerInterval = null;
-    let answerHistory = [], multiplier = 1;
+        <div id="game-ui" class="hidden">
+            <div class="stat-bar">
+                <div class="pill">SCORE: <span id="ui-score">0</span></div>
+                <div class="pill">STREAK: <span id="ui-streak">0</span></div>
+                <div class="pill" id="ui-timer-pill">TIME: <span id="ui-timer">60</span>s</div>
+                <div class="pill" style="color:var(--neon-blue)">x<span id="ui-mult">1</span></div>
+            </div>
 
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            <div id="question-display">--</div>
+            <div id="feedback-text"></div>
 
-    function playSound(type) {
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain); gain.connect(audioCtx.destination);
-      if (type === 'correct') {
-        osc.frequency.setValueAtTime(800 + (multiplier * 150), audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(1400, audioCtx.currentTime + 0.1);
-      } else if (type === 'freeze') {
-        osc.type = 'square'; osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-      } else if (type === 'wrong') {
-        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-      } else if (type === 'countdown') {
-        osc.frequency.setValueAtTime(500, audioCtx.currentTime);
-      }
-      osc.start(); osc.stop(audioCtx.currentTime + 0.15);
-    }
+            <div id="zone-0" class="zone">?</div>
+            <div id="zone-1" class="zone">?</div>
+            <div id="zone-2" class="zone">?</div>
+            <div id="zone-3" class="zone">?</div>
 
-    function selectLevel(level) {
-      currentLevel = level;
-      document.getElementById('menu-overlay').classList.add('hidden');
-      runPreGameCountdown();
-    }
+            <div class="neutral-indicator" id="neutral-node">CENTER HAND</div>
+        </div>
+    </div>
 
-    function runPreGameCountdown() {
-      document.getElementById('result-overlay').classList.add('hidden');
-      document.getElementById('ui-layer').classList.add('hidden');
-      const overlay = document.getElementById('countdown-overlay');
-      const text = document.getElementById('start-countdown');
-      overlay.classList.remove('hidden');
-      let count = 3;
-      text.innerText = count;
-      playSound('countdown');
-      const cdInterval = setInterval(() => {
-        count--;
-        if (count > 0) { text.innerText = count; playSound('countdown'); }
-        else if (count === 0) { text.innerText = "GO!"; playSound('correct'); }
-        else { clearInterval(cdInterval); overlay.classList.add('hidden'); resetGame(); }
-      }, 1000);
-    }
+    <div id="scorecard-render">
+        <h1 style="color:var(--neon-blue)">MATHPALM PRO RESULTS</h1>
+        <hr style="border: 1px solid #333">
+        <h2 id="sc-level">Level: 1</h2>
+        <h1 id="sc-score" style="font-size: 4rem; margin: 10px 0;">0000</h1>
+        <p id="sc-acc" style="font-size: 1.5rem;">Accuracy: 0%</p>
+        <p style="color: #666; margin-top: 20px;">Analyzed by MediaPipe AI</p>
+    </div>
 
-    function resetGame() {
-      score = 0; rawCorrect = 0; totalAttempted = 0; timeLeft = 60; multiplier = 1; answerHistory = []; streak = 0; isTimeFrozen = false;
-      gameActive = true; needsReset = false;
-      document.getElementById('score').innerText = "0";
-      document.getElementById('streak').innerText = "0";
-      document.getElementById('combo-mult').innerText = "1";
-      document.getElementById('timer').innerText = "60";
-      document.getElementById('timer').className = "";
-      document.getElementById('ui-layer').classList.remove('hidden');
-      document.body.classList.remove('fever-active');
-      generateQuestion();
-      startTimer();
-    }
+    <script>
+        // --- CONFIG & STATE ---
+        const config = {
+            thingspeakKey: "0KPYMRVALYLOGJGT",
+            gameDuration: 60,
+            deadzoneSize: 0.15, // Center gap percentage
+            feverThreshold: 4
+        };
 
-    function generateQuestion() {
-      let a, b, q, ans, wrong;
-      const r = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-      switch (currentLevel) {
-        case 1: a = r(1, 9); b = r(1, 9); if (a < b) [a, b] = [b, a]; let p1 = Math.random() > 0.5; ans = p1 ? a + b : a - b; q = `${a}${p1 ? '+' : '-'}${b}`; wrong = ans + (Math.random() > 0.5 ? 1 : -1); break;
-        case 2: a = r(10, 99); b = r(10, 99); if (a < b) [a, b] = [b, a]; let p2 = Math.random() > 0.5; ans = p2 ? a + b : a - b; q = `${a}${p2 ? '+' : '-'}${b}`; wrong = ans + (Math.random() > 0.5 ? (Math.random() > 0.5 ? 10 : 1) : -10); break;
-        case 3: a = r(2, 9); b = r(2, 9); ans = a * b; q = `${a} × ${b}`; wrong = ans + (Math.random() > 0.5 ? a : -b); break;
-        case 4: let c = r(2, 5), fa = r(1, 4), fb = r(fa + 1, 6); q = `${fa * c}/${fb * c}`; ans = `${fa}/${fb}`; wrong = Math.random() > 0.5 ? `${fa}/${fb + 1}` : `${fa + 1}/${fb}`; break;
-        case 5: a = r(100, 999); b = r(100, 999); if (a < b) [a, b] = [b, a]; let p5 = Math.random() > 0.5; ans = p5 ? a + b : a - b; q = `${a}${p5 ? '+' : '-'}${b}`; wrong = ans + (Math.random() > 0.5 ? 100 : -10); break;
-        case 6: a = r(10, 25); b = r(2, 9); ans = a * b; q = `${a} × ${b}`; wrong = ans + (Math.random() > 0.5 ? b : -b); break;
-      }
-      if (currentLevel !== 4) {
-        let wrongNum = parseInt(wrong);
-        if (wrongNum <= 0) wrongNum = ans + 2;
-        if (wrongNum === ans) wrongNum = ans + 1;
-        wrong = wrongNum.toString();
-      }
-      currentQuestion = { ans: ans.toString(), options: Math.random() > 0.5 ? [ans.toString(), wrong.toString()] : [wrong.toString(), ans.toString()] };
-      document.getElementById('question-box').innerText = q;
-      document.getElementById('left-zone').innerText = currentQuestion.options[0];
-      document.getElementById('right-zone').innerText = currentQuestion.options[1];
-      needsReset = false;
-      document.getElementById('feedback').innerText = "";
-    }
+        let state = {
+            active: false,
+            score: 0,
+            streak: 0,
+            multiplier: 1,
+            timeLeft: 60,
+            correctAnswers: 0,
+            totalAttempts: 0,
+            currentLevel: 1,
+            needsNeutral: false,
+            answerHistory: [],
+            isFrozen: false,
+            currentAns: ""
+        };
 
-    function onResults(results) {
-      canvasCtx.save();
-      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        const hand = results.multiHandLandmarks[0];
-        drawConnectors(canvasCtx, hand, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 4 });
-        const x = 1 - hand[8].x;
-        const isPalmOpen = hand[8].y < hand[6].y && hand[12].y < hand[10].y;
-        if (gameActive && isPalmOpen) {
-          if (needsReset) {
-            if (x > 0.22 && x < 0.78) {
-              generateQuestion();
-              document.getElementById('message').innerText = "Pick an answer!";
-              document.getElementById('reset-box').style.opacity = "0.2";
+        // --- AUDIO ENGINE ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function beep(freq, duration, type = 'sine') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        // --- MATH LOGIC ---
+        function generateQuestion() {
+            const r = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+            let a, b, q, ans;
+
+            switch(state.currentLevel) {
+                case 1: a = r(1, 15); b = r(1, 15); ans = a + b; q = `${a}+${b}`; break;
+                case 2: a = r(20, 99); b = r(10, 50); ans = a - b; q = `${a}-${b}`; break;
+                case 3: a = r(2, 12); b = r(2, 12); ans = a * b; q = `${a}×${b}`; break;
+                case 4: let c = r(2, 5), fa = r(1, 4), fb = r(fa + 1, 6); q = `${fa*c}/${fb*c}`; ans = `${fa}/${fb}`; break;
+                case 5: a = r(100, 500); b = r(100, 500); ans = a + b; q = `${a}+${b}`; break;
+                case 6: a = r(12, 30); b = r(3, 9); ans = a * b; q = `${a}×${b}`; break;
             }
-          } else {
-            if (x < 0.22) checkAnswer(currentQuestion.options[0]);
-            else if (x > 0.78) checkAnswer(currentQuestion.options[1]);
-          }
+
+            state.currentAns = ans.toString();
+            let options = [state.currentAns];
+            while(options.length < 4) {
+                let off = r(-10, 10);
+                let w = (state.currentLevel === 4) ? `${r(1,5)}/${r(2,6)}` : (parseInt(ans) + (off === 0 ? 5 : off)).toString();
+                if(!options.includes(w)) options.push(w);
+            }
+            options.sort(() => Math.random() - 0.5);
+
+            document.getElementById('question-display').innerText = q;
+            options.forEach((opt, i) => {
+                const z = document.getElementById(`zone-${i}`);
+                z.innerText = opt;
+                z.dataset.val = opt;
+                z.classList.remove('active');
+            });
+            
+            state.needsNeutral = false;
+            document.getElementById('feedback-text').innerText = "";
+            document.getElementById('neutral-node').style.borderColor = "rgba(255,255,255,0.1)";
         }
-      }
-      canvasCtx.restore();
-    }
 
-    function checkAnswer(val) {
-      totalAttempted++;
-      const now = Date.now();
-      const fb = document.getElementById('feedback');
-      if (val === currentQuestion.ans) {
-        rawCorrect++; streak++;
-        document.getElementById('streak').innerText = streak;
-        if (streak % 10 === 0) triggerFreeze();
-        answerHistory.push(now);
-        answerHistory = answerHistory.filter(ts => now - ts < 5000);
-        multiplier = answerHistory.length >= 3 ? answerHistory.length - 1 : 1;
-        if (multiplier >= 4) document.body.classList.add('fever-active');
-        score += (1 * multiplier);
-        playSound('correct');
-        document.getElementById('score').innerText = score;
-        document.getElementById('combo-mult').innerText = multiplier;
-        fb.innerText = multiplier > 1 ? `COMBO x${multiplier}!` : "CORRECT!";
-        fb.className = "correct";
-      } else {
-        streak = 0; multiplier = 1; answerHistory = [];
-        document.getElementById('streak').innerText = "0";
-        document.body.classList.remove('fever-active');
-        document.getElementById('combo-mult').innerText = "1";
-        playSound('wrong');
-        fb.innerText = "WRONG!"; fb.className = "wrong";
-      }
-      needsReset = true;
-      document.getElementById('message').innerText = "← RETURN TO CENTER →";
-      document.getElementById('reset-box').style.opacity = "1";
-    }
-
-    function triggerFreeze() {
-      isTimeFrozen = true; playSound('freeze');
-      document.getElementById('timer').classList.add('time-frozen');
-      setTimeout(() => { isTimeFrozen = false; document.getElementById('timer').classList.remove('time-frozen'); }, 5000);
-    }
-
-    function startTimer() {
-      if (timerInterval) clearInterval(timerInterval);
-      timerInterval = setInterval(() => {
-        if (!isTimeFrozen) {
-          timeLeft--;
-          document.getElementById('timer').innerText = timeLeft;
-          if (timeLeft <= 10 && timeLeft > 0) playSound('countdown');
-          if (timeLeft <= 0) { clearInterval(timerInterval); gameActive = false; showResults(); }
+        // --- HAND TRACKING LOGIC ---
+        function getPalmCenter(landmarks) {
+            // Average of Wrist(0), Index_mcp(5), Middle_mcp(9), Ring_mcp(13), Pinky_mcp(17)
+            const indices = [0, 5, 9, 13, 17];
+            let x = 0, y = 0;
+            indices.forEach(i => {
+                x += landmarks[i].x;
+                y += landmarks[i].y;
+            });
+            return { x: x / 5, y: y / 5 };
         }
-      }, 1000);
-    }
-    // Function to upload data to ThingSpeak
-    function uploadToThingSpeak(level, points, correct, accuracy) {
-      const apiKey = "0KPYMRVALYLOGJGT"; // Your API Key
-      // ThingSpeak uses field1, field2, etc. 
-      // Mapping: Field1=Level, Field2=Points, Field3=Correct, Field4=Accuracy
-      const url = `https://api.thingspeak.com/update?api_key=${apiKey}&field1=${level}&field2=${points}&field3=${correct}&field4=${accuracy}`;
 
-      fetch(url)
-        .then(response => {
-          if (response.ok) {
-            console.log("Data uploaded to ThingSpeak successfully!");
-          }
-        })
-        .catch(error => console.error("Error uploading to ThingSpeak:", error));
-    }
-    function showResults() {
-      document.getElementById('ui-layer').classList.add('hidden');
-      document.getElementById('result-overlay').classList.remove('hidden');
-      const acc = totalAttempted > 0 ? Math.round((rawCorrect / totalAttempted) * 100) : 0;
-      document.getElementById('final-score').innerText = `Final Score: ${score}`;
-      document.getElementById('final-accuracy').innerText = `Accuracy: ${acc}%`;
-      document.getElementById('dl-level').innerText = currentLevel;
-      document.getElementById('dl-score').innerText = score;
-      document.getElementById('dl-correct').innerText = rawCorrect;
-      document.getElementById('dl-accuracy').innerText = acc + "%";
-      // --- NEW: UPLOAD DATA ---
-      uploadToThingSpeak(currentLevel, score, rawCorrect, acc);
-    }
+        function onResults(results) {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-    function downloadScorecard() {
-      html2canvas(document.getElementById('scorecard-capture'), { scale: 2 }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = `PalmMath_Results.png`;
-        link.href = canvas.toDataURL();
-        link.click();
-      });
-    }
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const hand = results.multiHandLandmarks[0];
+                const center = getPalmCenter(hand);
+                
+                // Draw Tracking Point
+                canvasCtx.fillStyle = state.needsNeutral ? "white" : "cyan";
+                canvasCtx.beginPath();
+                canvasCtx.arc(center.x * canvasElement.width, center.y * canvasElement.height, 15, 0, 2 * Math.PI);
+                canvasCtx.fill();
 
-    const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
-    hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
-    hands.onResults(onResults);
-    const camera = new Camera(videoElement, { onFrame: async () => { await hands.send({ image: videoElement }); }, width: 1280, height: 720 });
-    camera.start();
-  </script>
+                if (state.active) {
+                    processInput(center.x, center.y);
+                }
+            }
+            canvasCtx.restore();
+        }
+
+        function processInput(x, y) {
+            // Mirror logic: 0 is left, 1 is right in raw MP, but mirror display flips it.
+            // We use raw: TopLeft(>0.7, <0.4), TopRight(<0.3, <0.4), etc.
+            
+            const inCenterX = x > 0.4 && x < 0.6;
+            const inCenterY = y > 0.4 && y < 0.6;
+
+            if (state.needsNeutral) {
+                if (inCenterX && inCenterY) {
+                    state.needsNeutral = false;
+                    generateQuestion();
+                }
+                return;
+            }
+
+            let selectedZone = -1;
+            // Top Left
+            if (x > 0.65 && y < 0.4) selectedZone = 0;
+            // Top Right
+            else if (x < 0.35 && y < 0.4) selectedZone = 1;
+            // Bottom Left
+            else if (x > 0.65 && y > 0.6) selectedZone = 2;
+            // Bottom Right
+            else if (x < 0.35 && y > 0.6) selectedZone = 3;
+
+            if (selectedZone !== -1) {
+                handleSelection(selectedZone);
+            }
+        }
+
+        function handleSelection(index) {
+            const zone = document.getElementById(`zone-${index}`);
+            const val = zone.dataset.val;
+            state.totalAttempts++;
+
+            if (val === state.currentAns) {
+                state.score += (10 * state.multiplier);
+                state.streak++;
+                state.correctAnswers++;
+                
+                // Multiplier Logic (3 correct in 5s)
+                const now = Date.now();
+                state.answerHistory.push(now);
+                state.answerHistory = state.answerHistory.filter(t => now - t < 5000);
+                state.multiplier = Math.max(1, state.answerHistory.length - 1);
+
+                document.getElementById('feedback-text').innerText = state.multiplier > 1 ? `COMBO x${state.multiplier}!` : "CORRECT";
+                document.getElementById('feedback-text').style.color = "var(--neon-green)";
+                beep(800 + (state.multiplier * 100), 0.2);
+
+                if (state.streak % 10 === 0) triggerFreeze();
+            } else {
+                state.streak = 0;
+                state.multiplier = 1;
+                state.answerHistory = [];
+                document.getElementById('feedback-text').innerText = "WRONG";
+                document.getElementById('feedback-text').style.color = "var(--neon-pink)";
+                beep(150, 0.3, 'sawtooth');
+            }
+
+            // UI Refresh
+            document.getElementById('ui-score').innerText = state.score;
+            document.getElementById('ui-streak').innerText = state.streak;
+            document.getElementById('ui-mult').innerText = state.multiplier;
+            document.body.classList.toggle('fever-mode', state.multiplier >= config.feverThreshold);
+            
+            state.needsNeutral = true;
+            document.getElementById('neutral-node').style.borderColor = "var(--neon-blue)";
+            zone.classList.add('active');
+        }
+
+        // --- GAME FLOW ---
+        function startGame(level) {
+            state.currentLevel = level;
+            document.getElementById('menu-overlay').classList.add('hidden');
+            document.getElementById('countdown-overlay').classList.remove('hidden');
+            
+            let count = 3;
+            const timer = setInterval(() => {
+                beep(400, 0.1);
+                document.getElementById('count-num').innerText = count;
+                if (count <= 0) {
+                    clearInterval(timer);
+                    document.getElementById('countdown-overlay').classList.add('hidden');
+                    initGameSession();
+                }
+                count--;
+            }, 1000);
+        }
+
+        function initGameSession() {
+            state.score = 0;
+            state.timeLeft = config.gameDuration;
+            state.active = true;
+            state.streak = 0;
+            state.correctAnswers = 0;
+            state.totalAttempts = 0;
+            
+            document.getElementById('game-ui').classList.remove('hidden');
+            generateQuestion();
+
+            const clock = setInterval(() => {
+                if (!state.isFrozen) {
+                    state.timeLeft--;
+                    document.getElementById('ui-timer').innerText = state.timeLeft;
+                    if (state.timeLeft <= 0) {
+                        clearInterval(clock);
+                        endGame();
+                    }
+                }
+            }, 1000);
+        }
+
+        function triggerFreeze() {
+            state.isFrozen = true;
+            beep(1000, 0.5, 'square');
+            document.getElementById('ui-timer-pill').classList.add('time-frozen');
+            setTimeout(() => {
+                state.isFrozen = false;
+                document.getElementById('ui-timer-pill').classList.remove('time-frozen');
+            }, 5000);
+        }
+
+        function endGame() {
+            state.active = false;
+            document.getElementById('game-ui').classList.add('hidden');
+            document.getElementById('result-overlay').classList.remove('hidden');
+            
+            const acc = state.totalAttempts > 0 ? Math.round((state.correctAnswers / state.totalAttempts) * 100) : 0;
+            document.getElementById('final-stats').innerHTML = `
+                Score: ${state.score}<br>
+                Accuracy: ${acc}%<br>
+                Correct: ${state.correctAnswers} / ${state.totalAttempts}
+            `;
+
+            // Prepare scorecard
+            document.getElementById('sc-level').innerText = `Level: ${state.currentLevel}`;
+            document.getElementById('sc-score').innerText = state.score;
+            document.getElementById('sc-acc').innerText = `Accuracy: ${acc}%`;
+
+            uploadToThingSpeak(state.currentLevel, state.score, state.correctAnswers, acc);
+        }
+
+        function uploadToThingSpeak(l, s, c, a) {
+            const url = `https://api.thingspeak.com/update?api_key=${config.thingspeakKey}&field1=${l}&field2=${s}&field3=${c}&field4=${a}`;
+            fetch(url).then(() => console.log("Logged to Cloud")).catch(e => console.error(e));
+        }
+
+        function downloadScorecard() {
+            html2canvas(document.getElementById('scorecard-render')).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `MathPalm_Score_${state.score}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+
+        // --- MEDIA PIPE INIT ---
+        const videoElement = document.getElementById('input_video');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+        
+        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
+        hands.onResults(onResults);
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => { await hands.send({ image: videoElement }); },
+            width: 1280, height: 720
+        });
+        camera.start();
+    </script>
 </body>
-
 </html>
