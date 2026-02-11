@@ -237,6 +237,24 @@
             border-radius: 50px;
             cursor: pointer;
         }
+
+        #bg-code-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 250px;
+            font-weight: bold;
+            color: #e94560;
+            /* The base color */
+            opacity: 0;
+            /* Hidden by default */
+            pointer-events: none;
+            z-index: 1;
+            user-select: none;
+            transition: opacity 0.5s ease;
+            /* This creates the fade effect */
+        }
     </style>
 </head>
 
@@ -266,6 +284,7 @@
         </div>
 
         <div id="game-container">
+            <div id="bg-code-display"></div>
             <div id="ui-layer">
                 <h1 id="title">速成極限挑戰</h1>
                 <p style="color:#888; text-align:center;">
@@ -278,6 +297,7 @@
     </div>
 
     <script>
+        let fadeTimer = null;
         let audioCtx = null;
         const playTone = (freq, type, duration) => {
             // 只有在第一次執行或被關閉時才創建 Context
@@ -648,16 +668,19 @@
 
         // 阻止在 lightbox 顯示時遊戲接收鍵盤輸入
         window.addEventListener('keydown', (e) => {
-            if (document.getElementById('lightbox-overlay').style.display === 'flex') {
-                if (e.key === 'Escape') { // 允許按 ESC 關閉 Lightbox
-                    document.getElementById('lightbox-overlay').style.display = 'none';
-                    e.preventDefault(); // 阻止其他默認行為
-                }
-                // 阻止其他遊戲鍵盤輸入
-                if (/^[A-Z]$/i.test(e.key)) {
-                    e.preventDefault();
-                }
-            }
+            if (!isPlaying) return;
+            const key = e.key.toUpperCase();
+            if (!/^[A-Z]$/.test(key)) return;
+            // --- 1. ALWAYS SHOW THE RADICAL REGARDLESS OF ACCURACY ---
+            const bgDisplay = document.getElementById('bg-code-display');
+            bgDisplay.innerText = cjDict[key] || key;
+            bgDisplay.style.opacity = "0.15";
+
+            clearTimeout(fadeTimer);
+            fadeTimer = setTimeout(() => {
+                bgDisplay.style.opacity = "0";
+            }, 500);
+
         }, true); // 使用 capture 階段確保優先處理
     </script>
 </body>
