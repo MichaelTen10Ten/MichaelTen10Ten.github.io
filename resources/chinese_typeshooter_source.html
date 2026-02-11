@@ -1,115 +1,555 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
     <meta charset="UTF-8">
-    <title>倉頡練習 - 自由切換模式</title>
+    <title>速成極限挑戰 - Lightbox 對照版</title>
     <style>
         body {
             margin: 0;
-            background-color: #1a1a2e;
+            background-color: #0f0f1a;
             color: #fff;
-            font-family: "Microsoft JhengHei", sans-serif;
+            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.5s;
+        }
+
+        body.frozen {
+            background-color: #002b4d;
+        }
+
+        /* 左側照片牆佈局 */
+        #reference-sidebar {
+            width: 250px;
+            height: 100vh;
+            background: #1a1a2e;
+            border-right: 2px solid #e94560;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+            overflow-y: auto;
+            box-sizing: border-box;
+            scrollbar-width: thin;
+        }
+
+        #reference-sidebar img {
+            width: 100%;
+            border-radius: 8px;
+            border: 2px solid #333;
+            transition: transform 0.3s, border-color 0.3s;
+            cursor: zoom-in;
+        }
+
+        #reference-sidebar img:hover {
+            transform: scale(1.05);
+            border-color: #f1c40f;
+        }
+
+        /* Lightbox 樣式 */
+        #lightbox-overlay {
+            display: none;
+            /* 預設隱藏 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 200;
+            /* 高於所有遊戲元素 */
+            justify-content: center;
+            align-items: center;
+            cursor: zoom-out;
+            /* 點擊關閉提示 */
+        }
+
+        #lightbox-content {
+            max-width: 90%;
+            max-height: 90%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #lightbox-content img {
+            max-width: 85%;
+            max-height: 85%;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+        }
+
+        /* 右側遊戲主區 */
+        #main-content {
+            flex-grow: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            height: 100vh;
-            overflow: hidden;
+            position: relative;
         }
-        #hud { margin-top: 15px; font-size: 24px; color: #00d2ff; }
+
+        #hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 15px;
+            background: rgba(26, 26, 46, 0.8);
+            border-bottom: 2px solid #e94560;
+        }
+
+        .stat-item {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        #timer {
+            font-size: 34px;
+            color: #e94560;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        #timer.frozen-text {
+            color: #00d2ff;
+            text-shadow: 0 0 10px #00d2ff;
+        }
+
         #game-container {
             position: relative;
-            width: 850px;
-            height: 600px;
-            background-color: #16213e;
-            border: 4px solid #0f3460;
-            margin-top: 10px;
-            border-radius: 20px;
+            width: 95%;
+            height: 80vh;
+            background: rgba(22, 33, 62, 0.3);
+            margin-top: 15px;
+            border-radius: 15px;
             overflow: hidden;
+            border: 2px solid #16213e;
         }
+
+        /* 遊戲組件樣式保持不變 */
         .word-box {
             position: absolute;
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 160px;
-            padding: 10px;
-            border-radius: 10px;
-            transition: transform 0.1s;
+            width: 130px;
+            z-index: 5;
         }
-        /* 正在輸入中的字稍微放大或發光 */
-        .typing { filter: drop-shadow(0 0 10px #e94560); transform: scale(1.1); }
-        
-        .char { font-size: 50px; font-weight: bold; margin-bottom: 5px; }
+
+        .char {
+            font-size: 50px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            transition: color 0.3s;
+        }
+
+        .timer-bar {
+            width: 100%;
+            height: 5px;
+            background: #333;
+            border-radius: 2px;
+        }
+
+        .timer-progress {
+            width: 100%;
+            height: 100%;
+            background: #00ff41;
+        }
+
         .code-container {
-            display: flex; gap: 8px; background: rgba(0, 0, 0, 0.7);
-            padding: 5px 10px; border-radius: 8px; opacity: 0; transition: opacity 0.3s;
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 4px 10px;
+            border-radius: 15px;
+            border: 1px solid #444;
+            opacity: 0;
+            transform: translateY(5px);
+            transition: 0.3s;
         }
-        .code-pair { display: flex; flex-direction: column; align-items: center; }
-        .root { font-size: 12px; color: #f1c40f; }
-        .key { font-size: 18px; color: #777; font-weight: bold; }
-        .correct .root, .correct .key { color: #00ff41; }
+
+        .show-hint .code-container {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .show-hint .char {
+            color: #f1c40f;
+        }
+
+        .code-pair {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 20px;
+        }
+
+        .root {
+            font-size: 11px;
+            color: #f1c40f;
+        }
+
+        .key {
+            font-size: 15px;
+            color: #888;
+            font-weight: bold;
+        }
+
+        .correct .root,
+        .correct .key {
+            color: #00ff41 !important;
+        }
 
         #ui-layer {
-            position: absolute; inset: 0; background: rgba(26, 26, 46, 0.95);
-            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100;
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 15, 26, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
         }
-        button { padding: 15px 50px; font-size: 24px; background: #e94560; color: white; border: none; border-radius: 50px; cursor: pointer; }
+
+        .freeze-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            border: 10px solid #00d2ff;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 99;
+        }
+
+        .frozen .freeze-overlay {
+            opacity: 0.5;
+        }
+
+        button {
+            padding: 12px 40px;
+            font-size: 20px;
+            background: #e94560;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+        }
     </style>
 </head>
+
 <body>
 
-    <div id="hud">得分: <span id="score">0</span> | 生命: <span id="lives">5</span></div>
+    <div id="lightbox-overlay">
+        <div id="lightbox-content">
+            <img src="" alt="放大圖片">
+        </div>
+    </div>
 
-    <div id="game-container">
-        <div id="ui-layer">
-            <h2>倉頡自由切換強訓</h2>
-            <p>你可以隨時改打另一個字，但每個字的碼必須依序完成</p>
-            <button id="start-btn">開始</button>
+    <div id="reference-sidebar">
+        <h3 style="text-align:center; font-size:16px; color:#e94560;">參考圖庫</h3>
+        <img src="source/chinese_grid1.jpg" alt="Grid 1">
+        <img src="source/chinese_grid2.jpg" alt="Grid 2">
+        <img src="source/chinese_grid3.jpg" alt="Grid 3">
+        <img src="source/chinese_grid4.jpg" alt="Grid 4">
+        <img src="source/chinese_grid5.jpg" alt="Grid 5">
+    </div>
+
+    <div id="main-content">
+        <div class="freeze-overlay"></div>
+        <div id="hud">
+            <div class="stat-item">得分: <span id="score">0</span></div>
+            <div id="timer">01:00</div>
+            <div class="stat-item">Streak: <span id="streak">0</span></div>
+        </div>
+
+        <div id="game-container">
+            <div id="ui-layer">
+                <h1 id="title">速成極限挑戰</h1>
+                <p style="color:#888; text-align:center;">
+                    點擊左側圖片可放大查看<br>
+                    生命過半才顯示提示
+                </p>
+                <button id="start-btn">開始挑戰</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const cjDict = { 'A':'日','B':'月','C':'金','D':'木','E':'水','F':'火','G':'土','H':'竹','I':'戈','J':'十','K':'大','L':'中','M':'一','N':'弓','O':'人','P':'心','Q':'手','R':'廿','S':'尸','T':'廿','U':'山','V':'女','W':'田','X':'難','Y':'卜','Z':'重' };
-        
-        const wordDb = [
-            {char:'我', code:'HQI'},
-            {char:'你', code:'ONF'},
-            {char:'他', code:'OY'},
+        let audioCtx = null;
+        const playTone = (freq, type, duration) => {
+            // 只有在第一次執行或被關閉時才創建 Context
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            // 處理 Chrome/Safari 的 Resume 機制
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        };
+        const cjDict = { 'A': '日', 'B': '月', 'C': '金', 'D': '木', 'E': '水', 'F': '火', 'G': '土', 'H': '竹', 'I': '戈', 'J': '十', 'K': '大', 'L': '中', 'M': '一', 'N': '弓', 'O': '人', 'P': '心', 'Q': '手', 'R': '廿', 'S': '尸', 'T': '廿', 'U': '山', 'V': '女', 'W': '田', 'X': '難', 'Y': '卜', 'Z': '重' };
+        const masterWordDb = [
+            { char: '夫', code: 'QO' },
+            { char: '米', code: 'FD' },
+            { char: '步', code: 'YH' },
+            { char: '園', code: 'WV' },
+            { char: '青', code: 'OB' },
+            { char: '王', code: 'MG' },
+            { char: '勿', code: 'PH' },
+            { char: '巳', code: 'RU' },
+            { char: '杏', code: 'DR' },
+            { char: '早', code: 'AJ' },
+            { char: '泉', code: 'HE' },
+            { char: '灶', code: 'FG' },
+            { char: '打', code: 'QN' },
+            { char: '點', code: 'WR' },
+            { char: '或', code: 'IM' },
+            { char: '選', code: 'YC' },
+            { char: '刀', code: 'SH' },
+            { char: '目', code: 'BU' },
+            { char: '又', code: 'NK' },
+            { char: '九', code: 'KN' },
+            { char: '力', code: 'KS' },
+            { char: '內', code: 'OB' },
+            { char: '腦', code: 'BW' },
+            { char: '牆', code: 'VW' },
+            { char: '璃', code: 'MB' },
+            { char: '舊', code: 'TX' },
+            { char: '插', code: 'QX' },
+            { char: '肅', code: 'LX' },
+            { char: '出', code: 'UU' },
+            { char: '入', code: 'OH' },
+            { char: '平', code: 'MJ' },
+            { char: '安', code: 'JV' },
+            { char: '風', code: 'HI' },
+            { char: '調', code: 'YR' },
+            { char: '雨', code: 'LC' },
+            { char: '今', code: 'ON' },
+            { char: '天', code: 'MK' },
+            { char: '我', code: 'HI' },
+            { char: '們', code: 'ON' },
+            { char: '去', code: 'GI' },
+            { char: '海', code: 'EY' },
+            { char: '洋', code: 'EQ' },
+            { char: '公', code: 'CI' },
+            { char: '志', code: 'GP' },
+            { char: '芬', code: 'TH' },
+            { char: '希', code: 'KB' },
+            { char: '望', code: 'YG' },
+            { char: '在', code: 'KG' },
+            { char: '考', code: 'JS' },
+            { char: '試', code: 'YM' },
+            { char: '中', code: 'L' },
+            { char: '取', code: 'SE' },
+            { char: '得', code: 'HI' },
+            { char: '好', code: 'VD' },
+            { char: '成', code: 'IS' },
+            { char: '績', code: 'VC' },
+            { char: '妙', code: 'VH' },
+            { char: '寧', code: 'JN' },
+            { char: '昨', code: 'AS' },
+            { char: '到', code: 'MN' },
+            { char: '運', code: 'YJ' },
+            { char: '動', code: 'HS' },
+            { char: '場', code: 'GH' },
+            { char: '羽', code: 'SM' },
+            { char: '毛', code: 'HU' },
+            { char: '球', code: 'ME' },
+            { char: '新', code: 'YL' },
+            { char: '年', code: 'OQ' },
+            { char: '快', code: 'PK' },
+            { char: '了', code: 'NN' },
+            { char: '爸', code: 'CU' },
+            { char: '媽', code: 'VF' },
+            { char: '都', code: 'JL' },
+            { char: '準', code: 'EJ' },
+            { char: '備', code: 'OB' },
+            { char: '賀', code: 'KC' },
+            { char: '的', code: 'HI' },
+            { char: '食', code: 'OV' },
+            { char: '物', code: 'HH' },
+            { char: '黃', code: 'TC' },
+            { char: '河', code: 'ER' },
+            { char: '長', code: 'SM' },
+            { char: '江', code: 'EM' },
+            { char: '珠', code: 'GM' },
+            { char: '西', code: 'MW' },
+            { char: '湖', code: 'EB' },
+            { char: '山', code: 'U' },
+            { char: '故', code: 'JK' },
+            { char: '宮', code: 'JR' },
+            { char: '兵', code: 'OC' },
+            { char: '馬', code: 'SF' },
+            { char: '俑', code: 'OB' },
+            { char: '門', code: 'AN' },
+            { char: '莫', code: 'TK' },
+            { char: '高', code: 'YR' },
+            { char: '窟', code: 'JU' },
+            { char: '頤', code: 'SC' },
+            { char: '和', code: 'HR' },
+            { char: '壇', code: 'GM' },
+            { char: '萬', code: 'TB' },
+            { char: '里', code: 'WG' },
+            { char: '城', code: 'GS' },
+            { char: '造', code: 'YR' },
+            { char: '紙', code: 'VP' },
+            { char: '術', code: 'HN' },
+            { char: '印', code: 'HL' },
+            { char: '刷', code: 'SN' },
+            { char: '火', code: 'F' },
+            { char: '藥', code: 'TD' },
+            { char: '指', code: 'QA' },
+            { char: '南', code: 'JT' },
+            { char: '針', code: 'CJ' },
+            { char: '進', code: 'YG' },
+            { char: '行', code: 'HN' },
+            { char: '互', code: 'MM' },
+            { char: '聯', code: 'ST' },
+            { char: '網', code: 'WV' },
+            { char: '活', code: 'ER' },
+            { char: '時', code: 'AI' },
+            { char: '所', code: 'HL' },
+            { char: '留', code: 'HW' },
+            { char: '下', code: 'MY' },
+            { char: '痕', code: 'MK' },
+            { char: '跡', code: 'RC' },
+            { char: '稱', code: 'HH' },
+            { char: '為', code: 'IF' },
+            { char: '數', code: 'VK' },
+            { char: '碼', code: 'MR' },
+            { char: '足', code: 'RO' },
+            { char: '我', code: 'II' },
+            { char: '應', code: 'IP' },
+            { char: '該', code: 'RY' },
+            { char: '尊', code: 'TG' },
+            { char: '重', code: 'HG' },
+            { char: '別', code: 'RN' },
+            { char: '人', code: 'OO' },
+            { char: '創', code: 'ON' },
+            { char: '作', code: 'OS' },
+            { char: '果', code: 'WD' },
+            { char: '共', code: 'TC' },
+            { char: '同', code: 'BM' },
+            { char: '保', code: 'OD' },
+            { char: '護', code: 'RY' },
+            { char: '知', code: 'OK' },
+            { char: '識', code: 'RY' },
+            { char: '產', code: 'YM' },
+            { char: '權', code: 'DG' },
+            { char: '工', code: 'MM' },
+            { char: '智', code: 'OA' },
+            { char: '能', code: 'IP' },
+            { char: '可', code: 'MR' },
+            { char: '以', code: 'VO' },
+            { char: '模', code: 'DK' },
+            { char: '擬', code: 'RQ' },
+            { char: '類', code: 'OF' },
+            { char: '思', code: 'WP' },
+            { char: '考', code: 'JK' },
+            { char: '推', code: 'QG' },
+            { char: '理', code: 'MG' },
+            { char: '及', code: 'NE' },
+            { char: '判', code: 'RN' },
+            { char: '斷', code: 'VM' },
+            { char: '等', code: 'HG' }
         ];
 
-        let score = 0, lives = 5, activeWords = [], isPlaying = false, speed = 1.0;
+        let score = 0, isPlaying = false, timeLeft = 60, streak = 0;
+        let activeWords = [], currentPool = [], lastThreeHits = [], isFrozen = false;
+        let spawnInterval, countdownTimer;
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function getNextWord() {
+            if (currentPool.length === 0) currentPool = shuffle([...masterWordDb]);
+            return currentPool.pop();
+        }
+
+        function initGame() {
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            score = 0; timeLeft = 60; streak = 0; lastThreeHits = [];
+            isFrozen = false; activeWords = []; currentPool = [];
+            isPlaying = true;
+            document.querySelectorAll('.word-box').forEach(el => el.remove());
+            document.getElementById('ui-layer').style.display = 'none';
+            document.getElementById('score').innerText = "0";
+            document.getElementById('streak').innerText = "0";
+            document.getElementById('timer').innerText = "01:00";
+            document.body.classList.remove('frozen');
+
+            spawn();
+            spawnInterval = setInterval(spawn, 1500);
+            startCountdown();
+            gameLoop();
+        }
+
+        function startCountdown() {
+            clearInterval(countdownTimer);
+            countdownTimer = setInterval(() => {
+                if (!isFrozen) {
+                    timeLeft--;
+                    let sec = timeLeft < 10 ? "0" + timeLeft : timeLeft;
+                    document.getElementById('timer').innerText = `00:${sec}`;
+                    if (timeLeft <= 0) endGame();
+                }
+            }, 1000);
+        }
 
         function spawn() {
             if (!isPlaying) return;
-            const data = wordDb[Math.floor(Math.random() * wordDb.length)];
+            const data = getNextWord();
             const div = document.createElement('div');
             div.className = 'word-box';
-            let codeHtml = data.code.split('').map(l => `<div class="code-pair"><span class="root">${cjDict[l]||l}</span><span class="key">${l}</span></div>`).join('');
-            div.innerHTML = `<div class="char">${data.char}</div><div class="code-container">${codeHtml}</div>`;
-            div.style.left = Math.random() * 650 + 'px';
-            div.style.top = '-120px';
+            let codeHtml = data.code.split('').map(l => `<div class="code-pair"><span class="root">${cjDict[l] || l}</span><span class="key">${l}</span></div>`).join('');
+            div.innerHTML = `<div class="char">${data.char}</div><div class="timer-bar"><div class="timer-progress"></div></div><div class="code-container">${codeHtml}</div>`;
+            div.style.left = Math.random() * (document.getElementById('game-container').offsetWidth - 150) + 'px';
+            div.style.top = Math.random() * (document.getElementById('game-container').offsetHeight - 150) + 'px';
             document.getElementById('game-container').appendChild(div);
-            activeWords.push({ el: div, code: data.code, currentIndex: 0, y: -120 });
-            setTimeout(spawn, Math.max(1000, 3000 - score * 5));
+            activeWords.push({ el: div, code: data.code, currentIndex: 0, life: 100, decay: 0.2 + (score * 0.002) });
         }
 
-        function update() {
+        function gameLoop() {
             if (!isPlaying) return;
             for (let i = activeWords.length - 1; i >= 0; i--) {
                 let w = activeWords[i];
-                w.y += speed;
-                w.el.style.top = w.y + 'px';
-                if (w.y > 100) w.el.querySelector('.code-container').style.opacity = 1;
-
-                if (w.y > 550) {
-                    document.getElementById('game-container').removeChild(w.el);
+                w.life -= w.decay;
+                w.el.querySelector('.timer-progress').style.width = w.life + '%';
+                if (w.life <= 50) w.el.classList.add('show-hint');
+                if (w.life <= 0) {
+                    w.el.remove();
                     activeWords.splice(i, 1);
-                    lives--;
-                    document.getElementById('lives').innerText = lives;
-                    if (lives <= 0) location.reload();
+                    streak = 0;
+                    document.getElementById('streak').innerText = streak;
                 }
             }
-            requestAnimationFrame(update);
+            if (activeWords.length === 0) spawn();
+            requestAnimationFrame(gameLoop);
         }
 
         window.addEventListener('keydown', (e) => {
@@ -117,45 +557,109 @@
             const key = e.key.toUpperCase();
             if (!/^[A-Z]$/.test(key)) return;
 
-            let anyMatched = false;
-
-            // 檢查畫面上所有字，看看按下的鍵是否符合任何一個字的「下一個碼」
-            activeWords.forEach(w => {
-                if (w.code[w.currentIndex] === key) {
-                    // 匹配成功，前進一格
-                    const pairs = w.el.querySelectorAll('.code-pair');
-                    pairs[w.currentIndex].classList.add('correct');
-                    w.currentIndex++;
-                    w.el.classList.add('typing');
-                    anyMatched = true;
-
-                    // 檢查是否完成全碼
-                    if (w.currentIndex === w.code.length) {
-                        score += 10;
-                        document.getElementById('score').innerText = score;
-                        document.getElementById('game-container').removeChild(w.el);
-                        activeWords = activeWords.filter(item => item !== w);
-                    }
-                } else if (w.currentIndex > 0) {
-                    // 如果這個字已經開始打了，但這一步按錯了，則重置這個字
-                    // 這樣實現了「同一個字必須連續答對」的邏輯
-                    w.currentIndex = 0;
-                    w.el.classList.remove('typing');
-                    w.el.querySelectorAll('.code-pair').forEach(p => p.classList.remove('correct'));
+            // 如果 Lightbox 開啟中，不處理鍵盤輸入
+            if (document.getElementById('lightbox-overlay').style.display === 'flex') {
+                if (e.key === 'Escape') { // 允許按 ESC 關閉 Lightbox
+                    document.getElementById('lightbox-overlay').style.display = 'none';
                 }
-            });
+                return;
+            }
 
-            // 如果按下的一個鍵連任何一個字的首碼或進度都沒對上，可以加個音效提示
-            if (!anyMatched) {
-                console.log("Miss!"); 
+            let target = activeWords.find(w => w.currentIndex > 0 && w.code[w.currentIndex] === key);
+            if (!target) target = activeWords.find(w => w.currentIndex === 0 && w.code[0] === key);
+
+            if (target) {
+                const pairs = target.el.querySelectorAll('.code-pair');
+                pairs[target.currentIndex].classList.add('correct');
+                playTone(600, 'sine', 0.1);
+                target.currentIndex++;
+                if (target.currentIndex === target.code.length) {
+                    handleHit();
+                    playTone(800, 'sine', 0.2);
+                    target.el.remove();
+                    activeWords = activeWords.filter(w => w !== target);
+                }
+            } else {
+                streak = 0;
+                playTone(150, 'square', 0.2);
+                document.getElementById('streak').innerText = streak;
+                activeWords.forEach(w => {
+                    w.currentIndex = 0;
+                    w.el.querySelectorAll('.code-pair').forEach(p => p.classList.remove('correct'));
+                });
             }
         });
 
-        document.getElementById('start-btn').onclick = () => {
-            isPlaying = true;
-            document.getElementById('ui-layer').style.display = 'none';
-            spawn(); update();
-        };
+        function handleHit() {
+            const now = Date.now();
+            score++; streak++;
+            document.getElementById('score').innerText = score;
+            document.getElementById('streak').innerText = streak;
+            lastThreeHits.push(now);
+            if (lastThreeHits.length > 3) lastThreeHits.shift();
+            if (lastThreeHits.length === 3 && (lastThreeHits[2] - lastThreeHits[0]) / 1000 <= 5) score += 1;
+            if (streak > 0 && streak % 10 === 0) triggerFreeze();
+
+        }
+
+        function triggerFreeze() {
+            if (isFrozen) return;
+            isFrozen = true;
+            document.body.classList.add('frozen');
+            playTone(1200, 'triangle', 0.5);
+            document.getElementById('timer').classList.add('frozen-text');
+            setTimeout(() => {
+                isFrozen = false;
+                document.body.classList.remove('frozen');
+                document.getElementById('timer').classList.remove('frozen-text');
+            }, 5000);
+        }
+
+        function endGame() {
+            isPlaying = false;
+            playTone(300, 'sawtooth', 0.5);
+            clearInterval(spawnInterval);
+            clearInterval(countdownTimer);
+            document.getElementById('ui-layer').style.display = 'flex';
+            document.getElementById('title').innerText = "挑戰結束";
+            document.getElementById('result-display').innerHTML = `<div style="font-size:40px; color:#e94560">${score} 分</div>`;
+        }
+
+        document.getElementById('start-btn').onclick = initGame;
+
+        // Lightbox JavaScript Logic
+        const lightboxOverlay = document.getElementById('lightbox-overlay');
+        const lightboxImg = document.querySelector('#lightbox-content img');
+        const sidebarImages = document.querySelectorAll('#reference-sidebar img');
+
+        sidebarImages.forEach(img => {
+            img.addEventListener('click', () => {
+                lightboxImg.src = img.src;
+                lightboxOverlay.style.display = 'flex';
+            });
+        });
+
+        // 點擊 overlay 關閉 lightbox
+        lightboxOverlay.addEventListener('click', (e) => {
+            if (e.target.id === 'lightbox-overlay' || e.target.closest('#lightbox-content img')) {
+                lightboxOverlay.style.display = 'none';
+            }
+        });
+
+        // 阻止在 lightbox 顯示時遊戲接收鍵盤輸入
+        window.addEventListener('keydown', (e) => {
+            if (document.getElementById('lightbox-overlay').style.display === 'flex') {
+                if (e.key === 'Escape') { // 允許按 ESC 關閉 Lightbox
+                    document.getElementById('lightbox-overlay').style.display = 'none';
+                    e.preventDefault(); // 阻止其他默認行為
+                }
+                // 阻止其他遊戲鍵盤輸入
+                if (/^[A-Z]$/i.test(e.key)) {
+                    e.preventDefault();
+                }
+            }
+        }, true); // 使用 capture 階段確保優先處理
     </script>
 </body>
+
 </html>
