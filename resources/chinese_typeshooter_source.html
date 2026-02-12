@@ -292,6 +292,62 @@
             background: #e94560;
             box-shadow: 0 0 15px rgba(233, 69, 96, 0.5);
         }
+
+        #leaderboard-sidebar {
+            width: 300px;
+            height: 100vh;
+            background: #1a1a2e;
+            border-left: 2px solid #e94560;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .tab-container {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 5px;
+            font-size: 12px;
+            background: #16213e;
+            border: 1px solid #e94560;
+            color: white;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            background: #e94560;
+        }
+
+        #leaderboard-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+
+        .score-row {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr 2fr;
+            padding: 8px 4px;
+            border-bottom: 1px solid #333;
+            text-align: center;
+        }
+
+        .score-header {
+            font-weight: bold;
+            color: #e94560;
+            border-bottom: 2px solid #e94560;
+        }
+
+        .time-stamp {
+            font-size: 10px;
+            color: #888;
+        }
     </style>
 </head>
 
@@ -345,7 +401,23 @@
             </div>
         </div>
     </div>
-
+    <div id="leaderboard-sidebar">
+        <h3 style="text-align:center; color:#e94560; margin: 5px 0;">龍虎榜 (Top 10)</h3>
+        <div class="tab-container">
+            <button class="tab-btn active" onclick="updateLeaderboard('ALL')">全部</button>
+            <button class="tab-btn" onclick="updateLeaderboard('1')">Easy</button>
+            <button class="tab-btn" onclick="updateLeaderboard('2')">Normal</button>
+            <button class="tab-btn" onclick="updateLeaderboard('3')">Hard</button>
+        </div>
+        <div class="score-header score-row">
+            <div>班級</div>
+            <div>學號</div>
+            <div>得分</div>
+            <div>日期</div>
+        </div>
+        <div id="leaderboard-list">
+        </div>
+    </div>
     <script>
         let fadeTimer = null;
         let audioCtx = null;
@@ -361,7 +433,74 @@
             let opt = new Option(g + l, g + l);
             classSel.add(opt);
         }));
+        let allScores = [];
 
+        // Helper: Convert Numeric Class back to String (e.g., 24 -> 6D)
+        function reverseClassValue(val) {
+            const v = parseInt(val);
+            const grade = Math.ceil(v / 4);
+            const letterIdx = (v - 1) % 4;
+            const letters = ['A', 'B', 'C', 'D'];
+            return grade + letters[letterIdx];
+        }
+
+        // Fetch data from ThingSpeak
+        async function fetchLeaderboard() {
+            try {
+                const response = await fetch('https://api.thingspeak.com/channels/3260241/feeds.json?results=1000');
+                const data = await response.json();
+                allScores = data.feeds;
+                updateLeaderboard('ALL'); // Initial display
+            } catch (error) {
+                console.error('Error fetching leaderboard:', error);
+            }
+        }
+
+        function updateLeaderboard(modeFilter) {
+            // Update active tab UI
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.innerText === (modeFilter === 'ALL' ? '全部' : (modeFilter === '1' ? 'Easy' : modeFilter === '2' ? 'Normal' : 'Hard')));
+            });
+
+            const listContainer = document.getElementById('leaderboard-list');
+            listContainer.innerHTML = '';
+
+            // Filter by mode if necessary
+            let filtered = allScores.filter(f => f.field1 && f.field2 && f.field4);
+            if (modeFilter !== 'ALL') {
+                filtered = filtered.filter(f => f.field3 === modeFilter);
+            }
+
+            // Sort by Score (Field 4) Descending, then take Top 10
+            const top10 = filtered
+                .sort((a, b) => parseInt(b.field4) - parseInt(a.field4))
+                .slice(0, 10);
+
+            top10.forEach(entry => {
+                const date = new Date(entry.created_at);
+                const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+
+                const row = document.createElement('div');
+                row.className = 'score-row';
+                row.innerHTML = `
+            <div>${reverseClassValue(entry.field1)}</div>
+            <div>#${entry.field2}</div>
+            <div style="color:#00ff41; font-weight:bold;">${entry.field4}</div>
+            <div class="time-stamp">${dateStr}</div>
+        `;
+                listContainer.appendChild(row);
+            });
+        }
+
+        // Trigger fetch on page load and after game end
+        window.addEventListener('load', fetchLeaderboard);
+
+        // Modify your existing endGame to refresh the list after a delay
+        const originalEndGame = endGame;
+        endGame = function () {
+            originalEndGame();
+            setTimeout(fetchLeaderboard, 3000); // Wait 3s for ThingSpeak to process upload
+        };
         for (let i = 1; i <= 40; i++) {
             numSel.add(new Option(i, i));
         }
