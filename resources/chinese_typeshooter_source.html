@@ -255,6 +255,43 @@
             transition: opacity 0.5s ease;
             /* This creates the fade effect */
         }
+
+        /* New UI Elements */
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        select {
+            padding: 10px;
+            background: #1a1a2e;
+            color: white;
+            border: 1px solid #e94560;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .difficulty-select {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .diff-btn {
+            padding: 10px 20px;
+            border: 2px solid #e94560;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 5px;
+            color: white;
+            transition: 0.3s;
+        }
+
+        .diff-btn.active {
+            background: #e94560;
+            box-shadow: 0 0 15px rgba(233, 69, 96, 0.5);
+        }
     </style>
 </head>
 
@@ -287,10 +324,23 @@
             <div id="bg-code-display"></div>
             <div id="ui-layer">
                 <h1 id="title">速成極限挑戰</h1>
-                <p style="color:#888; text-align:center;">
-                    點擊左側圖片可放大查看<br>
-                    生命過半才顯示提示
-                </p>
+
+                <div class="input-group">
+                    <select id="class-select">
+                        <option value="" disabled selected>選擇班別</option>
+                    </select>
+                    <select id="st-num-select">
+                        <option value="" disabled selected>選擇學號</option>
+                    </select>
+                </div>
+
+                <div class="difficulty-select">
+                    <button class="diff-btn active" data-mode="EASY">EASY</button>
+                    <button class="diff-btn" data-mode="NORMAL">NORMAL</button>
+                    <button class="diff-btn" data-mode="HARD">HARD</button>
+                </div>
+
+                <div id="result-display"></div>
                 <button id="start-btn">開始挑戰</button>
             </div>
         </div>
@@ -299,6 +349,42 @@
     <script>
         let fadeTimer = null;
         let audioCtx = null;
+        let gameMode = 'EASY'; // Default
+
+        // Populate Dropdowns
+        const classSel = document.getElementById('class-select');
+        const numSel = document.getElementById('st-num-select');
+
+        const grades = ['1', '2', '3', '4', '5', '6'];
+        const letters = ['A', 'B', 'C', 'D'];
+        grades.forEach(g => letters.forEach(l => {
+            let opt = new Option(g + l, g + l);
+            classSel.add(opt);
+        }));
+
+        for (let i = 1; i <= 40; i++) {
+            numSel.add(new Option(i, i));
+        }
+        function getClassValue(classStr) {
+            if (!classStr) return 0;
+            const grade = parseInt(classStr[0]); // Gets 1-6
+            const letter = classStr[1]; // Gets A-D
+            const letterMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+            // Formula: (Grade - 1) * 4 + LetterValue + 1
+            // Example: 1A -> (0*4)+0+1 = 1 | 6D -> (5*4)+3+1 = 24
+            return (grade - 1) * 4 + letterMap[letter] + 1;
+        }
+        // Difficulty Button Logic
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                gameMode = btn.dataset.mode;
+
+                // Toggle Sidebar visibility for HARD mode immediately
+                document.getElementById('reference-sidebar').style.display = (gameMode === 'HARD') ? 'none' : 'flex';
+            };
+        });
         const playTone = (freq, type, duration) => {
             // 只有在第一次執行或被關閉時才創建 Context
             if (!audioCtx) {
@@ -560,7 +646,13 @@
                 let w = activeWords[i];
                 w.life -= w.decay;
                 w.el.querySelector('.timer-progress').style.width = w.life + '%';
-                if (w.life <= 50) w.el.classList.add('show-hint');
+                // EASY: Always show hint | NORMAL: Never show hint | HARD: Never show hint
+                if (gameMode === 'EASY') {
+                    w.el.classList.add('show-hint');
+                } else {
+                    w.el.classList.remove('show-hint');
+                }
+                if (w.life <= 50 && gameMode !== 'HARD') w.el.classList.add('show-hint');
                 if (w.life <= 0) {
                     w.el.remove();
                     activeWords.splice(i, 1);
@@ -640,9 +732,32 @@
             playTone(300, 'sawtooth', 0.5);
             clearInterval(spawnInterval);
             clearInterval(countdownTimer);
+
             document.getElementById('ui-layer').style.display = 'flex';
             document.getElementById('title').innerText = "挑戰結束";
-            document.getElementById('result-display').innerHTML = `<div style="font-size:40px; color:#e94560">${score} 分</div>`;
+
+            // Updated result display - ensure this ID exists in your HTML or add it
+            const resultDiv = document.getElementById('result-display');
+            if (resultDiv) {
+                resultDiv.innerHTML = `<div style="font-size:40px; color:#e94560">${score} 分</div>`;
+            }
+
+            // --- ThingSpeak Upload Logic ---
+            const selectedClass = document.getElementById('class-select').value;
+            const selectedNum = document.getElementById('st-num-select').value;
+
+            if (selectedClass && selectedNum) {
+                const field1 = getClassValue(selectedClass);
+                const field2 = selectedNum;
+                const field3 = (gameMode === 'EASY') ? 1 : (gameMode === 'NORMAL' ? 2 : 3);
+                const field4 = score;
+
+                const url = `https://api.thingspeak.com/update?api_key=LV5V0P8TT9CFUAAY&field1=${field1}&field2=${field2}&field3=${field3}&field4=${field4}`;
+
+                fetch(url)
+                    .then(response => console.log('Data uploaded to ThingSpeak'))
+                    .catch(error => console.error('Error uploading to ThingSpeak:', error));
+            }
         }
 
         document.getElementById('start-btn').onclick = initGame;
