@@ -24,9 +24,9 @@ This is a responsive, single-page portfolio website designed to provide a quick 
 
 ```text
 .
-├── resiyrces/css/                # Stylesheets (main styles, media queries)
-├── resiyrces/img/                # Image assets (profile pic, project thumbnails)
-├── resiyrces/js/                 # JavaScript files for interactivity
+├── resources/css/                # Stylesheets (main styles, media queries)
+├── resources/img/                # Image assets (profile pic, project thumbnails)
+├── resources/js/                 # JavaScript files for interactivity
 ├── index.html          # Main entry point
 └── README.md           # Project documentation
 
