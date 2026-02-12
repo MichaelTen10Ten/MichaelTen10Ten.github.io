@@ -447,7 +447,7 @@
         // Fetch data from ThingSpeak
         async function fetchLeaderboard() {
             try {
-                const response = await fetch('https://api.thingspeak.com/channels/3260241/feeds.json?results=1000');
+                const response = await fetch('https://api.thingspeak.com/channels/3260241/feeds.json?results=10000');
                 const data = await response.json();
                 allScores = data.feeds;
                 updateLeaderboard('ALL'); // Initial display
