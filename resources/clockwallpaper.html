@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spectrum Chime ASCII Clock</title>
+    <style>
+        :root {
+            --dynamic-color: hsl(270, 100%, 75%);
+            --glow-intensity: 15px;
+            --bg-flash: #030105;
+        }
+
+        body {
+            background-color: var(--bg-flash);
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Courier New', monospace;
+            transition: background-color 0.5s ease;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            opacity: 0.5;
+        }
+
+        #clock-container {
+            position: relative;
+            z-index: 2;
+            color: var(--dynamic-color);
+            line-height: 0.82;
+            letter-spacing: 2px;
+            white-space: pre;
+            font-size: 1.4vw;
+            text-shadow: 0 0 var(--glow-intensity) var(--dynamic-color);
+            transition: color 2s ease, text-shadow 2s ease, transform 0.2s;
+            user-select: none;
+        }
+
+        /* Chime Flash Effect */
+        .hour-chime {
+            animation: chime-flash 1.5s cubic-bezier(0, 1, 0, 1);
+        }
+
+        @keyframes chime-flash {
+            0% { transform: scale(1.1); color: #ffffff; text-shadow: 0 0 50px #ffffff; }
+            100% { transform: scale(1); }
+        }
+
+        .glitch-active {
+            animation: shake 0.15s infinite;
+            text-shadow: 5px 0 #ff0000, -5px 0 #00ff00 !important;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(0); }
+            20% { transform: translate(-5px, 3px); }
+            60% { transform: translate(5px, -3px); }
+            100% { transform: translate(0); }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+<div id="clock-container"></div>
+
+<script>
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    let matrixSpeed = 1;
+    const chars = "0123456789ABCDEFΣΩλπ";
+    const fontSize = 16;
+    const columns = width / fontSize;
+    const drops = Array(Math.floor(columns)).fill(1);
+
+    function drawMatrix() {
+        ctx.fillStyle = "rgba(3, 1, 5, 0.15)";
+        ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--dynamic-color');
+        ctx.font = fontSize + "px monospace";
+
+        for (let i = 0; i < drops.length; i++) {
+            const text = chars.charAt(Math.floor(Math.random() * chars.length));
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+            if (drops[i] * fontSize > height && Math.random() > 0.98) drops[i] = 0;
+            // Matrix speed increases during chime
+            drops[i] += matrixSpeed;
+        }
+    }
+
+    const digitMaps = {
+        '0': ["  ██████  ", " ████████ ", "██      ██", "██      ██", "██      ██", "██      ██", "██      ██", "██      ██", " ████████ ", "  ██████  "],
+        '1': ["    ██    ", "   ███    ", "  ████    ", "    ██    ", "    ██    ", "    ██    ", "    ██    ", "    ██    ", " ████████ ", " ████████ "],
+        '2': [" ████████ ", "██████████", "        ██", "        ██", " ████████ ", "████████  ", "██        ", "██        ", "██████████", "██████████"],
+        '3': [" ████████ ", "██████████", "        ██", "        ██", "   ██████ ", "        ██", "        ██", "        ██", "██████████", " ████████ "],
+        '4': ["██      ██", "██      ██", "██      ██", "██      ██", "██████████", "██████████", "        ██", "        ██", "        ██", "        ██"],
+        '5': ["██████████", "██████████", "██        ", "██        ", "█████████ ", " █████████", "        ██", "        ██", "██████████", "█████████ "],
+        '6': ["  ██████  ", " ████████ ", "██        ", "██        ", "████████  ", "██      ██", "██      ██", "██      ██", " ████████ ", "  ██████  "],
+        '7': ["██████████", "██████████", "      ██  ", "     ██   ", "    ██    ", "   ██     ", "  ██      ", "  ██      ", "  ██      ", "  ██      "],
+        '8': ["  ██████  ", " ████████ ", "██      ██", "██      ██", "  ██████  ", " ████████ ", "██      ██", "██      ██", " ████████ ", "  ██████  "],
+        '9': ["  ██████  ", " ████████ ", "██      ██", "██      ██", "  ████████", "   ███████", "        ██", "        ██", " ████████ ", "  ██████  "]
+    };
+
+    let lastHour = -1;
+
+    function smoothColorTransition() {
+        const now = new Date();
+        const secondsInDay = (now.getHours() * 3600) + (now.getMinutes() * 60) + now.getSeconds();
+        const totalSeconds = 24 * 3600;
+        const progress = secondsInDay / totalSeconds;
+
+        // Expanded Hue Cycle: 
+        // 0=Red, 120=Green, 240=Blue, 300=Purple
+        // We travel through the spectrum over 24 hours
+        const hue = (progress * 360 + 260) % 360; 
+        
+        const lightness = 50 + Math.sin(progress * Math.PI * 2 - Math.PI/2) * 20;
+        const glow = (lightness / 3) + "px";
+
+        document.documentElement.style.setProperty('--dynamic-color', `hsl(${hue}, 100%, ${lightness}%)`);
+        document.documentElement.style.setProperty('--glow-intensity', glow);
+
+        // --- THE CHIME LOGIC ---
+        if (lastHour !== -1 && lastHour !== now.getHours()) {
+            triggerChime();
+        }
+        lastHour = now.getHours();
+    }
+
+    function triggerChime() {
+        const container = document.getElementById('clock-container');
+        container.classList.add('hour-chime');
+        matrixSpeed = 10; // Hyperspeed rain
+        
+        document.body.style.backgroundColor = "#1a1a1a";
+        
+        setTimeout(() => {
+            container.classList.remove('hour-chime');
+            matrixSpeed = 1;
+            document.body.style.backgroundColor = "#030105";
+        }, 1500);
+    }
+
+    function update() {
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        const s = String(now.getSeconds()).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const mo = String(now.getMonth() + 1).padStart(2, '0');
+
+        smoothColorTransition();
+
+        let output = "";
+        [h, m, s, "---", d, mo].forEach(seg => {
+            if (seg === "---") { output += "\n" + "=".repeat(22) + "\n\n"; return; }
+            for (let r = 0; r < 10; r++) output += digitMaps[seg[0]][r] + "  " + digitMaps[seg[1]][r] + "\n";
+            output += "\n";
+        });
+
+        const container = document.getElementById('clock-container');
+        container.textContent = output;
+
+        if (Math.random() > 0.992) {
+            container.classList.add('glitch-active');
+            setTimeout(() => container.classList.remove('glitch-active'), 150);
+        }
+    }
+
+    window.addEventListener('resize', () => { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; });
+    setInterval(drawMatrix, 50);
+    setInterval(update, 1000);
+    update();
+</script>
+</body>
+</html>
