@@ -19,16 +19,14 @@ This is a responsive, single-page portfolio website designed to provide a quick 
 - **HTML5:** Semantic structure for better SEO and accessibility.
 - **CSS3:** Custom styling with a focus on modern UI/UX principles (Flexbox, CSS Grid).
 - **JavaScript:** Interactive elements and dynamic content.
-- **FontAwesome:** For professional iconography.
-- **Google Fonts:** For clean and readable typography.
 
 ## 📂 Project Structure
 
 ```text
 .
-├── css/                # Stylesheets (main styles, media queries)
-├── img/                # Image assets (profile pic, project thumbnails)
-├── js/                 # JavaScript files for interactivity
+├── resiyrces/css/                # Stylesheets (main styles, media queries)
+├── resiyrces/img/                # Image assets (profile pic, project thumbnails)
+├── resiyrces/js/                 # JavaScript files for interactivity
 ├── index.html          # Main entry point
 └── README.md           # Project documentation
 
