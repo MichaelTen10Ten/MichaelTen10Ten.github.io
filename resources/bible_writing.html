@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -14,6 +15,7 @@
             --danger: #c62828;
             --download: #1976d2;
         }
+
         body {
             font-family: "Microsoft JhengHei", sans-serif;
             background-color: var(--bg);
@@ -32,401 +34,648 @@
             width: 320px;
             height: 100%;
             background: #fff;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
             transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 100;
             display: flex;
             flex-direction: column;
         }
-        #sidebar.open { left: 0; }
-        #sidebar-header { background: var(--primary); color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-        #book-list { flex: 1; overflow-y: auto; }
-        .book-group { border-bottom: 1px solid #eee; }
-        .book-main { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #fff; transition: background 0.2s; }
-        .chapter-list { display: none; background: #f9f9f9; padding: 0; border-top: 1px solid #eee; }
-        .book-group.expanded .chapter-list { display: block; }
-        .chapter-item { padding: 10px 20px 10px 40px; display: flex; flex-direction: column; cursor: pointer; font-size: 0.9em; border-bottom: 1px solid #f0f0f0; }
-        .progress-container { width: 100%; height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden; }
-        .progress-bar { height: 100%; transition: width 0.3s; }
-        .prog-badge { font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; color: white; }
-        .arrow { font-size: 10px; transition: transform 0.3s; color: #999; margin-left: 5px; }
-        .book-group.expanded .arrow { transform: rotate(90deg); }
-        .sidebar-footer { padding: 10px; border-top: 1px solid #eee; display: flex; flex-direction: column; gap: 5px; background: #fff; }
-        .footer-btn { padding: 10px; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold; font-size: 12px; }
+
+        #sidebar.open {
+            left: 0;
+        }
+
+        #sidebar-header {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #book-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .book-group {
+            border-bottom: 1px solid #eee;
+        }
+
+        .book-main {
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background: #fff;
+            transition: background 0.2s;
+        }
+
+        .chapter-list {
+            display: none;
+            background: #f9f9f9;
+            padding: 0;
+            border-top: 1px solid #eee;
+        }
+
+        .book-group.expanded .chapter-list {
+            display: block;
+        }
+
+        .chapter-item {
+            padding: 10px 20px 10px 40px;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            font-size: 0.9em;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        .prog-badge {
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: white;
+        }
+
+        .arrow {
+            font-size: 10px;
+            transition: transform 0.3s;
+            color: #999;
+            margin-left: 5px;
+        }
+
+        .book-group.expanded .arrow {
+            transform: rotate(90deg);
+        }
+
+        .sidebar-footer {
+            padding: 10px;
+            border-top: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            background: #fff;
+        }
+
+        .footer-btn {
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+        }
 
         /* Nav Layout */
-        nav { background: var(--primary); padding: 8px; display: flex; justify-content: center; gap: 5px; z-index: 10; align-items: center;}
-        nav button { padding: 6px 8px; font-size: 11px; cursor: pointer; border-radius: 4px; border: none; background: white; font-weight: bold; }
-        .menu-toggle { font-size: 16px !important; }
-        .btn-download-mode { background: var(--download); color: white; }
-        #nav-label { color: white; font-size: 13px; font-weight: bold; min-width: 70px; text-align: center; }
+        nav {
+            background: var(--primary);
+            padding: 8px;
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            z-index: 10;
+            align-items: center;
+        }
+
+        nav button {
+            padding: 6px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            border-radius: 4px;
+            border: none;
+            background: white;
+            font-weight: bold;
+        }
+
+        .menu-toggle {
+            font-size: 16px !important;
+        }
+
+        .btn-download-mode {
+            background: var(--download);
+            color: white;
+        }
+
+        #nav-label {
+            color: white;
+            font-size: 13px;
+            font-weight: bold;
+            min-width: 70px;
+            text-align: center;
+        }
 
         /* Display Area */
-        #display-area { flex: 1; overflow-y: auto; padding: 15px; background: var(--paper); }
-        .verse-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 15px; position: relative; }
-        .verse-header { width: 100%; display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-        .verse-number { font-weight: bold; color: var(--accent); font-size: 0.9em; }
-        
-        /* Checkbox hidden unless in download mode */
-        .verse-checkbox { display: none; width: 18px; height: 18px; cursor: pointer; }
-        body.download-mode .verse-checkbox { display: inline-block; }
+        #display-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: var(--paper);
+        }
 
-        .char-box { display: inline-flex; flex-direction: column; border: 1px solid #e0e0e0; width: 42px; background: white; }
-        .char-box.active { border: 3px solid #ff9800 !important; background: #fff9c4 !important; z-index: 2;}
-        .original-char { font-size: 10px; color: #aaa; text-align: center; background: #fafafa; border-bottom: 1px solid #eee; }
-        .written-img { width: 100%; height: 38px; object-fit: contain; }
+        .verse-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .verse-header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .verse-number {
+            font-weight: bold;
+            color: var(--accent);
+            font-size: 0.9em;
+        }
+
+        /* Checkbox hidden unless in download mode */
+        .verse-checkbox {
+            display: none;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        body.download-mode .verse-checkbox {
+            display: inline-block;
+        }
+
+        .char-box {
+            display: inline-flex;
+            flex-direction: column;
+            border: 1px solid #e0e0e0;
+            width: 42px;
+            background: white;
+        }
+
+        .char-box.active {
+            border: 3px solid #ff9800 !important;
+            background: #fff9c4 !important;
+            z-index: 2;
+        }
+
+        .original-char {
+            font-size: 10px;
+            color: #aaa;
+            text-align: center;
+            background: #fafafa;
+            border-bottom: 1px solid #eee;
+        }
+
+        .written-img {
+            width: 100%;
+            height: 38px;
+            object-fit: contain;
+        }
 
         /* Writing Area (Hidden in download mode) */
-        #writing-area { background: #e0e0e0; padding: 10px; display: flex; flex-direction: column; align-items: center; border-top: 2px solid var(--primary); }
-        body.download-mode #writing-area { display: none; }
-        
-        .writing-header { display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 340px; margin-bottom: 8px; }
-        .side-btn { flex: 1; height: 60px; border: none; border-radius: 8px; font-weight: bold; color: white; cursor: pointer; }
-        .btn-clear { background: var(--accent); margin-right: 10px; }
-        .btn-submit { background: var(--success); margin-left: 10px; }
-        #current-char-display { font-size: 42px; font-weight: bold; background: white; width: 75px; height: 75px; display: flex; align-items: center; justify-content: center; border-radius: 12px; border: 2px solid var(--accent); }
-        #canvas-container { background: white; border: 2px solid var(--primary); touch-action: none; }
+        #writing-area {
+            background: #e0e0e0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-top: 2px solid var(--primary);
+        }
+
+        body.download-mode #writing-area {
+            display: none;
+        }
+
+        .writing-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 340px;
+            margin-bottom: 8px;
+        }
+
+        .side-btn {
+            flex: 1;
+            height: 60px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+        }
+
+        .btn-clear {
+            background: var(--accent);
+            margin-right: 10px;
+        }
+
+        .btn-submit {
+            background: var(--success);
+            margin-left: 10px;
+        }
+
+        #current-char-display {
+            font-size: 42px;
+            font-weight: bold;
+            background: white;
+            width: 75px;
+            height: 75px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            border: 2px solid var(--accent);
+        }
+
+        #canvas-container {
+            background: white;
+            border: 2px solid var(--primary);
+            touch-action: none;
+        }
 
         /* Download Toolbar */
-        #download-toolbar { display: none; background: #1565c0; padding: 10px; justify-content: space-around; }
-        body.download-mode #download-toolbar { display: flex; }
-        #sidebar-overlay { position: fixed; display: none; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99; }
+        #download-toolbar {
+            display: none;
+            background: #1565c0;
+            padding: 10px;
+            justify-content: space-around;
+        }
+
+        body.download-mode #download-toolbar {
+            display: flex;
+        }
+
+        #sidebar-overlay {
+            position: fixed;
+            display: none;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+        }
     </style>
 </head>
+
 <body>
 
-<div id="sidebar-overlay" onclick="toggleSidebar()"></div>
-<div id="sidebar">
-    <div id="sidebar-header"><span>讀經進度目錄</span><span onclick="toggleSidebar()" style="cursor:pointer; font-size: 20px;">✕</span></div>
-    <div id="book-list"></div>
-    <div class="sidebar-footer">
-        <button class="footer-btn" style="background:var(--accent)" onclick="clearChapter()">清空本章記錄</button>
-        <button class="footer-btn" style="background:var(--danger)" onclick="clearAll()">清空全體歷史</button>
+    <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <div id="sidebar">
+        <div id="sidebar-header"><span>讀經進度目錄</span><span onclick="toggleSidebar()"
+                style="cursor:pointer; font-size: 20px;">✕</span></div>
+        <div id="book-list"></div>
+        <div class="sidebar-footer">
+            <button class="footer-btn" style="background:var(--accent)" onclick="clearChapter()">清空本章記錄</button>
+            <button class="footer-btn" style="background:var(--danger)" onclick="clearAll()">清空全體歷史</button>
+        </div>
     </div>
-</div>
 
-<nav id="main-nav">
-    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
-    <button onclick="changeBook(-1)">上卷</button>
-    <button onclick="changeChapter(-1)">上章</button>
-    <span id="nav-label">...</span>
-    <button onclick="changeChapter(1)">下章</button>
-    <button onclick="changeBook(1)">下卷</button>
-    <button class="btn-download-mode" onclick="toggleDownloadMode()">下載</button>
-</nav>
+    <nav id="main-nav">
+        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+        <button onclick="changeBook(-1)">上卷</button>
+        <button onclick="changeChapter(-1)">上章</button>
+        <span id="nav-label">...</span>
+        <button onclick="changeChapter(1)">下章</button>
+        <button onclick="changeBook(1)">下卷</button>
+        <button class="btn-download-mode" onclick="toggleDownloadMode()">下載</button>
+    </nav>
 
-<div id="download-toolbar">
-    <button class="footer-btn" style="background:#fff; color:#1565c0;" onclick="toggleDownloadMode()">取消</button>
-    <button class="footer-btn" style="background:#ff9800; color:#fff;" onclick="selectAllVerses()">全選 (Select All)</button>
-    <button class="footer-btn" style="background:#4caf50; color:#fff;" onclick="exportSelected()">導出選中節次 (Export)</button>
-</div>
-
-<div id="display-area">
-    <h2 id="book-title" style="text-align:center; color:var(--primary); font-size:1.1em; margin:0 0 10px 0;">載入中...</h2>
-    <div id="verses-container"></div>
-</div>
-
-<div id="writing-area">
-    <div class="writing-header">
-        <button class="side-btn btn-clear" onclick="clearCanvas()">清除<br>(Clear)</button>
-        <div id="current-char-display">?</div>
-        <button class="side-btn btn-submit" onclick="saveWriting()">提交<br>(OK)</button>
+    <div id="download-toolbar">
+        <button class="footer-btn" style="background:#fff; color:#1565c0;" onclick="toggleDownloadMode()">取消</button>
+        <button class="footer-btn" style="background:#ff9800; color:#fff;" onclick="selectAllVerses()">全選 (Select
+            All)</button>
+        <button class="footer-btn" style="background:#4caf50; color:#fff;" onclick="exportSelected()">導出選中節次
+            (Export)</button>
     </div>
-    <div id="canvas-container"><canvas id="paintCanvas" width="280" height="280"></canvas></div>
-</div>
 
-<script>
-    let books = [];
-    let currentBookIndex = 0;
-    let currentChapter = 1;
-    let chapterData = [];
-    let activeGlobalIndex = 0;
-    let isDownloadMode = false;
-    let chapterMeta = JSON.parse(localStorage.getItem('bible_meta') || "{}");
+    <div id="display-area">
+        <h2 id="book-title" style="text-align:center; color:var(--primary); font-size:1.1em; margin:0 0 10px 0;">載入中...
+        </h2>
+        <div id="verses-container"></div>
+    </div>
 
-    const canvas = document.getElementById('paintCanvas');
-    const ctx = canvas.getContext('2d');
-    let isDrawing = false;
+    <div id="writing-area">
+        <div class="writing-header">
+            <button class="side-btn btn-clear" onclick="clearCanvas()">清除<br>(Clear)</button>
+            <div id="current-char-display">?</div>
+            <button class="side-btn btn-submit" onclick="saveWriting()">提交<br>(OK)</button>
+        </div>
+        <div id="canvas-container"><canvas id="paintCanvas" width="280" height="280"></canvas></div>
+    </div>
 
-    async function init() {
-        try {
-            const res = await fetch('https://bible.helloao.org/api/cmn_cuv/books.json');
-            const data = await res.json();
-            books = data.books;
-            loadChapter();
-            setupCanvas();
-        } catch (e) { console.error(e); }
-    }
+    <script>
+        let books = [];
+        let currentBookIndex = 0;
+        let currentChapter = 1;
+        let chapterData = [];
+        let activeGlobalIndex = 0;
+        let isDownloadMode = false;
+        let chapterMeta = JSON.parse(localStorage.getItem('bible_meta') || "{}");
 
-    function toggleDownloadMode() {
-        isDownloadMode = !isDownloadMode;
-        document.body.classList.toggle('download-mode', isDownloadMode);
-        document.getElementById('main-nav').style.display = isDownloadMode ? 'none' : 'flex';
-        renderDisplay(); 
-    }
+        const canvas = document.getElementById('paintCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
 
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebar-overlay');
-        const isOpen = sidebar.classList.toggle('open');
-        overlay.style.display = isOpen ? 'block' : 'none';
-        if (isOpen) renderSidebar();
-    }
-
-    function getProgColor(perc) {
-        const r = Math.floor(255 - (perc * 2.55));
-        const g = Math.floor(perc * 2.55);
-        return `rgb(${r},${g},0)`;
-    }
-
-    function renderSidebar() {
-        const list = document.getElementById('book-list');
-        list.innerHTML = "";
-        books.forEach((book, bIdx) => {
-            const group = document.createElement('div');
-            group.className = 'book-group';
-            let completedChapters = 0;
-            for(let c=1; c<=book.numberOfChapters; c++) {
-                const key = `bible_${book.id}_${c}`;
-                const data = JSON.parse(localStorage.getItem(key) || "{}");
-                if(chapterMeta[key] && Object.keys(data).length >= chapterMeta[key]) completedChapters++;
-            }
-            const bookPerc = Math.round((completedChapters / book.numberOfChapters) * 100);
-            const main = document.createElement('div');
-            main.className = 'book-main';
-            main.innerHTML = `<div style="display:flex; align-items:center;"><span class="arrow">▶</span><span style="margin-left:8px;">${book.name}</span></div><span class="prog-badge" style="background:${getProgColor(bookPerc)}">${bookPerc}%</span>`;
-            main.onclick = () => {
-                const isExpanded = group.classList.contains('expanded');
-                document.querySelectorAll('.book-group').forEach(g => g.classList.remove('expanded'));
-                if (!isExpanded) group.classList.add('expanded');
-            };
-            const cList = document.createElement('div');
-            cList.className = 'chapter-list';
-            for(let c=1; c<=book.numberOfChapters; c++) {
-                const key = `bible_${book.id}_${c}`;
-                const cData = JSON.parse(localStorage.getItem(key) || "{}");
-                const writtenCount = Object.keys(cData).length;
-                const totalInChap = chapterMeta[key] || 0;
-                const chapPerc = totalInChap > 0 ? Math.round((writtenCount / totalInChap) * 100) : 0;
-                const cItem = document.createElement('div');
-                cItem.className = 'chapter-item';
-                cItem.innerHTML = `<div class="chapter-info"><span>第 ${c} 章</span><span style="font-size:10px;">${writtenCount}/${totalInChap || '?'}字 (${chapPerc}%)</span></div><div class="progress-container"><div class="progress-bar" style="width:${chapPerc}%; background:${getProgColor(chapPerc)}"></div></div>`;
-                cItem.onclick = (e) => { e.stopPropagation(); currentBookIndex = bIdx; currentChapter = c; toggleSidebar(); loadChapter(); };
-                cList.appendChild(cItem);
-            }
-            group.appendChild(main);
-            group.appendChild(cList);
-            list.appendChild(group);
-        });
-    }
-
-    async function loadChapter() {
-        const book = books[currentBookIndex];
-        const key = `bible_${book.id}_${currentChapter}`;
-        document.getElementById('nav-label').innerText = `${book.shortName || book.name} ${currentChapter}`;
-        document.getElementById('book-title').innerText = `${book.name} 第 ${currentChapter} 章`;
-        const res = await fetch(`https://bible.helloao.org/api/cmn_cuv/${book.id}/${currentChapter}.json`);
-        const data = await res.json();
-        chapterData = [];
-        let totalChars = 0;
-        data.chapter.content.forEach(v => {
-            if (v.type === "verse") {
-                let text = "";
-                v.content.forEach(line => text += (typeof line === 'string' ? line : line.text));
-                const chars = text.replace(/\s/g, '').split('');
-                chapterData.push({ number: v.number, chars: chars });
-                totalChars += chars.length;
-            }
-        });
-        chapterMeta[key] = totalChars;
-        localStorage.setItem('bible_meta', JSON.stringify(chapterMeta));
-        activeGlobalIndex = 0;
-        renderDisplay();
-        updateTargetChar();
-    }
-
-    function renderDisplay() {
-        const container = document.getElementById('verses-container');
-        container.innerHTML = "";
-        const storageKey = `bible_${books[currentBookIndex].id}_${currentChapter}`;
-        const history = JSON.parse(localStorage.getItem(storageKey) || "{}");
-        let globalIdx = 0;
-
-        chapterData.forEach((verse, vIdx) => {
-            const verseRow = document.createElement('div');
-            verseRow.className = 'verse-row';
-            verseRow.dataset.verseNum = verse.number;
-
-            const vHeader = document.createElement('div');
-            vHeader.className = 'verse-header';
-            
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.className = 'verse-checkbox';
-            checkbox.dataset.vidx = vIdx;
-
-            const vNum = document.createElement('span');
-            vNum.className = 'verse-number';
-            vNum.innerText = `第 ${verse.number} 節`;
-
-            vHeader.appendChild(checkbox);
-            vHeader.appendChild(vNum);
-            verseRow.appendChild(vHeader);
-
-            verse.chars.forEach((char) => {
-                const thisIdx = globalIdx;
-                const box = document.createElement('div');
-                box.className = 'char-box' + (thisIdx === activeGlobalIndex && !isDownloadMode ? ' active' : '');
-                box.id = `char-${thisIdx}`;
-                const original = document.createElement('span');
-                original.className = 'original-char';
-                original.innerText = char;
-                const img = document.createElement('img');
-                img.className = 'written-img';
-                if (history[thisIdx]) img.src = history[thisIdx];
-                box.appendChild(original);
-                box.appendChild(img);
-                if (!isDownloadMode) {
-                    box.onclick = () => { activeGlobalIndex = thisIdx; updateHighlight(); updateTargetChar(); };
-                }
-                verseRow.appendChild(box);
-                globalIdx++;
-            });
-            container.appendChild(verseRow);
-        });
-    }
-
-    function selectAllVerses() {
-    const checkboxes = document.querySelectorAll('.verse-checkbox');
-    // If all are already checked, uncheck them. Otherwise, check all.
-    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-    checkboxes.forEach(cb => cb.checked = !allChecked);
-}
-
-async function exportSelected() {
-    const selectedCheckboxes = document.querySelectorAll('.verse-checkbox:checked');
-    if (selectedCheckboxes.length === 0) { alert("請先選取要導出的節次！"); return; }
-
-    const exportCanvas = document.createElement('canvas');
-    const exCtx = exportCanvas.getContext('2d');
-    
-    const charSize = 100; 
-    const padding = 60;
-    const headerHeight = 120; // Extra space for Book Name
-    const rowHeight = charSize + 100;
-    
-    // Calculate dimensions
-    let maxWidth = 0;
-    selectedCheckboxes.forEach(cb => {
-        const verse = chapterData[cb.dataset.vidx];
-        maxWidth = Math.max(maxWidth, verse.chars.length);
-    });
-
-    // Ensure width is at least enough for the title
-    exportCanvas.width = Math.max((maxWidth * charSize) + (padding * 2), 600);
-    exportCanvas.height = (selectedCheckboxes.length * rowHeight) + headerHeight + padding;
-
-    // Background - slight paper tint for aesthetics
-    exCtx.fillStyle = "#fffcf5";
-    exCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-
-    // Draw Book Name and Chapter Title
-    exCtx.fillStyle = "#5d4037";
-    exCtx.font = "bold 48px Microsoft JhengHei";
-    exCtx.textAlign = "center";
-    exCtx.fillText(`${books[currentBookIndex].name} - 第 ${currentChapter} 章`, exportCanvas.width / 2, padding + 40);
-    
-    // Reset text align for verses
-    exCtx.textAlign = "left";
-
-    const storageKey = `bible_${books[currentBookIndex].id}_${currentChapter}`;
-    const history = JSON.parse(localStorage.getItem(storageKey) || "{}");
-    
-    const getGlobalIdx = (vIdx) => {
-        let count = 0;
-        for(let i=0; i < vIdx; i++) count += chapterData[i].chars.length;
-        return count;
-    };
-
-    for (let i = 0; i < selectedCheckboxes.length; i++) {
-        const vIdx = parseInt(selectedCheckboxes[i].dataset.vidx);
-        const verse = chapterData[vIdx];
-        const y = headerHeight + padding + (i * rowHeight);
-
-        // Draw Verse Number
-        exCtx.fillStyle = "#8d6e63";
-        exCtx.font = "bold 28px Microsoft JhengHei";
-        exCtx.fillText(`[第 ${verse.number} 節]`, padding, y - 10);
-
-        // Draw Characters
-        let gIdx = getGlobalIdx(vIdx);
-        for (let c = 0; c < verse.chars.length; c++) {
-            const charImgData = history[gIdx + c];
-            const posX = padding + (c * charSize);
-            const posY = y;
-
-            // Draw grid box
-            exCtx.strokeStyle = "#d7ccc8";
-            exCtx.lineWidth = 1;
-            exCtx.strokeRect(posX, posY, charSize, charSize);
-
-            if (charImgData) {
-                const img = new Image();
-                img.src = charImgData;
-                await new Promise(r => img.onload = r);
-                exCtx.drawImage(img, posX, posY, charSize, charSize);
-            }
+        async function init() {
+            try {
+                const res = await fetch('https://bible.helloao.org/api/cmn_cuv/books.json');
+                const data = await res.json();
+                books = data.books;
+                loadChapter();
+                setupCanvas();
+            } catch (e) { console.error(e); }
         }
-    }
 
-    // Trigger Download
-    const link = document.createElement('a');
-    link.download = `${books[currentBookIndex].name}_第${currentChapter}章_書寫導出.png`;
-    link.href = exportCanvas.toDataURL("image/png");
-    link.click();
-}
+        function toggleDownloadMode() {
+            isDownloadMode = !isDownloadMode;
+            document.body.classList.toggle('download-mode', isDownloadMode);
+            document.getElementById('main-nav').style.display = isDownloadMode ? 'none' : 'flex';
+            renderDisplay();
+        }
 
-    // Standard Handwriting Setup
-    function updateHighlight() {
-        document.querySelectorAll('.char-box').forEach(box => box.classList.remove('active'));
-        const activeBox = document.getElementById(`char-${activeGlobalIndex}`);
-        if (activeBox) { activeBox.classList.add('active'); activeBox.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-    }
-    function updateTargetChar() {
-        const allChars = chapterData.flatMap(v => v.chars);
-        document.getElementById('current-char-display').innerText = allChars[activeGlobalIndex] || "完";
-    }
-    function setupCanvas() {
-        ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.strokeStyle = '#000';
-        const getPos = (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const clientX = (e.touches ? e.touches[0].clientX : e.clientX);
-            const clientY = (e.touches ? e.touches[0].clientY : e.clientY);
-            return { x: clientX - rect.left, y: clientY - rect.top };
-        };
-        const start = (e) => { isDrawing = true; draw(e); };
-        const end = () => { isDrawing = false; ctx.beginPath(); };
-        const draw = (e) => { if (!isDrawing) return; if (e.cancelable) e.preventDefault(); const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); };
-        canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', draw); window.addEventListener('mouseup', end);
-        canvas.addEventListener('touchstart', start, {passive: false}); canvas.addEventListener('touchmove', draw, {passive: false}); canvas.addEventListener('touchend', end);
-    }
-    function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
-    function saveWriting() {
-        const storageKey = `bible_${books[currentBookIndex].id}_${currentChapter}`;
-        const history = JSON.parse(localStorage.getItem(storageKey) || "{}");
-        const imgData = canvas.toDataURL();
-        history[activeGlobalIndex] = imgData;
-        localStorage.setItem(storageKey, JSON.stringify(history));
-        const activeBoxImg = document.querySelector(`#char-${activeGlobalIndex} .written-img`);
-        if (activeBoxImg) activeBoxImg.src = imgData;
-        clearCanvas(); activeGlobalIndex++; updateHighlight(); updateTargetChar();
-    }
-    function changeBook(dir) { currentBookIndex = Math.max(0, Math.min(books.length - 1, currentBookIndex + dir)); currentChapter = 1; loadChapter(); }
-    function changeChapter(dir) { const book = books[currentBookIndex]; const newChap = currentChapter + dir; if (newChap >= 1 && newChap <= book.numberOfChapters) { currentChapter = newChap; loadChapter(); } }
-    function clearChapter() { if(confirm("清除本章記錄？")) { localStorage.removeItem(`bible_${books[currentBookIndex].id}_${currentChapter}`); renderDisplay(); } }
-    function clearAll() { if(confirm("警告：這將刪除所有書寫歷史及進度！")) { localStorage.clear(); chapterMeta = {}; renderDisplay(); activeGlobalIndex = 0; updateTargetChar(); } }
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const isOpen = sidebar.classList.toggle('open');
+            overlay.style.display = isOpen ? 'block' : 'none';
+            if (isOpen) renderSidebar();
+        }
 
-    init();
-</script>
+        function getProgColor(perc) {
+            const r = Math.floor(255 - (perc * 2.55));
+            const g = Math.floor(perc * 2.55);
+            return `rgb(${r},${g},0)`;
+        }
+
+        function renderSidebar() {
+            const list = document.getElementById('book-list');
+            list.innerHTML = "";
+            books.forEach((book, bIdx) => {
+                const group = document.createElement('div');
+                group.className = 'book-group';
+                let completedChapters = 0;
+                for (let c = 1; c <= book.numberOfChapters; c++) {
+                    const key = `bible_${book.id}_${c}`;
+                    const data = JSON.parse(localStorage.getItem(key) || "{}");
+                    if (chapterMeta[key] && Object.keys(data).length >= chapterMeta[key]) completedChapters++;
+                }
+                const bookPerc = Math.round((completedChapters / book.numberOfChapters) * 100);
+                const main = document.createElement('div');
+                main.className = 'book-main';
+                main.innerHTML = `<div style="display:flex; align-items:center;"><span class="arrow">▶</span><span style="margin-left:8px;">${book.name}</span></div><span class="prog-badge" style="background:${getProgColor(bookPerc)}">${bookPerc}%</span>`;
+                main.onclick = () => {
+                    const isExpanded = group.classList.contains('expanded');
+                    document.querySelectorAll('.book-group').forEach(g => g.classList.remove('expanded'));
+                    if (!isExpanded) group.classList.add('expanded');
+                };
+                const cList = document.createElement('div');
+                cList.className = 'chapter-list';
+                for (let c = 1; c <= book.numberOfChapters; c++) {
+                    const key = `bible_${book.id}_${c}`;
+                    const cData = JSON.parse(localStorage.getItem(key) || "{}");
+                    const writtenCount = Object.keys(cData).length;
+                    const totalInChap = chapterMeta[key] || 0;
+                    const chapPerc = totalInChap > 0 ? Math.round((writtenCount / totalInChap) * 100) : 0;
+                    const cItem = document.createElement('div');
+                    cItem.className = 'chapter-item';
+                    cItem.innerHTML = `<div class="chapter-info"><span>第 ${c} 章</span><span style="font-size:10px;">${writtenCount}/${totalInChap || '?'}字 (${chapPerc}%)</span></div><div class="progress-container"><div class="progress-bar" style="width:${chapPerc}%; background:${getProgColor(chapPerc)}"></div></div>`;
+                    cItem.onclick = (e) => { e.stopPropagation(); currentBookIndex = bIdx; currentChapter = c; toggleSidebar(); loadChapter(); };
+                    cList.appendChild(cItem);
+                }
+                group.appendChild(main);
+                group.appendChild(cList);
+                list.appendChild(group);
+            });
+        }
+
+        async function loadChapter() {
+            const book = books[currentBookIndex];
+            const key = `bible_${book.id}_${currentChapter}`;
+            document.getElementById('nav-label').innerText = `${book.shortName || book.name} ${currentChapter}`;
+            document.getElementById('book-title').innerText = `${book.name} 第 ${currentChapter} 章`;
+
+            const res = await fetch(`https://bible.helloao.org/api/cmn_cuv/${book.id}/${currentChapter}.json`);
+            const data = await res.json();
+
+            chapterData = [];
+            let totalChars = 0;
+
+            data.chapter.content.forEach(v => {
+                if (v.type === "verse") {
+                    let text = "";
+                    v.content.forEach(line => text += (typeof line === 'string' ? line : line.text));
+
+                    // FIX: Use regex to keep only Chinese characters and punctuation
+                    // This removes "undefined" or random latin characters causing issues
+                    const chars = text.match(/[\u4e00-\u9fa5，。；：！？（）「」『』、]/g) || [];
+
+                    chapterData.push({ number: v.number, chars: chars });
+                    totalChars += chars.length;
+                }
+            });
+
+            chapterMeta[key] = totalChars;
+            localStorage.setItem('bible_meta', JSON.stringify(chapterMeta));
+            activeGlobalIndex = 0;
+            renderDisplay();
+            updateTargetChar();
+        }
+
+        function renderDisplay() {
+            const container = document.getElementById('verses-container');
+            container.innerHTML = "";
+            const storageKey = `bible_${books[currentBookIndex].id}_${currentChapter}`;
+            const history = JSON.parse(localStorage.getItem(storageKey) || "{}");
+            let globalIdx = 0;
+
+            chapterData.forEach((verse, vIdx) => {
+                const verseRow = document.createElement('div');
+                verseRow.className = 'verse-row';
+                verseRow.dataset.verseNum = verse.number;
+
+                const vHeader = document.createElement('div');
+                vHeader.className = 'verse-header';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'verse-checkbox';
+                checkbox.dataset.vidx = vIdx;
+
+                const vNum = document.createElement('span');
+                vNum.className = 'verse-number';
+                vNum.innerText = `第 ${verse.number} 節`;
+
+                vHeader.appendChild(checkbox);
+                vHeader.appendChild(vNum);
+                verseRow.appendChild(vHeader);
+
+                verse.chars.forEach((char) => {
+                    const thisIdx = globalIdx;
+                    const box = document.createElement('div');
+                    box.className = 'char-box' + (thisIdx === activeGlobalIndex && !isDownloadMode ? ' active' : '');
+                    box.id = `char-${thisIdx}`;
+                    const original = document.createElement('span');
+                    original.className = 'original-char';
+                    original.innerText = char;
+                    const img = document.createElement('img');
+                    img.className = 'written-img';
+                    if (history[thisIdx]) img.src = history[thisIdx];
+                    box.appendChild(original);
+                    box.appendChild(img);
+                    if (!isDownloadMode) {
+                        box.onclick = () => { activeGlobalIndex = thisIdx; updateHighlight(); updateTargetChar(); };
+                    }
+                    verseRow.appendChild(box);
+                    globalIdx++;
+                });
+                container.appendChild(verseRow);
+            });
+        }
+
+        function selectAllVerses() {
+            const checkboxes = document.querySelectorAll('.verse-checkbox');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => cb.checked = !allChecked);
+        }
+
+        async function exportSelected() {
+            const selectedCheckboxes = document.querySelectorAll('.verse-checkbox:checked');
+            if (selectedCheckboxes.length === 0) { alert("請先選取要導出的節次！"); return; }
+
+            const exportCanvas = document.createElement('canvas');
+            const exCtx = exportCanvas.getContext('2d');
+            const charSize = 100;
+            const padding = 60;
+            const headerHeight = 150; // Space for the Book Title
+            const rowHeight = charSize + 100;
+
+            let maxWidth = 0;
+            selectedCheckboxes.forEach(cb => {
+                const verse = chapterData[cb.dataset.vidx];
+                maxWidth = Math.max(maxWidth, verse.chars.length);
+            });
+
+            exportCanvas.width = (maxWidth * charSize) + (padding * 2);
+            exportCanvas.height = (selectedCheckboxes.length * rowHeight) + headerHeight;
+
+            // Background
+            exCtx.fillStyle = "#fffcf5";
+            exCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+            // Draw Book Header
+            exCtx.fillStyle = "#5d4037";
+            exCtx.font = "bold 40px Microsoft JhengHei";
+            exCtx.textAlign = "center";
+            exCtx.fillText(`${books[currentBookIndex].name} - 第 ${currentChapter} 章`, exportCanvas.width / 2, 80);
+            exCtx.textAlign = "left";
+
+            const storageKey = `bible_${books[currentBookIndex].id}_${currentChapter}`;
+            const history = JSON.parse(localStorage.getItem(storageKey) || "{}");
+
+            const getGlobalIdx = (vIdx) => {
+                let count = 0;
+                for (let i = 0; i < vIdx; i++) count += chapterData[i].chars.length;
+                return count;
+            };
+
+            for (let i = 0; i < selectedCheckboxes.length; i++) {
+                const vIdx = parseInt(selectedCheckboxes[i].dataset.vidx);
+                const verse = chapterData[vIdx];
+                const y = headerHeight + (i * rowHeight);
+
+                exCtx.fillStyle = "#8d6e63";
+                exCtx.font = "bold 24px Microsoft JhengHei";
+                exCtx.fillText(`第 ${verse.number} 節`, padding, y - 10);
+
+                let gIdx = getGlobalIdx(vIdx);
+                for (let c = 0; c < verse.chars.length; c++) {
+                    const charImgData = history[gIdx + c];
+                    const posX = padding + (c * charSize);
+                    const posY = y;
+
+                    exCtx.strokeStyle = "#d7ccc8";
+                    exCtx.strokeRect(posX, posY, charSize, charSize);
+
+                    if (charImgData) {
+                        const img = new Image();
+                        img.src = charImgData;
+                        await new Promise(r => img.onload = r);
+                        exCtx.drawImage(img, posX, posY, charSize, charSize);
+                    }
+                }
+            }
+
+            const link = document.createElement('a');
+            link.download = `${books[currentBookIndex].name}_Chap${currentChapter}.png`;
+            link.href = exportCanvas.toDataURL("image/png");
+            link.click();
+        }
+
+        // Standard Handwriting Setup
+        function updateHighlight() {
+            document.querySelectorAll('.char-box').forEach(box => box.classList.remove('active'));
+            const activeBox = document.getElementById(`char-${activeGlobalIndex}`);
+            if (activeBox) { activeBox.classList.add('active'); activeBox.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        }
+        function updateTargetChar() {
+            const allChars = chapterData.flatMap(v => v.chars);
+            document.getElementById('current-char-display').innerText = allChars[activeGlobalIndex] || "完";
+        }
+        function setupCanvas() {
+            ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.strokeStyle = '#000';
+            const getPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = (e.touches ? e.touches[0].clientX : e.clientX);
+                const clientY = (e.touches ? e.touches[0].clientY : e.clientY);
+                return { x: clientX - rect.left, y: clientY - rect.top };
+            };
+            const start = (e) => { isDrawing = true; draw(e); };
+            const end = () => { isDrawing = false; ctx.beginPath(); };
+            const draw = (e) => { if (!isDrawing) return; if (e.cancelable) e.preventDefault(); const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); };
+            canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', draw); window.addEventListener('mouseup', end);
+            canvas.addEventListener('touchstart', start, { passive: false }); canvas.addEventListener('touchmove', draw, { passive: false }); canvas.addEventListener('touchend', end);
+        }
+        function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+        function saveWriting() {
+            const storageKey = `bible_${books[currentBookIndex].id}_${currentChapter}`;
+            const history = JSON.parse(localStorage.getItem(storageKey) || "{}");
+            const imgData = canvas.toDataURL();
+            history[activeGlobalIndex] = imgData;
+            localStorage.setItem(storageKey, JSON.stringify(history));
+            const activeBoxImg = document.querySelector(`#char-${activeGlobalIndex} .written-img`);
+            if (activeBoxImg) activeBoxImg.src = imgData;
+            clearCanvas(); activeGlobalIndex++; updateHighlight(); updateTargetChar();
+        }
+        function changeBook(dir) { currentBookIndex = Math.max(0, Math.min(books.length - 1, currentBookIndex + dir)); currentChapter = 1; loadChapter(); }
+        function changeChapter(dir) { const book = books[currentBookIndex]; const newChap = currentChapter + dir; if (newChap >= 1 && newChap <= book.numberOfChapters) { currentChapter = newChap; loadChapter(); } }
+        function clearChapter() { if (confirm("清除本章記錄？")) { localStorage.removeItem(`bible_${books[currentBookIndex].id}_${currentChapter}`); renderDisplay(); } }
+        function clearAll() { if (confirm("警告：這將刪除所有書寫歷史及進度！")) { localStorage.clear(); chapterMeta = {}; renderDisplay(); activeGlobalIndex = 0; updateTargetChar(); } }
+
+        init();
+    </script>
 </body>
+
 </html>
