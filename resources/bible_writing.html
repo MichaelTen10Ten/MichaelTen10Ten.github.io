@@ -621,86 +621,105 @@
         }
 
         async function exportSelected() {
-            const selectedCheckboxes = document.querySelectorAll('.verse-checkbox:checked');
-            if (selectedCheckboxes.length === 0) {
-                alert("請先選取要導出的節次！");
-                return;
-            }
+    const selectedCheckboxes = document.querySelectorAll('.verse-checkbox:checked');
+    if (selectedCheckboxes.length === 0) { alert("請先選取要導出的節次！"); return; }
 
-            const exportCanvas = document.createElement('canvas');
-            const exCtx = exportCanvas.getContext('2d');
-            const charSize = 100;
-            const padding = 60;
-            const headerHeight = 150;
-            const rowHeight = charSize + 100;
+    const storageKey = `bible_${books[currentBookIndex].id}_${currentChapter}`;
+    const history = await getDB(storageKey) || {};
 
-            let maxWidth = 0;
-            selectedCheckboxes.forEach(cb => {
-                const verse = chapterData[cb.dataset.vidx];
-                maxWidth = Math.max(maxWidth, verse.chars.length);
-            });
+    // A4 Constants for 300 DPI
+    const A4_WIDTH = 2480;
+    const A4_HEIGHT = 3508;
+    const CHARS_PER_LINE = 20;
+    const CHAR_SIZE = 100; // High quality size
+    const LINE_SPACING = 60;
+    const MARGIN = 100;
+    const HEADER_SPACE = 200;
+    
+    const rowHeight = CHAR_SIZE + LINE_SPACING;
+    const availableHeight = A4_HEIGHT - (MARGIN * 2) - HEADER_SPACE;
 
-            exportCanvas.width = (maxWidth * charSize) + (padding * 2);
-            exportCanvas.height = (selectedCheckboxes.length * rowHeight) + headerHeight;
+    let currentY = 0;
+    let pageCount = 1;
+    let tempCanvas = document.createElement('canvas');
+    let tempCtx = tempCanvas.getContext('2d');
 
-            // Background
-            exCtx.fillStyle = "#fffcf5";
-            exCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+    const setupNewPage = (canvas, ctx, pNum) => {
+        canvas.width = A4_WIDTH;
+        canvas.height = A4_HEIGHT;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, A4_WIDTH, A4_HEIGHT);
+        
+        // Header info
+        ctx.fillStyle = "#5d4037";
+        ctx.font = "bold 60px Microsoft JhengHei";
+        ctx.textAlign = "center";
+        ctx.fillText(`${books[currentBookIndex].name} - 第 ${currentChapter} 章 (第 ${pNum} 頁)`, A4_WIDTH / 2, MARGIN + 60);
+        ctx.textAlign = "left";
+        return HEADER_SPACE;
+    };
 
-            // Draw Book Header
-            exCtx.fillStyle = "#5d4037";
-            exCtx.font = "bold 40px Microsoft JhengHei";
-            exCtx.textAlign = "center";
-            exCtx.fillText(`${books[currentBookIndex].name} - 第 ${currentChapter} 章`, exportCanvas.width / 2, 80);
-            exCtx.textAlign = "left";
+    const downloadPage = (canvas, pNum) => {
+        const link = document.createElement('a');
+        link.download = `${books[currentBookIndex].name}_Chap${currentChapter}_Page${pNum}.png`;
+        link.href = canvas.toDataURL("image/png", 1.0);
+        link.click();
+    };
 
-            const storageKey = `bible_${books[currentBookIndex].id}_${currentChapter}`;
+    const getGlobalIdx = (vIdx) => {
+        let count = 0;
+        for (let i = 0; i < vIdx; i++) count += chapterData[i].chars.length;
+        return count;
+    };
 
-            // FIX: Pulling from IndexedDB instead of localStorage
-            const history = await getDB(storageKey) || {};
+    currentY = setupNewPage(tempCanvas, tempCtx, pageCount);
 
-            const getGlobalIdx = (vIdx) => {
-                let count = 0;
-                for (let i = 0; i < vIdx; i++) count += chapterData[i].chars.length;
-                return count;
-            };
+    for (let i = 0; i < selectedCheckboxes.length; i++) {
+        const vIdx = parseInt(selectedCheckboxes[i].dataset.vidx);
+        const verse = chapterData[vIdx];
+        const linesNeeded = Math.ceil(verse.chars.length / CHARS_PER_LINE);
+        const verseHeight = 40 + (linesNeeded * rowHeight) + 40; // Verse label + chars + padding
 
-            for (let i = 0; i < selectedCheckboxes.length; i++) {
-                const vIdx = parseInt(selectedCheckboxes[i].dataset.vidx);
-                const verse = chapterData[vIdx];
-                const y = headerHeight + (i * rowHeight);
-
-                exCtx.fillStyle = "#8d6e63";
-                exCtx.font = "bold 24px Microsoft JhengHei";
-                exCtx.fillText(`第 ${verse.number} 節`, padding, y - 10);
-
-                let gIdx = getGlobalIdx(vIdx);
-                for (let c = 0; c < verse.chars.length; c++) {
-                    const charImgData = history[gIdx + c];
-                    const posX = padding + (c * charSize);
-                    const posY = y;
-
-                    exCtx.strokeStyle = "#d7ccc8";
-                    exCtx.strokeRect(posX, posY, charSize, charSize);
-
-                    // Only draw if data exists to avoid black boxes/errors in export
-                    if (charImgData) {
-                        const img = new Image();
-                        img.src = charImgData;
-                        await new Promise((resolve) => {
-                            img.onload = resolve;
-                            img.onerror = resolve; // Continue even if one image fails
-                        });
-                        exCtx.drawImage(img, posX, posY, charSize, charSize);
-                    }
-                }
-            }
-
-            const link = document.createElement('a');
-            link.download = `${books[currentBookIndex].name}_第${currentChapter}章.png`;
-            link.href = exportCanvas.toDataURL("image/png");
-            link.click();
+        // Check if verse fits on current page
+        if (currentY + verseHeight > A4_HEIGHT - MARGIN) {
+            downloadPage(tempCanvas, pageCount);
+            pageCount++;
+            currentY = setupNewPage(tempCanvas, tempCtx, pageCount);
         }
+
+        // Draw Verse Label
+        tempCtx.fillStyle = "#8d6e63";
+        tempCtx.font = "bold 40px Microsoft JhengHei";
+        tempCtx.fillText(`第 ${verse.number} 節`, MARGIN, currentY + 40);
+        currentY += 60;
+
+        let gIdx = getGlobalIdx(vIdx);
+        for (let c = 0; c < verse.chars.length; c++) {
+            const lineNum = Math.floor(c / CHARS_PER_LINE);
+            const colNum = c % CHARS_PER_LINE;
+            
+            const posX = MARGIN + (colNum * (CHAR_SIZE + 10));
+            const posY = currentY + (lineNum * rowHeight);
+
+            // Draw Grid
+            tempCtx.strokeStyle = "#d7ccc8";
+            tempCtx.lineWidth = 2;
+            tempCtx.strokeRect(posX, posY, CHAR_SIZE, CHAR_SIZE);
+
+            const charImgData = history[gIdx + c];
+            if (charImgData) {
+                const img = new Image();
+                img.src = charImgData;
+                await new Promise(r => img.onload = r);
+                tempCtx.drawImage(img, posX, posY, CHAR_SIZE, CHAR_SIZE);
+            }
+        }
+        currentY += (linesNeeded * rowHeight) + 40;
+    }
+
+    // Download the last (or only) page
+    downloadPage(tempCanvas, pageCount);
+}
 
         // Standard Handwriting Setup
         function updateHighlight() {
