@@ -348,6 +348,11 @@
                 style="cursor:pointer; font-size: 20px;">✕</span></div>
         <div id="book-list"></div>
         <div class="sidebar-footer">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 5px;">
+                <button class="footer-btn" style="background:#607d8b" onclick="exportBackup()">匯出備份 (Export)</button>
+                <button class="footer-btn" style="background:#9e9e9e" onclick="triggerImport()">匯入備份 (Import)</button>
+            </div>
+            <input type="file" id="importFile" style="display:none" onchange="importBackup(event)" accept=".json">
             <button class="footer-btn" style="background:var(--accent)" onclick="clearChapter()">清空本章記錄</button>
             <button class="footer-btn" style="background:var(--danger)" onclick="clearAll()">清空全體歷史</button>
         </div>
@@ -694,7 +699,50 @@
         function changeChapter(dir) { const book = books[currentBookIndex]; const newChap = currentChapter + dir; if (newChap >= 1 && newChap <= book.numberOfChapters) { currentChapter = newChap; loadChapter(); } }
         function clearChapter() { if (confirm("清除本章記錄？")) { localStorage.removeItem(`bible_${books[currentBookIndex].id}_${currentChapter}`); renderDisplay(); } }
         function clearAll() { if (confirm("警告：這將刪除所有書寫歷史及進度！")) { localStorage.clear(); chapterMeta = {}; renderDisplay(); activeGlobalIndex = 0; updateTargetChar(); } }
+        function exportBackup() {
+            const backupData = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                backupData[key] = localStorage.getItem(key);
+            }
 
+            const dataStr = JSON.stringify(backupData);
+            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+
+            const exportFileDefaultName = 'bible_practice_backup_' + new Date().toISOString().slice(0, 10) + '.json';
+
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+        function triggerImport() {
+            document.getElementById('importFile').click();
+        }
+        function importBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+
+                    if (confirm("這將覆蓋現有所有進度，確定要匯入嗎？")) {
+                        localStorage.clear();
+                        for (const key in importedData) {
+                            localStorage.setItem(key, importedData[key]);
+                        }
+                        alert("匯入成功！頁面即將重新整理。");
+                        location.reload();
+                    }
+                } catch (err) {
+                    alert("匯入失敗：無效的文件格式。");
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+        }
         init();
     </script>
 </body>
