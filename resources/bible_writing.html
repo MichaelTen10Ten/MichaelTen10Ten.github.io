@@ -404,9 +404,24 @@
                 const res = await fetch('https://bible.helloao.org/api/cmn_cuv/books.json');
                 const data = await res.json();
                 books = data.books;
+
+                // 1. Retrieve the last session from localStorage
+                const lastSession = JSON.parse(localStorage.getItem('bible_last_session'));
+
+                if (lastSession) {
+                    currentBookIndex = lastSession.bookIndex;
+                    currentChapter = lastSession.chapter;
+                } else {
+                    // Default to first book/chapter if no history exists
+                    currentBookIndex = 0;
+                    currentChapter = 1;
+                }
+
                 loadChapter();
                 setupCanvas();
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error("Initialization error:", e);
+            }
         }
 
         function toggleDownloadMode() {
@@ -474,6 +489,13 @@
         async function loadChapter() {
             const book = books[currentBookIndex];
             const key = `bible_${book.id}_${currentChapter}`;
+
+            // 2. Save current position to localStorage so it remembers next time
+            localStorage.setItem('bible_last_session', JSON.stringify({
+                bookIndex: currentBookIndex,
+                chapter: currentChapter
+            }));
+
             document.getElementById('nav-label').innerText = `${book.shortName || book.name} ${currentChapter}`;
             document.getElementById('book-title').innerText = `${book.name} 第 ${currentChapter} 章`;
 
@@ -488,8 +510,7 @@
                     let text = "";
                     v.content.forEach(line => text += (typeof line === 'string' ? line : line.text));
 
-                    // FIX: Use regex to keep only Chinese characters and punctuation
-                    // This removes "undefined" or random latin characters causing issues
+                    // Regex fix to remove "undefined" and non-Chinese artifacts
                     const chars = text.match(/[\u4e00-\u9fa5，。；：！？（）「」『』、]/g) || [];
 
                     chapterData.push({ number: v.number, chars: chars });
