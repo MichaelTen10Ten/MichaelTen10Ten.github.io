@@ -398,28 +398,70 @@
         let chapterData = [];
         let activeGlobalIndex = 0;
         let isDownloadMode = false;
-        let chapterMeta = JSON.parse(localStorage.getItem('bible_meta') || "{}");
+
+        // IndexedDB variables
+        const DB_NAME = "BiblePracticeDB";
+        const DB_VERSION = 1;
+        const STORE_NAME = "handwriting";
+        let db;
 
         const canvas = document.getElementById('paintCanvas');
         const ctx = canvas.getContext('2d');
         let isDrawing = false;
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME);
+                    }
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve();
+                };
+                request.onerror = (e) => reject("IndexedDB error");
+            });
+        }
 
+        // NEW: Helper to get/set data from IndexedDB
+        function getDB(key) {
+            return new Promise((resolve) => {
+                const transaction = db.transaction([STORE_NAME], "readonly");
+                const request = transaction.objectStore(STORE_NAME).get(key);
+                request.onsuccess = () => resolve(request.result);
+            });
+        }
+
+        function setDB(key, val) {
+            return new Promise((resolve) => {
+                const transaction = db.transaction([STORE_NAME], "readwrite");
+                const request = transaction.objectStore(STORE_NAME).put(val, key);
+                request.onsuccess = () => resolve();
+            });
+        }
+
+        function deleteDB(key) {
+            return new Promise((resolve) => {
+                const transaction = db.transaction([STORE_NAME], "readwrite");
+                const request = transaction.objectStore(STORE_NAME).delete(key);
+                request.onsuccess = () => resolve();
+            });
+        }
         async function init() {
             try {
+                await initDB(); // Wait for DB to be ready
                 const res = await fetch('https://bible.helloao.org/api/cmn_cuv/books.json');
                 const data = await res.json();
                 books = data.books;
 
-                // 1. Retrieve the last session from localStorage
-                const lastSession = JSON.parse(localStorage.getItem('bible_last_session'));
+                // Retrieve last session from IndexedDB (or fallback to localStorage for migration)
+                const lastSession = await getDB('bible_last_session') || JSON.parse(localStorage.getItem('bible_last_session'));
 
                 if (lastSession) {
                     currentBookIndex = lastSession.bookIndex;
                     currentChapter = lastSession.chapter;
-                } else {
-                    // Default to first book/chapter if no history exists
-                    currentBookIndex = 0;
-                    currentChapter = 1;
                 }
 
                 loadChapter();
@@ -450,35 +492,43 @@
             return `rgb(${r},${g},0)`;
         }
 
-        function renderSidebar() {
+        async function renderSidebar() {
             const list = document.getElementById('book-list');
             list.innerHTML = "";
-            books.forEach((book, bIdx) => {
+            const chapterMeta = await getDB('bible_meta') || {};
+
+            for (let bIdx = 0; bIdx < books.length; bIdx++) {
+                const book = books[bIdx];
                 const group = document.createElement('div');
                 group.className = 'book-group';
+
                 let completedChapters = 0;
                 for (let c = 1; c <= book.numberOfChapters; c++) {
                     const key = `bible_${book.id}_${c}`;
-                    const data = JSON.parse(localStorage.getItem(key) || "{}");
+                    const data = await getDB(key) || {};
                     if (chapterMeta[key] && Object.keys(data).length >= chapterMeta[key]) completedChapters++;
                 }
+
                 const bookPerc = Math.round((completedChapters / book.numberOfChapters) * 100);
                 const main = document.createElement('div');
                 main.className = 'book-main';
                 main.innerHTML = `<div style="display:flex; align-items:center;"><span class="arrow">▶</span><span style="margin-left:8px;">${book.name}</span></div><span class="prog-badge" style="background:${getProgColor(bookPerc)}">${bookPerc}%</span>`;
+
                 main.onclick = () => {
                     const isExpanded = group.classList.contains('expanded');
                     document.querySelectorAll('.book-group').forEach(g => g.classList.remove('expanded'));
                     if (!isExpanded) group.classList.add('expanded');
                 };
+
                 const cList = document.createElement('div');
                 cList.className = 'chapter-list';
                 for (let c = 1; c <= book.numberOfChapters; c++) {
                     const key = `bible_${book.id}_${c}`;
-                    const cData = JSON.parse(localStorage.getItem(key) || "{}");
+                    const cData = await getDB(key) || {};
                     const writtenCount = Object.keys(cData).length;
                     const totalInChap = chapterMeta[key] || 0;
                     const chapPerc = totalInChap > 0 ? Math.round((writtenCount / totalInChap) * 100) : 0;
+
                     const cItem = document.createElement('div');
                     cItem.className = 'chapter-item';
                     cItem.innerHTML = `<div class="chapter-info"><span>第 ${c} 章</span><span style="font-size:10px;">${writtenCount}/${totalInChap || '?'}字 (${chapPerc}%)</span></div><div class="progress-container"><div class="progress-bar" style="width:${chapPerc}%; background:${getProgColor(chapPerc)}"></div></div>`;
@@ -488,18 +538,14 @@
                 group.appendChild(main);
                 group.appendChild(cList);
                 list.appendChild(group);
-            });
+            }
         }
 
         async function loadChapter() {
             const book = books[currentBookIndex];
             const key = `bible_${book.id}_${currentChapter}`;
 
-            // 2. Save current position to localStorage so it remembers next time
-            localStorage.setItem('bible_last_session', JSON.stringify({
-                bookIndex: currentBookIndex,
-                chapter: currentChapter
-            }));
+            await setDB('bible_last_session', { bookIndex: currentBookIndex, chapter: currentChapter });
 
             document.getElementById('nav-label').innerText = `${book.shortName || book.name} ${currentChapter}`;
             document.getElementById('book-title').innerText = `${book.name} 第 ${currentChapter} 章`;
@@ -509,53 +555,39 @@
 
             chapterData = [];
             let totalChars = 0;
-
             data.chapter.content.forEach(v => {
                 if (v.type === "verse") {
                     let text = "";
                     v.content.forEach(line => text += (typeof line === 'string' ? line : line.text));
-
-                    // Regex fix to remove "undefined" and non-Chinese artifacts
                     const chars = text.match(/[\u4e00-\u9fa5，。；：！？（）「」『』、]/g) || [];
-
                     chapterData.push({ number: v.number, chars: chars });
                     totalChars += chars.length;
                 }
             });
 
+            const chapterMeta = await getDB('bible_meta') || {};
             chapterMeta[key] = totalChars;
-            localStorage.setItem('bible_meta', JSON.stringify(chapterMeta));
+            await setDB('bible_meta', chapterMeta);
+
             activeGlobalIndex = 0;
             renderDisplay();
             updateTargetChar();
         }
 
-        function renderDisplay() {
+        async function renderDisplay() {
             const container = document.getElementById('verses-container');
             container.innerHTML = "";
             const storageKey = `bible_${books[currentBookIndex].id}_${currentChapter}`;
-            const history = JSON.parse(localStorage.getItem(storageKey) || "{}");
+            const history = await getDB(storageKey) || {};
             let globalIdx = 0;
 
             chapterData.forEach((verse, vIdx) => {
                 const verseRow = document.createElement('div');
                 verseRow.className = 'verse-row';
-                verseRow.dataset.verseNum = verse.number;
 
                 const vHeader = document.createElement('div');
                 vHeader.className = 'verse-header';
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.className = 'verse-checkbox';
-                checkbox.dataset.vidx = vIdx;
-
-                const vNum = document.createElement('span');
-                vNum.className = 'verse-number';
-                vNum.innerText = `第 ${verse.number} 節`;
-
-                vHeader.appendChild(checkbox);
-                vHeader.appendChild(vNum);
+                vHeader.innerHTML = `<input type="checkbox" class="verse-checkbox" data-vidx="${vIdx}"><span class="verse-number">第 ${verse.number} 節</span>`;
                 verseRow.appendChild(vHeader);
 
                 verse.chars.forEach((char) => {
@@ -563,14 +595,15 @@
                     const box = document.createElement('div');
                     box.className = 'char-box' + (thisIdx === activeGlobalIndex && !isDownloadMode ? ' active' : '');
                     box.id = `char-${thisIdx}`;
-                    const original = document.createElement('span');
-                    original.className = 'original-char';
-                    original.innerText = char;
-                    const img = document.createElement('img');
-                    img.className = 'written-img';
-                    if (history[thisIdx]) img.src = history[thisIdx];
-                    box.appendChild(original);
-                    box.appendChild(img);
+
+                    // Logic: Only show the img tag if there is actual history data
+                    const hasData = !!history[thisIdx];
+                    box.innerHTML = `
+                <span class="original-char">${char}</span>
+                <img class="written-img" src="${hasData ? history[thisIdx] : ''}" 
+                     style="display: ${hasData ? 'block' : 'none'};">
+            `;
+
                     if (!isDownloadMode) {
                         box.onclick = () => { activeGlobalIndex = thisIdx; updateHighlight(); updateTargetChar(); };
                     }
@@ -589,13 +622,16 @@
 
         async function exportSelected() {
             const selectedCheckboxes = document.querySelectorAll('.verse-checkbox:checked');
-            if (selectedCheckboxes.length === 0) { alert("請先選取要導出的節次！"); return; }
+            if (selectedCheckboxes.length === 0) {
+                alert("請先選取要導出的節次！");
+                return;
+            }
 
             const exportCanvas = document.createElement('canvas');
             const exCtx = exportCanvas.getContext('2d');
             const charSize = 100;
             const padding = 60;
-            const headerHeight = 150; // Space for the Book Title
+            const headerHeight = 150;
             const rowHeight = charSize + 100;
 
             let maxWidth = 0;
@@ -619,7 +655,9 @@
             exCtx.textAlign = "left";
 
             const storageKey = `bible_${books[currentBookIndex].id}_${currentChapter}`;
-            const history = JSON.parse(localStorage.getItem(storageKey) || "{}");
+
+            // FIX: Pulling from IndexedDB instead of localStorage
+            const history = await getDB(storageKey) || {};
 
             const getGlobalIdx = (vIdx) => {
                 let count = 0;
@@ -645,17 +683,21 @@
                     exCtx.strokeStyle = "#d7ccc8";
                     exCtx.strokeRect(posX, posY, charSize, charSize);
 
+                    // Only draw if data exists to avoid black boxes/errors in export
                     if (charImgData) {
                         const img = new Image();
                         img.src = charImgData;
-                        await new Promise(r => img.onload = r);
+                        await new Promise((resolve) => {
+                            img.onload = resolve;
+                            img.onerror = resolve; // Continue even if one image fails
+                        });
                         exCtx.drawImage(img, posX, posY, charSize, charSize);
                     }
                 }
             }
 
             const link = document.createElement('a');
-            link.download = `${books[currentBookIndex].name}_Chap${currentChapter}.png`;
+            link.download = `${books[currentBookIndex].name}_第${currentChapter}章.png`;
             link.href = exportCanvas.toDataURL("image/png");
             link.click();
         }
@@ -685,60 +727,100 @@
             canvas.addEventListener('touchstart', start, { passive: false }); canvas.addEventListener('touchmove', draw, { passive: false }); canvas.addEventListener('touchend', end);
         }
         function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
-        function saveWriting() {
+        async function saveWriting() {
             const storageKey = `bible_${books[currentBookIndex].id}_${currentChapter}`;
-            const history = JSON.parse(localStorage.getItem(storageKey) || "{}");
-            const imgData = canvas.toDataURL();
+            const history = await getDB(storageKey) || {};
+
+            // Create a temporary canvas to add a white background
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // Fill white background (prevents black JPEG issue)
+            tempCtx.fillStyle = "#FFFFFF";
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+            // Draw your writing on top of the white
+            tempCtx.drawImage(canvas, 0, 0);
+
+            const imgData = tempCanvas.toDataURL("image/jpeg", 0.5);
+
             history[activeGlobalIndex] = imgData;
-            localStorage.setItem(storageKey, JSON.stringify(history));
-            const activeBoxImg = document.querySelector(`#char-${activeGlobalIndex} .written-img`);
-            if (activeBoxImg) activeBoxImg.src = imgData;
-            clearCanvas(); activeGlobalIndex++; updateHighlight(); updateTargetChar();
+            await setDB(storageKey, history);
+
+            // Update the UI immediately
+            const activeBox = document.getElementById(`char-${activeGlobalIndex}`);
+            const activeBoxImg = activeBox.querySelector('.written-img');
+            if (activeBoxImg) {
+                activeBoxImg.src = imgData;
+                activeBoxImg.style.display = 'block'; // Show it now that it has data
+            }
+
+            clearCanvas();
+            activeGlobalIndex++;
+            updateHighlight();
+            updateTargetChar();
         }
         function changeBook(dir) { currentBookIndex = Math.max(0, Math.min(books.length - 1, currentBookIndex + dir)); currentChapter = 1; loadChapter(); }
         function changeChapter(dir) { const book = books[currentBookIndex]; const newChap = currentChapter + dir; if (newChap >= 1 && newChap <= book.numberOfChapters) { currentChapter = newChap; loadChapter(); } }
-        function clearChapter() { if (confirm("清除本章記錄？")) { localStorage.removeItem(`bible_${books[currentBookIndex].id}_${currentChapter}`); renderDisplay(); } }
-        function clearAll() { if (confirm("警告：這將刪除所有書寫歷史及進度！")) { localStorage.clear(); chapterMeta = {}; renderDisplay(); activeGlobalIndex = 0; updateTargetChar(); } }
-        function exportBackup() {
-            const backupData = {};
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                backupData[key] = localStorage.getItem(key);
+        async function clearChapter() {
+            if (confirm("清除本章記錄？")) {
+                await deleteDB(`bible_${books[currentBookIndex].id}_${currentChapter}`);
+                renderDisplay();
             }
+        }
 
-            const dataStr = JSON.stringify(backupData);
-            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+        async function clearAll() {
+            if (confirm("警告：這將刪除所有書寫歷史及進度！")) {
+                const transaction = db.transaction([STORE_NAME], "readwrite");
+                transaction.objectStore(STORE_NAME).clear();
+                renderDisplay();
+                activeGlobalIndex = 0;
+                updateTargetChar();
+            }
+        }
 
-            const exportFileDefaultName = 'bible_practice_backup_' + new Date().toISOString().slice(0, 10) + '.json';
+        async function exportBackup() {
+            const transaction = db.transaction([STORE_NAME], "readonly");
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.getAll();
+            const keysRequest = store.getAllKeys();
 
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
-            linkElement.click();
+            request.onsuccess = () => {
+                const backupData = {};
+                keysRequest.onsuccess = () => {
+                    keysRequest.result.forEach((key, i) => {
+                        backupData[key] = request.result[i];
+                    });
+                    const dataStr = JSON.stringify(backupData);
+                    const blob = new Blob([dataStr], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'bible_full_backup.json';
+                    link.click();
+                };
+            };
         }
         function triggerImport() {
             document.getElementById('importFile').click();
         }
-        function importBackup(event) {
+        async function importBackup(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
-            reader.onload = function (e) {
-                try {
-                    const importedData = JSON.parse(e.target.result);
-
-                    if (confirm("這將覆蓋現有所有進度，確定要匯入嗎？")) {
-                        localStorage.clear();
-                        for (const key in importedData) {
-                            localStorage.setItem(key, importedData[key]);
-                        }
-                        alert("匯入成功！頁面即將重新整理。");
-                        location.reload();
+            reader.onload = async (e) => {
+                const importedData = JSON.parse(e.target.result);
+                if (confirm("這將覆蓋現有所有進度，確定要匯入嗎？")) {
+                    const transaction = db.transaction([STORE_NAME], "readwrite");
+                    const store = transaction.objectStore(STORE_NAME);
+                    store.clear();
+                    for (const key in importedData) {
+                        store.put(importedData[key], key);
                     }
-                } catch (err) {
-                    alert("匯入失敗：無效的文件格式。");
-                    console.error(err);
+                    alert("匯入成功！");
+                    location.reload();
                 }
             };
             reader.readAsText(file);
