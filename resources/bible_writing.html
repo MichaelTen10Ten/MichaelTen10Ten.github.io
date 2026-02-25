@@ -364,11 +364,15 @@
         <button onclick="changeBook(-1)">上卷</button>
         <button onclick="changeChapter(-1)">上章</button>
         <div id="nav-progress-wrapper"
-            style="display: flex; flex-direction: column; align-items: center; min-width: 100px;">
-            <span id="nav-label">...</span>
-            <div class="progress-container"
-                style="width: 80px; height: 4px; margin-top: 2px; background: rgba(255,255,255,0.3);">
-                <div id="nav-progress-bar" class="progress-bar" style="width: 0%; background: #4caf50;"></div>
+            style="display: flex; flex-direction: column; align-items: center; min-width: 120px;">
+            <span id="nav-label" style="line-height: 1.2;">...</span>
+            <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                <div class="progress-container"
+                    style="flex: 1; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px;">
+                    <div id="nav-progress-bar" class="progress-bar" style="width: 0%; background: #4caf50;"></div>
+                </div>
+                <span id="nav-count-label"
+                    style="color: white; font-size: 10px; font-weight: bold; min-width: 45px; text-align: right;">0/0</span>
             </div>
         </div>
         <button onclick="changeChapter(1)">下章</button>
@@ -624,7 +628,7 @@
             await setDB('bible_meta', chapterMeta);
 
             activeGlobalIndex = 0;
-            updateNavProgress();
+            await updateNavProgress();
             renderDisplay();
             updateTargetChar();
         }
@@ -866,7 +870,7 @@
                 activeBoxImg.src = imgData;
                 activeBoxImg.style.display = 'block'; // Show it now that it has data
             }
-            updateNavProgress();
+            await updateNavProgress();
             clearCanvas();
             activeGlobalIndex++;
             updateHighlight();
@@ -945,10 +949,17 @@
             const totalInChap = chapterMeta[key] || 0;
             const chapPerc = totalInChap > 0 ? Math.round((writtenCount / totalInChap) * 100) : 0;
 
+            // Update Bar
             const navBar = document.getElementById('nav-progress-bar');
             if (navBar) {
                 navBar.style.width = `${chapPerc}%`;
-                navBar.style.background = getProgColor(chapPerc); // Uses your existing color logic
+                navBar.style.background = getProgColor(chapPerc);
+            }
+
+            // Update Text Label (e.g., 15/150)
+            const countLabel = document.getElementById('nav-count-label');
+            if (countLabel) {
+                countLabel.innerText = `${writtenCount}/${totalInChap}`;
             }
         }
         init();
