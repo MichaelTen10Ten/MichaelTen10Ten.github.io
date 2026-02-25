@@ -497,10 +497,19 @@
             list.innerHTML = "";
             const chapterMeta = await getDB('bible_meta') || {};
 
+            let activeGroup = null;
+
             for (let bIdx = 0; bIdx < books.length; bIdx++) {
                 const book = books[bIdx];
                 const group = document.createElement('div');
                 group.className = 'book-group';
+
+                // Track if this is the current book
+                const isCurrentBook = (bIdx === currentBookIndex);
+                if (isCurrentBook) {
+                    group.classList.add('expanded');
+                    activeGroup = group; // Store reference for scrolling
+                }
 
                 let completedChapters = 0;
                 for (let c = 1; c <= book.numberOfChapters; c++) {
@@ -512,7 +521,15 @@
                 const bookPerc = Math.round((completedChapters / book.numberOfChapters) * 100);
                 const main = document.createElement('div');
                 main.className = 'book-main';
-                main.innerHTML = `<div style="display:flex; align-items:center;"><span class="arrow">▶</span><span style="margin-left:8px;">${book.name}</span></div><span class="prog-badge" style="background:${getProgColor(bookPerc)}">${bookPerc}%</span>`;
+
+                // Added (bIdx + 1) for the book number
+                main.innerHTML = `
+            <div style="display:flex; align-items:center;">
+                <span class="arrow">▶</span>
+                <span style="margin-left:8px;">${bIdx + 1}. ${book.name}</span>
+            </div>
+            <span class="prog-badge" style="background:${getProgColor(bookPerc)}">${bookPerc}%</span>
+        `;
 
                 main.onclick = () => {
                     const isExpanded = group.classList.contains('expanded');
@@ -531,13 +548,42 @@
 
                     const cItem = document.createElement('div');
                     cItem.className = 'chapter-item';
-                    cItem.innerHTML = `<div class="chapter-info"><span>第 ${c} 章</span><span style="font-size:10px;">${writtenCount}/${totalInChap || '?'}字 (${chapPerc}%)</span></div><div class="progress-container"><div class="progress-bar" style="width:${chapPerc}%; background:${getProgColor(chapPerc)}"></div></div>`;
-                    cItem.onclick = (e) => { e.stopPropagation(); currentBookIndex = bIdx; currentChapter = c; toggleSidebar(); loadChapter(); };
+
+                    // Highlight current chapter
+                    if (isCurrentBook && c === currentChapter) {
+                        cItem.style.background = "#fff9c4";
+                        cItem.style.fontWeight = "bold";
+                    }
+
+                    cItem.innerHTML = `
+                <div class="chapter-info">
+                    <span>第 ${c} 章</span>
+                    <span style="font-size:10px;">${writtenCount}/${totalInChap || '?'}字 (${chapPerc}%)</span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width:${chapPerc}%; background:${getProgColor(chapPerc)}"></div>
+                </div>`;
+
+                    cItem.onclick = (e) => {
+                        e.stopPropagation();
+                        currentBookIndex = bIdx;
+                        currentChapter = c;
+                        toggleSidebar();
+                        loadChapter();
+                    };
                     cList.appendChild(cItem);
                 }
                 group.appendChild(main);
                 group.appendChild(cList);
                 list.appendChild(group);
+            }
+
+            // AUTO-SCROLL LOGIC
+            if (activeGroup) {
+                // Use setTimeout to ensure the DOM has rendered before scrolling
+                setTimeout(() => {
+                    activeGroup.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
             }
         }
 
