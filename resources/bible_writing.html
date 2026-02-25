@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chinese Bible Handwriting Practice</title>
     <link rel="icon" type="image/x-icon" href="images/icon.ico">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
             --primary: #5d4037;
@@ -347,6 +348,16 @@
     <div id="sidebar">
         <div id="sidebar-header"><span>讀經進度目錄</span><span onclick="toggleSidebar()"
                 style="cursor:pointer; font-size: 20px;">✕</span></div>
+        <div id="stats-dashboard" style="padding: 15px; background: #fdf5e6; border-bottom: 2px solid #ddd;">
+            <h3 style="margin: 0 0 10px 0; color: var(--primary); font-size: 16px;">里程碑統計 (Milestones)</h3>
+
+            <div id="streak-info" style="font-size: 12px; margin-bottom: 10px; color: #555;">
+                🔥 今日已寫: <span id="today-count">0</span> 字 | 總計: <span id="total-bible-count">0</span> 字
+            </div>
+
+            <div id="milestone-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            </div>
+        </div>
         <div id="book-list"></div>
         <div class="sidebar-footer">
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 5px;">
@@ -505,6 +516,28 @@
         }
 
         async function renderSidebar() {
+            async function updateDashboard() {
+                const stats = await getBibleStats();
+                const milestoneList = document.getElementById('milestone-list');
+                const todayCount = localStorage.getItem('daily_count') || 0;
+
+                document.getElementById('today-count').innerText = todayCount;
+                document.getElementById('total-bible-count').innerText = stats.grandTotalWritten;
+
+                milestoneList.innerHTML = stats.groupStats.map(g => `
+        <div style="background: white; padding: 8px; border-radius: 4px; border: 1px solid #eee; font-size: 11px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="font-weight: bold; color: #5d4037; margin-bottom: 4px;">${g.name}</div>
+            <div style="display: flex; justify-content: space-between; font-size: 9px; color: #888; margin-bottom: 2px;">
+                <span>已完結: ${g.completed}/${g.total} 卷</span>
+                <span>${g.perc}%</span>
+            </div>
+            <div style="width: 100%; height: 6px; background: #eee; border-radius: 3px; overflow: hidden;">
+                <div style="width: ${g.perc}%; height: 100%; background: ${getProgColor(g.perc)}; transition: width 0.5s;"></div>
+            </div>
+        </div>
+    `).join('');
+            }
+            updateDashboard();
             const list = document.getElementById('book-list');
             list.innerHTML = "";
             const chapterMeta = await getDB('bible_meta') || {};
@@ -844,7 +877,21 @@
         async function saveWriting() {
             const storageKey = `bible_${books[currentBookIndex].id}_${currentChapter}`;
             const history = await getDB(storageKey) || {};
+            const today = new Date().toDateString();
+            let lastDate = localStorage.getItem('last_write_date');
+            let dailyCount = parseInt(localStorage.getItem('daily_count') || "0");
 
+            if (lastDate !== today) {
+                dailyCount = 1;
+                localStorage.setItem('last_write_date', today);
+            } else {
+                dailyCount++;
+            }
+            localStorage.setItem('daily_count', dailyCount);
+
+            // Update the dashboard if the sidebar is open
+            const todayDisplay = document.getElementById('today-count');
+            if (todayDisplay) todayDisplay.innerText = dailyCount;
             // Create a temporary canvas to add a white background
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = canvas.width;
@@ -961,6 +1008,66 @@
             if (countLabel) {
                 countLabel.innerText = `${writtenCount}/${totalInChap}`;
             }
+        }
+        async function getBibleStats() {
+            const chapterMeta = await getDB('bible_meta') || {};
+            const groups = [
+                { name: "摩西五經", range: [0, 4] },
+                { name: "歷史書", range: [5, 16] },
+                { name: "詩歌智慧書", range: [17, 21] },
+                { name: "大先知書", range: [22, 26] },
+                { name: "小先知書", range: [27, 38] },
+                { name: "四福音書", range: [39, 42] },
+                { name: "保羅書信", range: [44, 56] },
+                { name: "其他書信與啟示錄", range: [57, 65] }
+            ];
+
+            let groupStats = [];
+            let grandTotalWritten = 0;
+
+            for (const group of groups) {
+                let booksInGroup = (group.range[1] - group.range[0]) + 1;
+                let fullyCompletedBooks = 0;
+
+                for (let bIdx = group.range[0]; bIdx <= group.range[1]; bIdx++) {
+                    const book = books[bIdx];
+                    let bookIsComplete = true;
+
+                    for (let c = 1; c <= book.numberOfChapters; c++) {
+                        const key = `bible_${book.id}_${c}`;
+                        const meta = chapterMeta[key];
+
+                        // If chapter meta doesn't exist, it means the chapter was never even loaded/calculated
+                        if (!meta) {
+                            bookIsComplete = false;
+                            break;
+                        }
+
+                        const data = await getDB(key) || {};
+                        const writtenCount = Object.keys(data).length;
+
+                        // Check if every character in the chapter is finished
+                        if (writtenCount < meta || meta === 0) {
+                            bookIsComplete = false;
+                            break;
+                        }
+                        grandTotalWritten += writtenCount;
+                    }
+
+                    if (bookIsComplete) {
+                        fullyCompletedBooks++;
+                    }
+                }
+
+                groupStats.push({
+                    name: group.name,
+                    completed: fullyCompletedBooks,
+                    total: booksInGroup,
+                    perc: Math.round((fullyCompletedBooks / booksInGroup) * 100)
+                });
+            }
+
+            return { groupStats, grandTotalWritten };
         }
         init();
     </script>
