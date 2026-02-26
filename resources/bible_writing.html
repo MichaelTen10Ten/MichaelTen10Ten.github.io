@@ -7,6 +7,10 @@
     <title>Chinese Bible Handwriting Practice</title>
     <link rel="icon" type="image/x-icon" href="images/icon.ico">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#5d4037">
     <style>
         :root {
             --primary: #5d4037;
@@ -1070,6 +1074,13 @@
             return { groupStats, grandTotalWritten };
         }
         init();
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('js/sw.js')
+                    .then(reg => console.log('Service Worker registered!'))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            });
+        }
     </script>
 </body>
 

@@ -1,0 +1,17 @@
+{
+  "name": "Chinese Bible Handwriting",
+  "short_name": "BibleWrite",
+  "description": "A focused environment for handwriting the Chinese Bible.",
+  "start_url": "./bible_writing.html",
+  "display": "standalone",
+  "background_color": "#f5f5dc",
+  "theme_color": "#5d4037",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3004/3004416.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
