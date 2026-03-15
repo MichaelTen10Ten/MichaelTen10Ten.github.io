@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Shuffle Filter</title>
+    <style>
+        body { display: flex; flex-direction: column; align-items: center; font-family: sans-serif; background: #222; color: white; }
+        
+        .container { position: relative; width: 640px; height: 480px; margin-top: 50px; }
+        
+        /* The Webcam Feed */
+        #video { width: 100%; height: 100%; border-radius: 10px; transform: scaleX(-1); }
+
+        /* The Shuffling Image */
+        #character-display {
+            position: absolute;
+            top: -60px; /* Adjust based on image size */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 150px;
+            border: 4px solid #fff;
+            border-radius: 15px;
+            background: #444;
+            display: none; /* Hidden until start */
+            object-fit: cover;
+        }
+
+        #result-text { margin-top: 20px; font-size: 1.5rem; font-weight: bold; min-height: 1.6em; }
+        
+        button { 
+            padding: 10px 25px; font-size: 1rem; cursor: pointer; border-radius: 5px; border: none;
+            background: #007bff; color: white; transition: 0.2s;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #666; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <video id="video" autoplay playsinline></video>
+        <img id="character-display" src="" alt="Character">
+    </div>
+
+    <p id="result-text"></p>
+    
+    <div class="controls">
+        <button id="start-btn">開始抽籤</button>
+        <button id="stop-btn" disabled>停止！</button>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const characterImg = document.getElementById('character-display');
+        const resultText = document.getElementById('result-text');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+
+        // 1. Define your images here
+        const characters = ['善良.png', '正直.png', '誠實.png']; // Add your actual filenames
+        const path = 'source/character/';
+        
+        let shuffleInterval;
+
+        // 2. Setup Camera
+        async function setupCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error("Camera access denied:", err);
+                resultText.innerText = "無法開啟攝影機";
+            }
+        }
+
+        // 3. Shuffle Logic
+        startBtn.onclick = () => {
+            characterImg.style.display = 'block';
+            resultText.innerText = "選取中...";
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+
+            shuffleInterval = setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * characters.length);
+                characterImg.src = path + characters[randomIndex];
+                // Store the filename temporarily in a data attribute
+                characterImg.dataset.current = characters[randomIndex];
+            }, 80); // Shuffle speed in ms
+        };
+
+        // 4. Stop Logic
+        stopBtn.onclick = () => {
+            clearInterval(shuffleInterval);
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+
+            const finalName = characterImg.dataset.current;
+            // Remove file extension for the display text
+            const displayName = finalName.split('.')[0]; 
+            resultText.innerText = `我是一個 ${displayName} 的人`;
+        };
+
+        setupCamera();
+    </script>
+</body>
+</html>
