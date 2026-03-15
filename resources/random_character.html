@@ -1,129 +1,113 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
-    <meta charset="utf-8">
-    <title>Face Tracking Shuffle with Bounce</title>
-    <script src="https://cdn.jsdelivr.net/npm/jeelizfacefilter/dist/jeelizFaceFilter.umd.js"></script>
+    <meta charset="UTF-8">
+    <title>Face Track Image Shuffler</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
     <style>
-        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
-        #container { position: relative; width: 600px; height: 600px; margin-top: 20px; overflow: visible; }
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 15px; }
-        
-        #controls { margin-top: 20px; text-align: center; }
-        #result-text { font-size: 1.5rem; margin-top: 15px; font-weight: bold; height: 1.5em; color: #f1c40f; }
-        
-        /* --- The Bounce Animation --- */
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); } /* Moves up 15px */
-        }
-
-        #floating-img {
-            position: absolute;
-            z-index: 10;
-            display: none;
-            border: 3px solid white;
-            border-radius: 10px;
-            background: rgba(0,0,0,0.5);
-            /* Apply animation: 0.6s duration, infinite loop */
-            animation: bounce 0.6s ease-in-out infinite;
-        }
-
-        button { 
-            padding: 10px 25px; font-size: 1rem; cursor: pointer; border-radius: 5px; border: none;
-            background: #e74c3c; color: white; margin: 0 10px;
-        }
-        button:disabled { background: #555; cursor: not-allowed; }
-        button#start-btn { background: #2ecc71; }
+        body { display: flex; flex-direction: column; align-items: center; font-family: sans-serif; background: #222; color: white; }
+        canvas { position: absolute; }
+        .container { position: relative; margin-top: 20px; }
+        .controls { margin-top: 20px; z-index: 10; }
+        #resultText { margin-top: 15px; font-size: 24px; color: #00ffcc; font-weight: bold; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 8px; border: none; margin: 0 5px; }
+        .start { background: #28a745; color: white; }
+        .stop { background: #dc3545; color: white; }
     </style>
 </head>
 <body>
 
-    <div id="container">
-        <canvas id='jeeFaceFilterCanvas'></canvas>
-        <img id="floating-img" src="" alt="Character">
+    <h2>誰是我？</h2>
+    
+    <div class="container">
+        <video id="video" width="640" height="480" autoplay muted></video>
+        <canvas id="overlay"></canvas>
     </div>
 
-    <div id="result-text"></div>
-
-    <div id="controls">
-        <button id="start-btn">開始抽籤</button>
-        <button id="stop-btn" disabled>停止！</button>
+    <div class="controls">
+        <button class="start" onclick="startShuffle()">開始 (Start)</button>
+        <button class="stop" onclick="stopShuffle()">停止 (Stop)</button>
     </div>
+
+    <div id="resultText"></div>
 
     <script>
-        const resultText = document.getElementById('result-text');
-        const startBtn = document.getElementById('start-btn');
-        const stopBtn = document.getElementById('stop-btn');
-        const floatingImg = document.getElementById('floating-img');
-        
-        const images = ['善良.png', '正直.png', '誠實.png'];
-        const path = 'source/character/';
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('overlay');
+        const resultText = document.getElementById('resultText');
         
         let isShuffling = false;
-        let currentImgIdx = 0;
         let shuffleInterval;
+        let currentImageIndex = 0;
+        const imageFiles = ['善良.png', '正直.png', '誠實.png'];
+        const loadedImages = [];
 
-        function init() {
-            JEELIZFACEFILTER.init({
-                canvasId: 'jeeFaceFilterCanvas',
-                NNCPath: 'https://cdn.jsdelivr.net/npm/jeelizfacefilter/dist/',
-                callbackReady: (errCode) => {
-                    if (errCode) { console.error('Error:', errCode); return; }
-                },
-                callbackTrack: (detectState) => {
-                    if (detectState.detected > 0.7) {
-                        // y + 0.7 moves it higher above the head
-                        updatePosition(detectState.x, detectState.y + 0.7, detectState.s);
-                    } else {
-                        floatingImg.style.display = 'none';
-                    }
+        // Preload images
+        imageFiles.forEach(src => {
+            const img = new Image();
+            img.src = src; 
+            loadedImages.push(img);
+        });
+
+        // 1. Initialize Face API and Camera
+        async function setup() {
+            // Load models from CDN
+            await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+            await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+            
+            navigator.mediaDevices.getUserMedia({ video: {} })
+                .then(stream => { video.srcObject = stream; })
+                .catch(err => console.error("Camera error:", err));
+        }
+
+        // 2. Tracking Loop
+        video.addEventListener('play', () => {
+            const displaySize = { width: video.width, height: video.height };
+            faceapi.matchDimensions(canvas, displaySize);
+
+            setInterval(async () => {
+                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
+                const resizedDetections = faceapi.resizeResults(detections, displaySize);
+                
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                if (resizedDetections.length > 0 && (isShuffling || resultText.innerText !== "")) {
+                    const landmarks = resizedDetections[0].landmarks;
+                    const topHead = landmarks.getJawOutline()[0]; // Reference point
+                    const nose = landmarks.getNose()[0];
+                    
+                    // Logic to place image above head
+                    const img = loadedImages[currentImageIndex];
+                    const imgWidth = 150;
+                    const imgHeight = 150;
+                    // Position: X is center of nose, Y is above the eyebrows
+                    const x = nose._x - (imgWidth / 2);
+                    const y = landmarks.getLeftEyeBrow()[0]._y - 160;
+
+                    ctx.drawImage(img, x, y, imgWidth, imgHeight);
                 }
-            });
-        }
+            }, 100);
+        });
 
-        function updatePosition(x, y, s) {
-            // Only show if we are shuffling or if a result has been picked
-            if (!isShuffling && resultText.innerText === "") return;
-
-            const canvas = document.getElementById('jeeFaceFilterCanvas');
-            const rect = canvas.getBoundingClientRect();
-            
-            const size = s * rect.width * 0.9; 
-            floatingImg.src = path + images[currentImgIdx];
-            floatingImg.style.width = size + 'px';
-            
-            // Convert normalized coords (-1 to 1) to pixels
-            const posX = ((x + 1) / 2) * rect.width - (size / 2);
-            const posY = ((1 - y) / 2) * rect.height - (size / 2);
-
-            floatingImg.style.left = posX + 'px';
-            floatingImg.style.top = posY + 'px';
-            floatingImg.style.display = 'block';
-        }
-
-        startBtn.onclick = () => {
+        function startShuffle() {
+            if(isShuffling) return;
             isShuffling = true;
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
-            resultText.innerText = "選取中...";
-
+            resultText.innerText = "";
             shuffleInterval = setInterval(() => {
-                currentImgIdx = Math.floor(Math.random() * images.length);
-            }, 60);
-        };
+                currentImageIndex = Math.floor(Math.random() * imageFiles.length);
+            }, 100);
+        }
 
-        stopBtn.onclick = () => {
+        function stopShuffle() {
+            if(!isShuffling) return;
             isShuffling = false;
             clearInterval(shuffleInterval);
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
+            const finalTrait = imageFiles[currentImageIndex].replace('.png', '');
+            resultText.innerText = `我是一個${finalTrait}的人`;
+        }
 
-            const filename = images[currentImgIdx].split('.')[0];
-            resultText.innerText = `我是一個 ${filename} 的人`;
-        };
-
-        window.onload = init;
+        setup();
     </script>
 </body>
 </html>
