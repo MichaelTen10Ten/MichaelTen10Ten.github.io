@@ -2,34 +2,52 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Face Tracking Shuffle</title>
+    <title>Face Tracking Shuffle - Bouncing</title>
     <script src="https://cdn.jsdelivr.net/npm/jeelizfacefilter/dist/jeelizFaceFilter.umd.js"></script>
     <style>
-        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
-        #container { position: relative; width: 600px; height: 600px; margin-top: 20px; }
-        /* The canvas where the camera and tracking happen */
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 15px; }
+        body { margin: 0; background: #1a1a1a; color: white; font-family: "Microsoft JhengHei", sans-serif; display: flex; flex-direction: column; align-items: center; }
+        #container { position: relative; width: 640px; height: 480px; margin-top: 20px; overflow: visible; }
+        canvas { width: 100%; height: 100%; border-radius: 15px; background: #000; }
         
-        #controls { margin-top: 20px; text-align: center; }
-        #result-text { font-size: 1.5rem; margin-top: 15px; font-weight: bold; height: 1.5em; }
-        
-        button { 
-            padding: 10px 25px; font-size: 1rem; cursor: pointer; border-radius: 5px; border: none;
-            background: #e74c3c; color: white; margin: 0 10px;
+        /* The Bouncing Animation */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
         }
-        button:disabled { background: #555; cursor: not-allowed; }
-        button#start-btn { background: #2ecc71; }
+
+        #floating-img {
+            position: absolute;
+            z-index: 10;
+            display: none;
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5));
+            /* Apply the animation */
+            animation: bounce 0.6s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        #result-text { font-size: 2rem; margin-top: 20px; font-weight: bold; height: 1.5em; color: #ffeb3b; }
+        
+        .controls { margin-top: 20px; }
+        button { 
+            padding: 12px 30px; font-size: 1.1rem; cursor: pointer; border-radius: 50px; border: none;
+            margin: 0 10px; font-weight: bold; transition: transform 0.1s;
+        }
+        button:active { transform: scale(0.95); }
+        button#start-btn { background: #2ecc71; color: white; }
+        button#stop-btn { background: #e74c3c; color: white; }
+        button:disabled { background: #555 !important; opacity: 0.6; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
     <div id="container">
         <canvas id='jeeFaceFilterCanvas'></canvas>
+        <img id="floating-img" src="" alt="Character">
     </div>
 
     <div id="result-text"></div>
 
-    <div id="controls">
+    <div class="controls">
         <button id="start-btn">開始抽籤</button>
         <button id="stop-btn" disabled>停止！</button>
     </div>
@@ -38,79 +56,70 @@
         const resultText = document.getElementById('result-text');
         const startBtn = document.getElementById('start-btn');
         const stopBtn = document.getElementById('stop-btn');
+        const floatingImg = document.getElementById('floating-img');
         
         const images = ['善良.png', '正直.png', '誠實.png'];
         const path = 'source/character/';
         
-        let isShuffling = false;
+        let isActive = false;
         let currentImgIdx = 0;
         let shuffleInterval;
-        let characterImageElement = new Image();
 
         function init() {
             JEELIZFACEFILTER.init({
                 canvasId: 'jeeFaceFilterCanvas',
-                NNCPath: 'https://cdn.jsdelivr.net/npm/jeelizfacefilter/dist/', // Path to neural network model
-                callbackReady: (errCode, spec) => {
-                    if (errCode) { console.error('Error:', errCode); return; }
-                    console.log('FaceFilter is ready');
+                NNCPath: 'https://cdn.jsdelivr.net/npm/jeelizfacefilter/dist/',
+                callbackReady: (errCode) => {
+                    if (errCode) alert("Camera error or not supported");
                 },
-                // Called every frame
                 callbackTrack: (detectState) => {
-                    if (detectState.detected > 0.8) {
-                        // Calculate position: detectState.x/y/s are normalized coordinates
-                        const x = detectState.x;
-                        const y = detectState.y + 0.6; // Shift up to be "above" head
-                        const s = detectState.s; // Scale
-
-                        // Draw the image onto the canvas manually or via CSS overlay
-                        // For simplicity in this vanilla setup, we'll position an overlay
-                        drawOverlay(x, y, s);
+                    if (detectState.detected > 0.7) {
+                        updatePosition(detectState.x, detectState.y, detectState.s);
+                        if (isActive || resultText.innerText !== "") {
+                            floatingImg.style.display = 'block';
+                        }
+                    } else {
+                        floatingImg.style.display = 'none';
                     }
                 }
             });
         }
 
-        function drawOverlay(x, y, s) {
-            // Mapping Jeeliz coordinates to CSS positioning
-            // x, y are -1 to 1. s is scale ~0 to 1.
-            if (!isShuffling && resultText.innerText === "") return;
+        function updatePosition(x, y, s) {
+            const container = document.getElementById('container');
+            const rect = container.getBoundingClientRect();
             
-            // We'll use a hidden image element and draw it via CSS for ease
-            const canvas = document.getElementById('jeeFaceFilterCanvas');
-            const rect = canvas.getBoundingClientRect();
+            // Adjust size based on face scale
+            const size = s * rect.width * 0.7; 
             
-            // Create or get the floating image
-            let floatingImg = document.getElementById('floating-img');
-            if (!floatingImg) {
-                floatingImg = document.createElement('img');
-                floatingImg.id = 'floating-img';
-                floatingImg.style.position = 'absolute';
-                floatingImg.style.zIndex = '10';
-                document.getElementById('container').appendChild(floatingImg);
-            }
+            // Mirror X because the camera is usually mirrored
+            // Calculate center position and shift Y upwards to sit "on top"
+            const posX = ((x + 1) / 2) * rect.width - (size / 2);
+            const posY = ((1 - y) / 2) * rect.height - size; // Positioned above head
 
-            const size = s * rect.width * 0.8; 
-            floatingImg.src = path + images[currentImgIdx];
             floatingImg.style.width = size + 'px';
-            floatingImg.style.left = ((x + 1) / 2) * rect.width - (size / 2) + 'px';
-            floatingImg.style.top = ((1 - y) / 2) * rect.height - (size / 2) + 'px';
-            floatingImg.style.display = 'block';
+            floatingImg.style.left = posX + 'px';
+            floatingImg.style.top = posY + 'px';
+            
+            // Update source during shuffle
+            if (isActive) {
+                floatingImg.src = path + images[currentImgIdx];
+            }
         }
 
         startBtn.onclick = () => {
-            isShuffling = true;
+            isActive = true;
+            resultText.innerText = "";
             startBtn.disabled = true;
             stopBtn.disabled = false;
-            resultText.innerText = "選取中...";
 
             shuffleInterval = setInterval(() => {
                 currentImgIdx = Math.floor(Math.random() * images.length);
-            }, 50);
+            }, 60);
         };
 
         stopBtn.onclick = () => {
-            isShuffling = false;
+            isActive = false;
             clearInterval(shuffleInterval);
             startBtn.disabled = false;
             stopBtn.disabled = true;
