@@ -2,40 +2,39 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Face Tracking Shuffle - Bouncing</title>
+    <title>Face Tracking Shuffle with Bounce</title>
     <script src="https://cdn.jsdelivr.net/npm/jeelizfacefilter/dist/jeelizFaceFilter.umd.js"></script>
     <style>
-        body { margin: 0; background: #1a1a1a; color: white; font-family: "Microsoft JhengHei", sans-serif; display: flex; flex-direction: column; align-items: center; }
-        #container { position: relative; width: 640px; height: 480px; margin-top: 20px; overflow: visible; }
-        canvas { width: 100%; height: 100%; border-radius: 15px; background: #000; }
+        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        #container { position: relative; width: 600px; height: 600px; margin-top: 20px; overflow: visible; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 15px; }
         
-        /* The Bouncing Animation */
+        #controls { margin-top: 20px; text-align: center; }
+        #result-text { font-size: 1.5rem; margin-top: 15px; font-weight: bold; height: 1.5em; color: #f1c40f; }
+        
+        /* --- The Bounce Animation --- */
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
+            50% { transform: translateY(-15px); } /* Moves up 15px */
         }
 
         #floating-img {
             position: absolute;
             z-index: 10;
             display: none;
-            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5));
-            /* Apply the animation */
+            border: 3px solid white;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.5);
+            /* Apply animation: 0.6s duration, infinite loop */
             animation: bounce 0.6s ease-in-out infinite;
-            pointer-events: none;
         }
 
-        #result-text { font-size: 2rem; margin-top: 20px; font-weight: bold; height: 1.5em; color: #ffeb3b; }
-        
-        .controls { margin-top: 20px; }
         button { 
-            padding: 12px 30px; font-size: 1.1rem; cursor: pointer; border-radius: 50px; border: none;
-            margin: 0 10px; font-weight: bold; transition: transform 0.1s;
+            padding: 10px 25px; font-size: 1rem; cursor: pointer; border-radius: 5px; border: none;
+            background: #e74c3c; color: white; margin: 0 10px;
         }
-        button:active { transform: scale(0.95); }
-        button#start-btn { background: #2ecc71; color: white; }
-        button#stop-btn { background: #e74c3c; color: white; }
-        button:disabled { background: #555 !important; opacity: 0.6; cursor: not-allowed; }
+        button:disabled { background: #555; cursor: not-allowed; }
+        button#start-btn { background: #2ecc71; }
     </style>
 </head>
 <body>
@@ -47,7 +46,7 @@
 
     <div id="result-text"></div>
 
-    <div class="controls">
+    <div id="controls">
         <button id="start-btn">開始抽籤</button>
         <button id="stop-btn" disabled>停止！</button>
     </div>
@@ -61,7 +60,7 @@
         const images = ['善良.png', '正直.png', '誠實.png'];
         const path = 'source/character/';
         
-        let isActive = false;
+        let isShuffling = false;
         let currentImgIdx = 0;
         let shuffleInterval;
 
@@ -70,14 +69,12 @@
                 canvasId: 'jeeFaceFilterCanvas',
                 NNCPath: 'https://cdn.jsdelivr.net/npm/jeelizfacefilter/dist/',
                 callbackReady: (errCode) => {
-                    if (errCode) alert("Camera error or not supported");
+                    if (errCode) { console.error('Error:', errCode); return; }
                 },
                 callbackTrack: (detectState) => {
                     if (detectState.detected > 0.7) {
-                        updatePosition(detectState.x, detectState.y, detectState.s);
-                        if (isActive || resultText.innerText !== "") {
-                            floatingImg.style.display = 'block';
-                        }
+                        // y + 0.7 moves it higher above the head
+                        updatePosition(detectState.x, detectState.y + 0.7, detectState.s);
                     } else {
                         floatingImg.style.display = 'none';
                     }
@@ -86,32 +83,30 @@
         }
 
         function updatePosition(x, y, s) {
-            const container = document.getElementById('container');
-            const rect = container.getBoundingClientRect();
-            
-            // Adjust size based on face scale
-            const size = s * rect.width * 0.7; 
-            
-            // Mirror X because the camera is usually mirrored
-            // Calculate center position and shift Y upwards to sit "on top"
-            const posX = ((x + 1) / 2) * rect.width - (size / 2);
-            const posY = ((1 - y) / 2) * rect.height - size; // Positioned above head
+            // Only show if we are shuffling or if a result has been picked
+            if (!isShuffling && resultText.innerText === "") return;
 
+            const canvas = document.getElementById('jeeFaceFilterCanvas');
+            const rect = canvas.getBoundingClientRect();
+            
+            const size = s * rect.width * 0.9; 
+            floatingImg.src = path + images[currentImgIdx];
             floatingImg.style.width = size + 'px';
+            
+            // Convert normalized coords (-1 to 1) to pixels
+            const posX = ((x + 1) / 2) * rect.width - (size / 2);
+            const posY = ((1 - y) / 2) * rect.height - (size / 2);
+
             floatingImg.style.left = posX + 'px';
             floatingImg.style.top = posY + 'px';
-            
-            // Update source during shuffle
-            if (isActive) {
-                floatingImg.src = path + images[currentImgIdx];
-            }
+            floatingImg.style.display = 'block';
         }
 
         startBtn.onclick = () => {
-            isActive = true;
-            resultText.innerText = "";
+            isShuffling = true;
             startBtn.disabled = true;
             stopBtn.disabled = false;
+            resultText.innerText = "選取中...";
 
             shuffleInterval = setInterval(() => {
                 currentImgIdx = Math.floor(Math.random() * images.length);
@@ -119,7 +114,7 @@
         };
 
         stopBtn.onclick = () => {
-            isActive = false;
+            isShuffling = false;
             clearInterval(shuffleInterval);
             startBtn.disabled = false;
             stopBtn.disabled = true;
