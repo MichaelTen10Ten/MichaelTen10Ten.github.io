@@ -3,56 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Virtual Bike Race</title>
+    <title>Pro Bike Race Dashboard</title>
     <style>
-        :root { --track-color: #333; }
-        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; margin: 0; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+        :root { --track-color: #2a2a2a; --accent: #00ff88; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #121212; color: white; margin: 0; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         
         /* 頂部控制列 */
-        .header { background: #222; padding: 15px; display: flex; gap: 15px; align-items: center; border-bottom: 2px solid #444; }
-        .start-btn { background: #ff5722; color: white; border: none; padding: 10px 30px; font-size: 20px; font-weight: bold; border-radius: 5px; cursor: pointer; }
-        .start-btn:disabled { background: #555; }
+        .header { background: #1f1f1f; padding: 10px 20px; display: flex; gap: 20px; align-items: center; border-bottom: 2px solid #333; z-index: 10; flex-wrap: wrap; }
+        .btn { padding: 8px 16px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; border: none; transition: 0.2s; }
+        .btn-add { background: #3d3d3d; color: white; }
+        .btn-start { background: var(--accent); color: #000; }
+        .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* 難度調整器 */
+        .setting-group { display: flex; align-items: center; gap: 10px; background: #2d2d2d; padding: 5px 15px; border-radius: 8px; }
+        input[type="range"] { cursor: pointer; }
 
         /* 賽道區域 */
-        #raceField { flex: 1; display: flex; justify-content: center; padding: 20px; gap: 10px; overflow-x: auto; background: #1a1a1a; position: relative; }
+        #raceField { flex: 1; display: flex; justify-content: center; padding: 10px; gap: 8px; overflow-x: auto; background: linear-gradient(to bottom, #111 0%, #222 100%); position: relative; }
         
-        .track { width: 100px; background: var(--track-color); position: relative; border-left: 2px dashed #555; border-right: 2px dashed #555; display: flex; flex-direction: column; align-items: center; }
-        .finish-line { position: absolute; top: 10%; width: 100%; text-align: center; font-size: 30px; border-top: 4px double white; }
-        .start-line { position: absolute; bottom: 15%; width: 100%; text-align: center; font-size: 30px; border-bottom: 2px solid white; }
+        .track { width: 110px; background: var(--track-color); position: relative; border-left: 1px solid #444; border-right: 1px solid #444; display: flex; flex-direction: column; }
+        .finish-line { position: absolute; top: 10%; width: 100%; text-align: center; font-size: 24px; border-top: 4px dashed #fff; padding-top: 5px; color: gold; }
+        .start-line { position: absolute; bottom: 15%; width: 100%; text-align: center; font-size: 24px; border-bottom: 2px solid #666; color: #888; }
         
         /* 騎士標誌 */
-        .rider { position: absolute; bottom: 15%; transition: bottom 0.1s linear; font-size: 40px; z-index: 10; filter: drop-shadow(0 0 5px gold); }
+        .rider-container { position: absolute; bottom: 15%; width: 100%; display: flex; justify-content: center; transition: bottom 0.1s linear; z-index: 5; }
+        .rider { font-size: 45px; filter: drop-shadow(0 0 8px rgba(0,255,136,0.5)); }
         
-        /* 賽道控制台 */
-        .track-controls { position: absolute; bottom: 0; width: 100%; height: 15%; background: #222; display: flex; flex-direction: column; align-items: center; padding-top: 5px; }
-        .name-input { width: 80%; background: transparent; border: 1px solid #555; color: white; text-align: center; font-size: 12px; }
-        .power-tag { color: #00ff00; font-weight: bold; font-size: 18px; margin: 5px 0; }
-        .swap-btns { display: flex; gap: 10px; }
-        .swap-btn { background: #444; color: white; border: none; cursor: pointer; padding: 2px 8px; border-radius: 3px; }
+        /* 底部數據與控制 */
+        .track-footer { position: absolute; bottom: 0; width: 100%; height: 15%; background: #1a1a1a; display: flex; flex-direction: column; align-items: center; border-top: 2px solid #333; }
+        .name-input { width: 90%; background: #222; border: 1px solid #444; color: #00e5ff; text-align: center; font-size: 13px; margin-top: 5px; border-radius: 4px; }
+        .power-val { color: var(--accent); font-size: 22px; font-weight: 800; margin: 2px 0; font-family: monospace; }
+        .nav-btns { display: flex; width: 100%; justify-content: space-between; padding: 0 5px; box-sizing: border-box; }
+        .nav-btn { background: #333; color: white; border: none; font-size: 16px; cursor: pointer; padding: 2px 10px; border-radius: 4px; }
 
-        /* 倒數與結果浮層 */
-        #overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 100px; font-weight: bold; color: #ffeb3b; z-index: 100; pointer-events: none; }
-        #resultsModal { display: none; position: fixed; top: 10%; left: 10%; width: 80%; height: 80%; background: rgba(0,0,0,0.95); border: 2px solid #00c853; border-radius: 20px; z-index: 200; padding: 30px; overflow-y: auto; }
+        /* 倒數與結果 */
+        #overlay { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; font-weight: 900; color: var(--accent); z-index: 100; pointer-events: none; text-shadow: 0 0 20px rgba(0,255,136,0.8); }
+        #resultsModal { display: none; position: fixed; top: 5%; left: 5%; width: 90%; height: 90%; background: rgba(10,10,10,0.98); border: 2px solid var(--accent); border-radius: 15px; z-index: 200; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
+        th { color: var(--accent); }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <button class="start-btn" id="addBike">➕ 新增單車</button>
-    <button class="start-btn" id="startRace" style="background: #00c853;">🏁 開始比賽</button>
-    <div id="totalStats">累計瓦特: 0 W</div>
-    <button onclick="downloadCSV()" id="dlBtn" style="display:none;">下載 CSV</button>
+    <button class="btn btn-add" id="addBike">➕ 新增單車</button>
+    <button class="btn btn-start" id="startRace">🏁 開始比賽</button>
+    
+    <div class="setting-group">
+        <span>難度調整 (分母):</span>
+        <input type="range" id="difficultyRange" min="1" max="100" value="10">
+        <span id="diffValue">10</span>
+        <small style="color:#888;">(愈低愈容易)</small>
+    </div>
+
+    <div id="globalStats" style="margin-left:auto; font-weight:bold;">總功率: <span id="totalW">0</span> W</div>
+    <button class="btn btn-add" onclick="downloadCSV()" id="dlBtn" style="display:none;">📥 下載 CSV</button>
 </div>
 
 <div id="overlay"></div>
 
-<div id="raceField">
-    </div>
+<div id="raceField"></div>
 
 <div id="resultsModal">
-    <h2 style="color: #00c853;">🏆 比賽結果</h2>
+    <h1 style="color: var(--accent);">🏆 最終賽績</h1>
     <div id="rankings"></div>
-    <button onclick="location.reload()" style="margin-top:20px; padding:10px;">重新開始</button>
+    <div id="totalSumGroup" style="margin-top:20px; font-size:1.2em; border-top:1px solid #444; padding-top:10px;"></div>
+    <button class="btn btn-start" onclick="location.reload()" style="margin-top:30px;">關閉並重置</button>
 </div>
 
 <script>
@@ -60,34 +78,43 @@
     let isRacing = false;
     let raceStartTime = 0;
     let results = [];
-    let historyData = []; // 用於 CSV
+    let difficulty = 10;
+
+    // 更新難度顯示
+    document.getElementById('difficultyRange').oninput = function() {
+        difficulty = this.value;
+        document.getElementById('diffValue').innerText = this.value;
+    };
 
     class Bike {
         constructor(device) {
             this.device = device;
-            this.id = device.id.slice(-5);
-            this.customName = `騎士 ${this.id}`;
+            this.id = Math.random().toString(36).substr(2, 5);
+            this.customName = `騎士 ${device.name ? device.name.split(' ')[0] : this.id}`;
             this.watts = 0;
-            this.distance = 0; // 0 to 100 (%)
+            this.distance = 0; 
             this.finished = false;
             this.finishTime = null;
-            this.allWatts = []; // 紀錄所有 W 用於平均與 CSV
+            this.allWatts = [];
             this.createTrack();
         }
 
         createTrack() {
             this.trackDiv = document.createElement('div');
             this.trackDiv.className = 'track';
+            this.trackDiv.id = `cont-${this.id}`;
             this.trackDiv.innerHTML = `
                 <div class="finish-line">🏁</div>
                 <div class="start-line">🚩</div>
-                <div id="rider-${this.id}" class="rider">🚴</div>
-                <div class="track-controls">
-                    <input class="name-input" value="${this.customName}" onchange="updateName('${this.id}', this.value)">
-                    <div id="w-${this.id}" class="power-tag">0 W</div>
-                    <div class="swap-btns">
-                        <button class="swap-btn" onclick="moveTrack('${this.id}', -1)">◀</button>
-                        <button class="swap-btn" onclick="moveTrack('${this.id}', 1)">▶</button>
+                <div id="rider-cont-${this.id}" class="rider-container">
+                    <div class="rider">🚴</div>
+                </div>
+                <div class="track-footer">
+                    <input class="name-input" value="${this.customName}" oninput="updateBikeName('${this.id}', this.value)">
+                    <div id="w-${this.id}" class="power-val">0 W</div>
+                    <div class="nav-btns">
+                        <button class="nav-btn" onclick="moveTrack('${this.id}', -1)">◀</button>
+                        <button class="nav-btn" onclick="moveTrack('${this.id}', 1)">▶</button>
                     </div>
                 </div>
             `;
@@ -101,25 +128,28 @@
             await char.startNotifications();
             char.addEventListener('characteristicvaluechanged', (e) => {
                 this.watts = e.target.value.getInt16(2, true);
+                if (this.watts < 0) this.watts = 0; // 防止負數數據
+                
                 document.getElementById(`w-${this.id}`).innerText = `${this.watts} W`;
+                updateGlobalTotal();
+
                 if(isRacing && !this.finished) {
                     this.allWatts.push(this.watts);
-                    // 根據 W 計算移動速度 (這裡可根據需求調整係數)
-                    this.distance += (this.watts / 500); 
-                    this.updateRiderPosition();
+                    // 核心移動邏輯：每秒大約回報多次，我們將瓦特除以難度
+                    this.distance += (this.watts / (difficulty * 100)); 
+                    this.updateUI();
                 }
             });
         }
 
-        updateRiderPosition() {
-            const riderEl = document.getElementById(`rider-${this.id}`);
-            // 起點 15%，終點 90%，距離 75%
-            let pos = 15 + (this.distance * 0.75);
+        updateUI() {
+            const container = document.getElementById(`rider-cont-${this.id}`);
+            let pos = 15 + (this.distance); // 基於 15% 起點
             if (pos >= 90) {
                 pos = 90;
                 if(!this.finished) this.complete();
             }
-            riderEl.style.bottom = `${pos}%`;
+            container.style.bottom = `${pos}%`;
         }
 
         complete() {
@@ -128,53 +158,60 @@
             results.push({
                 name: this.customName,
                 time: this.finishTime,
-                avgW: Math.round(this.allWatts.reduce((a,b)=>a+b, 0) / this.allWatts.length),
+                avgW: Math.round(this.allWatts.reduce((a,b)=>a+b, 0) / this.allWatts.length) || 0,
                 totalW: this.allWatts.reduce((a,b)=>a+b, 0)
             });
             checkRaceEnd();
         }
     }
 
-    // 按鈕控制
-    document.getElementById('addBike').addEventListener('click', async () => {
+    function updateGlobalTotal() {
+        const sum = bikes.reduce((a, b) => a + b.watts, 0);
+        document.getElementById('totalW').innerText = sum;
+    }
+
+    function updateBikeName(id, val) {
+        const bike = bikes.find(b => b.id === id);
+        if(bike) bike.customName = val;
+    }
+
+    document.getElementById('addBike').onclick = async () => {
         try {
             const device = await navigator.bluetooth.requestDevice({
                 filters: [{ services: ['cycling_power'] }]
             });
-            const newBike = new Bike(device);
-            await newBike.connect();
-            bikes.push(newBike);
-        } catch (e) { console.log(e); }
-    });
+            const b = new Bike(device);
+            await b.connect();
+            bikes.push(b);
+        } catch (e) { console.warn(e); }
+    };
 
-    document.getElementById('startRace').addEventListener('click', () => {
+    document.getElementById('startRace').onclick = () => {
         if(bikes.length === 0) return alert("請先連接單車！");
+        document.getElementById('startRace').disabled = true;
+        document.getElementById('difficultyRange').disabled = true;
+
         let count = 3;
         const overlay = document.getElementById('overlay');
         const timer = setInterval(() => {
-            overlay.innerText = count > 0 ? count : "GO!";
-            if(count < 0) {
+            if(count > 0) {
+                overlay.innerText = count;
+            } else if(count === 0) {
+                overlay.innerText = "GO!";
+                isRacing = true;
+                raceStartTime = Date.now();
+            } else {
                 clearInterval(timer);
                 overlay.innerText = "";
-                startTheGame();
             }
             count--;
         }, 1000);
-    });
-
-    function startTheGame() {
-        isRacing = true;
-        raceStartTime = Date.now();
-        document.getElementById('startRace').disabled = true;
-        document.getElementById('addBike').disabled = true;
-    }
+    };
 
     function checkRaceEnd() {
-        const allFinished = bikes.every(b => b.finished);
-        if (allFinished || results.length === bikes.length) {
+        if (results.length === bikes.length) {
             endRace();
-        } else if (results.length > 0) {
-            // 第一個人衝綫後10秒結束 (如果其他人還沒到的話)
+        } else if (results.length === 1) {
             setTimeout(() => { if(isRacing) endRace(); }, 10000);
         }
     }
@@ -182,28 +219,25 @@
     function endRace() {
         isRacing = false;
         const modal = document.getElementById('resultsModal');
-        const rankDiv = document.getElementById('rankings');
         modal.style.display = 'block';
         
         results.sort((a,b) => a.time - b.time);
         
-        let html = '<table style="width:100%; font-size:20px;"><tr><th>排名</th><th>名字</th><th>時間</th><th>平均瓦特</th><th>總功(W-sec)</th></tr>';
+        let totalGroupWatts = results.reduce((a, b) => a + b.totalW, 0);
+        
+        let html = '<table><tr><th>排名</th><th>選手</th><th>用時</th><th>平均功率</th><th>個人總功(W·s)</th></tr>';
         results.forEach((r, i) => {
-            html += `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.time.toFixed(2)}s</td><td>${r.avgW}W</td><td>${r.totalW}</td></tr>`;
+            html += `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.time.toFixed(1)}s</td><td>${r.avgW} W</td><td>${r.totalW}</td></tr>`;
         });
         html += '</table>';
-        rankDiv.innerHTML = html;
+        
+        document.getElementById('rankings').innerHTML = html;
+        document.getElementById('totalSumGroup').innerHTML = `<strong>全體團隊總功：</strong> ${totalGroupWatts} W·s`;
         document.getElementById('dlBtn').style.display = 'block';
     }
 
-    // 輔助功能
-    function updateName(id, val) {
-        const bike = bikes.find(b => b.id === id);
-        if(bike) bike.customName = val;
-    }
-
     function moveTrack(id, dir) {
-        const track = bikes.find(b => b.id === id).trackDiv;
+        const track = document.getElementById(`cont-${id}`);
         if(dir === -1 && track.previousElementSibling) {
             track.parentNode.insertBefore(track, track.previousElementSibling);
         } else if(dir === 1 && track.nextElementSibling) {
@@ -212,16 +246,15 @@
     }
 
     function downloadCSV() {
-        let csv = "Name,Time(s),AvgPower(W),TotalPower(W)\n";
+        let csv = "\uFEFF選手名稱,比賽用時(s),平均功率(W),個人總功(Ws)\n";
         results.forEach(r => {
-            csv += `${r.name},${r.time},${r.avgW},${r.totalW}\n`;
+            csv += `"${r.name}",${r.time.toFixed(2)},${r.avgW},${r.totalW}\n`;
         });
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'race_results.csv';
-        a.click();
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute("download", `賽事紀錄_${new Date().toLocaleDateString()}.csv`);
+        link.click();
     }
 </script>
 </body>
