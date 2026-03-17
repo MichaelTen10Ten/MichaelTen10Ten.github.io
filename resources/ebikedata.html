@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>電競單車數據探測器</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+        #log { background: #f4f4f4; padding: 10px; border-radius: 5px; height: 300px; overflow-y: auto; white-space: pre-wrap; font-family: monospace; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+        button:disabled { background: #ccc; }
+        .data-card { border: 1px solid #ddd; padding: 10px; margin-top: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>藍牙單車數據掃描儀</h1>
+    <p>點擊下方按鈕搜尋你的電競單車：</p>
+    <button id="connectBtn">搜尋並連接單車</button>
+
+    <div class="data-card">
+        <h3>設備資訊</h3>
+        <div id="deviceName">等待連接...</div>
+    </div>
+
+    <h3>系統日誌：</h3>
+    <div id="log"></div>
+
+    <script>
+        const connectBtn = document.getElementById('connectBtn');
+        const logElement = document.getElementById('log');
+        const deviceNameDisplay = document.getElementById('deviceName');
+
+        function log(message) {
+            const now = new Date().toLocaleTimeString();
+            logElement.textContent += `[${now}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        connectBtn.addEventListener('click', async () => {
+            try {
+                log("正在請求藍牙設備...");
+                
+                // 掃描包含健身相關服務的設備
+                const device = await navigator.bluetooth.requestDevice({
+                    // acceptAllDevices: true, // 如果找不到設備，可以改用這個測試
+                    filters: [
+                        { services: ['fitness_machine'] },
+                        { services: ['cycling_speed_and_cadence'] },
+                        { services: ['cycling_power'] }
+                    ],
+                    optionalServices: ['battery_service', 'device_information']
+                });
+
+                deviceNameDisplay.textContent = `已連接：${device.name} (ID: ${device.id})`;
+                log(`成功找到設備: ${device.name}`);
+
+                // 連接 GATT 伺服器
+                log("正在連接 GATT 伺服器...");
+                const server = await device.gatt.connect();
+
+                // 獲取所有主要的服務 (Primary Services)
+                log("正在掃描服務...");
+                const services = await server.getPrimaryServices();
+                
+                log(`找到 ${services.length} 個服務：`);
+                
+                for (const service of services) {
+                    log(`👉 服務 UUID: ${service.uuid}`);
+                    
+                    // 獲取該服務下的所有特徵值 (Characteristics)
+                    const characteristics = await service.getCharacteristics();
+                    for (const char of characteristics) {
+                        let properties = "";
+                        if (char.properties.read) properties += "讀取(Read) ";
+                        if (char.properties.notify) properties += "通知(Notify) ";
+                        if (char.properties.write) properties += "寫入(Write) ";
+                        
+                        log(`   └── 特徵值 UUID: ${char.uuid} [${properties}]`);
+                    }
+                }
+
+                log("掃描完畢！現在你可以根據 UUID 去查閱藍牙規格書。");
+
+            } catch (error) {
+                log(`錯誤: ${error.message}`);
+            }
+        });
+    </script>
+</body>
+</html>
