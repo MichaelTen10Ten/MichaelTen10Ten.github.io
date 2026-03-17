@@ -1,140 +1,160 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
-
 <head>
     <meta charset="UTF-8">
-    <title>電競單車數據探測器</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多設備電競單車儀表板</title>
     <style>
-        body {
-            font-family: sans-serif;
-            padding: 20px;
-            line-height: 1.6;
-        }
-
-        #log {
-            background: #f4f4f4;
-            padding: 10px;
-            border-radius: 5px;
-            height: 300px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            font-family: monospace;
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-        }
-
-        button:disabled {
-            background: #ccc;
-        }
-
-        .data-card {
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 5px;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: #fff; padding: 20px; }
+        .controls { margin-bottom: 20px; padding: 15px; background: #2d2d2d; border-radius: 10px; }
+        button { padding: 12px 24px; font-size: 16px; cursor: pointer; background: #00c853; color: white; border: none; border-radius: 5px; font-weight: bold; }
+        button:hover { background: #00e676; }
+        
+        #devicesContainer { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        
+        /* 設備數據面板樣式 */
+        .device-card { background: #333; border: 2px solid #444; border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .device-name { font-size: 1.2em; color: #00e5ff; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .data-item { text-align: center; padding: 10px; background: #222; border-radius: 8px; }
+        .data-label { font-size: 0.8em; color: #aaa; text-transform: uppercase; }
+        .data-value { font-size: 2em; font-weight: bold; color: #fff; margin-top: 5px; }
+        .unit { font-size: 0.4em; margin-left: 5px; color: #888; }
+        
+        #log { margin-top: 20px; background: #000; color: #00ff00; padding: 10px; font-family: monospace; font-size: 12px; height: 150px; overflow-y: auto; border-radius: 5px; opacity: 0.7; }
     </style>
 </head>
-
 <body>
-    <h1>藍牙單車數據掃描儀</h1>
-    <p>點擊下方按鈕搜尋你的電競單車：</p>
-    <button id="connectBtn">搜尋並連接單車</button>
 
-    <div class="data-card">
-        <h3>設備資訊</h3>
-        <div id="deviceName">等待連接...</div>
+    <div class="controls">
+        <h1>🚴 多設備即時數據儀表板</h1>
+        <button id="addDeviceBtn">＋ 搜尋並增加單車</button>
     </div>
 
-    <div class="data-card" style="display: flex; gap: 20px;">
-        <div style="flex: 1; text-align: center; border: 2px solid #007bff; padding: 10px;">
-            <h2>功率</h2>
-            <div id="powerDisplay" style="font-size: 3em; font-weight: bold;">0 W</div>
+    <div id="devicesContainer">
         </div>
-        <div style="flex: 1; text-align: center; border: 2px solid #28a745; padding: 10px;">
-            <h2>踏頻</h2>
-            <div id="cadenceDisplay" style="font-size: 3em; font-weight: bold;">0 RPM</div>
-        </div>
-    </div>
-    
+
     <h3>系統日誌：</h3>
     <div id="log"></div>
 
     <script>
-        // 定義 UUID
-        const CPS_SERVICE_UUID = 'cycling_power';
-        const CP_MEASUREMENT_UUID = 'cycling_power_measurement';
-        const CSC_SERVICE_UUID = 'cycling_speed_and_cadence';
-        const CSC_MEASUREMENT_UUID = 'csc_measurement';
+        const logElement = document.getElementById('log');
+        const container = document.getElementById('devicesContainer');
 
-        let lastWheelRevolutions = -1;
-        let lastWheelTime = -1;
-        let lastCrankRevolutions = -1;
-        let lastCrankTime = -1;
-
-        async function startNotifications(device) {
-            const server = await device.gatt.connect();
-            log("GATT 已連接，正在訂閱數據...");
-
-            // 1. 訂閱 功率 (Power)
-            const powerService = await server.getPrimaryService(CPS_SERVICE_UUID);
-            const powerChar = await powerService.getCharacteristic(CP_MEASUREMENT_UUID);
-            await powerChar.startNotifications();
-            powerChar.addEventListener('characteristicvaluechanged', handlePowerData);
-            log("✅ 已訂閱功率數據");
-
-            // 2. 訂閱 踏頻 (Cadence)
-            const cscService = await server.getPrimaryService(CSC_SERVICE_UUID);
-            const cscChar = await cscService.getCharacteristic(CSC_MEASUREMENT_UUID);
-            await cscChar.startNotifications();
-            cscChar.addEventListener('characteristicvaluechanged', handleCSCData);
-            log("✅ 已訂閱踏頻數據");
+        function log(msg) {
+            const now = new Date().toLocaleTimeString();
+            logElement.textContent += `[${now}] ${msg}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
         }
 
-        function handlePowerData(event) {
-            const value = event.target.value;
-            // 根據藍牙規範，Flags 佔 2 bytes，之後的 2 bytes 是功率 (Instantaneous Power)
-            const power = value.getUint16(2, true); // true 代表小端序 (Little Endian)
-            document.getElementById('powerDisplay').textContent = `${power} W`;
-        }
+        class BikeDevice {
+            constructor(device) {
+                this.device = device;
+                this.id = device.id;
+                this.name = device.name || "未知設備";
+                this.lastCrankCount = -1;
+                this.lastCrankTime = -1;
+                this.createUI();
+            }
 
-        function handleCSCData(event) {
-            const value = event.target.value;
-            const flags = value.getUint8(0);
+            createUI() {
+                this.element = document.createElement('div');
+                this.element.className = 'device-card';
+                this.element.innerHTML = `
+                    <div class="device-name">📍 ${this.name}</div>
+                    <div class="data-grid">
+                        <div class="data-item">
+                            <div class="data-label">功率 Power</div>
+                            <div class="data-value"><span id="p-${this.id}">0</span><span class="unit">W</span></div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">踏頻 Cadence</div>
+                            <div class="data-value"><span id="c-${this.id}">0</span><span class="unit">RPM</span></div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(this.element);
+            }
 
-            // 判斷踏頻數據是否存在 (Flag bit 1: Crank Revolution Data Present)
-            let offset = 1;
-            if (flags & 0x01) offset += 6; // 跳過速度數據 (Wheel data)
+            async connect() {
+                try {
+                    log(`嘗試連接 ${this.name}...`);
+                    const server = await this.device.gatt.connect();
+                    
+                    // 訂閱功率 (Cycling Power)
+                    const pService = await server.getPrimaryService('cycling_power');
+                    const pChar = await pService.getCharacteristic('cycling_power_measurement');
+                    await pChar.startNotifications();
+                    pChar.addEventListener('characteristicvaluechanged', (e) => this.handlePower(e));
 
-            if (flags & 0x02) { // 踏頻數據存在
-                const cumulativeCrankRevolutions = value.getUint16(offset, true);
-                const lastCrankEventTime = value.getUint16(offset + 2, true);
+                    // 訂閱踏頻 (Cycling Speed and Cadence)
+                    const cService = await server.getPrimaryService('cycling_speed_and_cadence');
+                    const cChar = await cService.getCharacteristic('csc_measurement');
+                    await cChar.startNotifications();
+                    cChar.addEventListener('characteristicvaluechanged', (e) => this.handleCSC(e));
 
-                if (lastCrankTime !== -1 && lastCrankEventTime !== lastCrankTime) {
-                    // 計算 RPM: (轉圈差 / 時間差) * 60 * 1024 (時間單位是 1/1024 秒)
-                    let revDiff = cumulativeCrankRevolutions - lastCrankRevolutions;
-                    if (revDiff < 0) revDiff += 65535; // 處理溢位
-
-                    let timeDiff = lastCrankEventTime - lastCrankTime;
-                    if (timeDiff < 0) timeDiff += 65535;
-
-                    const rpm = Math.round((revDiff * 1024 * 60) / timeDiff);
-                    document.getElementById('cadenceDisplay').textContent = `${rpm} RPM`;
+                    log(`✅ ${this.name} 已同步數據`);
+                } catch (err) {
+                    log(`❌ ${this.name} 錯誤: ${err.message}`);
                 }
+            }
 
-                lastCrankRevolutions = cumulativeCrankRevolutions;
-                lastCrankTime = lastCrankEventTime;
+            handlePower(event) {
+                const view = event.target.value;
+                // 標準格式：Flags(16bit), Power(Int16) 在第 2,3 位元組
+                const watts = view.getInt16(2, true);
+                document.getElementById(`p-${this.id}`).innerText = watts;
+            }
+
+            handleCSC(event) {
+                const view = event.target.value;
+                const flags = view.getUint8(0);
+                
+                // 踏頻數據解析：Cumulative Crank Revolutions (16bit), Last Crank Event Time (16bit)
+                // 注意：數據偏移量取決於 Flags (是否有輪速數據)
+                // 通常單車數據格式中，踏頻數據在 flags 之後的某個位置
+                // 這裡簡化處理，具體偏移量可能需根據你的設備 flags 調節
+                let offset = 1; 
+                if (flags & 0x01) offset += 6; // 跳過 Wheel Data
+                
+                if (flags & 0x02) { // 包含 Crank Data
+                    const cumulativeCrank = view.getUint16(offset, true);
+                    const lastTime = view.getUint16(offset + 2, true);
+
+                    if (this.lastCrankTime !== -1 && lastTime !== this.lastCrankTime) {
+                        let diffRev = cumulativeCrank - this.lastCrankCount;
+                        let diffTime = lastTime - this.lastCrankTime;
+                        
+                        if (diffRev < 0) diffRev += 65536; // 溢位處理
+                        if (diffTime < 0) diffTime += 65536;
+
+                        // 藍牙時間單位是 1/1024 秒
+                        const rpm = Math.round((diffRev * 1024 * 60) / diffTime);
+                        if (rpm < 300) { // 過濾異常跳轉
+                            document.getElementById(`c-${this.id}`).innerText = rpm;
+                        }
+                    }
+                    this.lastCrankCount = cumulativeCrank;
+                    this.lastCrankTime = lastTime;
+                }
             }
         }
+
+        document.getElementById('addDeviceBtn').addEventListener('click', async () => {
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [
+                        { services: ['cycling_power'] },
+                        { services: ['cycling_speed_and_cadence'] }
+                    ]
+                });
+
+                const bike = new BikeDevice(device);
+                await bike.connect();
+            } catch (err) {
+                log(`掃描取消或出錯: ${err.message}`);
+            }
+        });
     </script>
 </body>
-
 </html>
