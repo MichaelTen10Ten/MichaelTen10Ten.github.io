@@ -3,113 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Bike Race - Continuous Mode</title>
+    <title>Smooth Neon Bike Race</title>
     <style>
-        :root { --track-color: #2a2a2a; --accent: #00ff88; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #121212; color: white; margin: 0; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+        :root { --accent: #00ff88; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: white; margin: 0; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         
-        /* 頂部控制列 */
-        .header { background: #1f1f1f; padding: 10px 20px; display: flex; gap: 20px; align-items: center; border-bottom: 2px solid #333; z-index: 10; }
-        .btn { padding: 8px 16px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; border: none; transition: 0.2s; }
-        .btn-add { background: #3d3d3d; color: white; }
-        .btn-start { background: var(--accent); color: #000; }
-        .btn-reset { background: #ff3d00; color: white; }
-        .btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-        .setting-group { display: flex; align-items: center; gap: 10px; background: #2d2d2d; padding: 5px 15px; border-radius: 8px; }
+        /* 頂部資訊 */
+        .header { background: #151515; padding: 10px 20px; display: flex; gap: 15px; align-items: center; border-bottom: 2px solid #333; }
+        .stats-box { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; background: #222; padding: 5px 15px; border-radius: 8px; font-family: monospace; }
+        
+        /* 即時排名看板 */
+        #liveRank { position: fixed; top: 80px; right: 20px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 10px; border: 1px solid #444; width: 180px; pointer-events: none; z-index: 50; }
+        .rank-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; }
 
         /* 賽道區域 */
-        #raceField { flex: 1; display: flex; justify-content: center; padding: 10px; gap: 8px; overflow-x: auto; background: linear-gradient(to bottom, #111 0%, #222 100%); position: relative; }
+        #raceField { flex: 1; display: flex; justify-content: center; padding: 10px; gap: 15px; background: #0a0a0a; position: relative; }
+        .track { width: 90px; background: #1a1a1a; position: relative; border-left: 1px solid #333; }
+        .finish-line { position: absolute; top: 30%; width: 100%; text-align: center; font-size: 20px; border-top: 4px dashed gold; padding-top: 5px; color: gold; z-index: 2; }
+        .start-line { position: absolute; bottom: 15%; width: 100%; text-align: center; font-size: 20px; border-bottom: 2px solid #444; color: #666; }
         
-        .track { width: 110px; background: var(--track-color); position: relative; border-left: 1px solid #444; border-right: 1px solid #444; display: flex; flex-direction: column; }
-        .finish-line { position: absolute; top: 10%; width: 100%; text-align: center; font-size: 24px; border-top: 4px dashed #fff; padding-top: 5px; color: gold; }
-        .start-line { position: absolute; bottom: 15%; width: 100%; text-align: center; font-size: 24px; border-bottom: 2px solid #666; color: #888; }
-        
-        /* 騎士 */
-        .rider-container { position: absolute; bottom: 15%; width: 100%; display: flex; justify-content: center; transition: bottom 0.1s linear; z-index: 5; }
-        .rider { font-size: 45px; filter: drop-shadow(0 0 8px rgba(0,255,136,0.5)); }
-        
-        /* 底部控制 */
-        .track-footer { position: absolute; bottom: 0; width: 100%; height: 15%; background: #1a1a1a; display: flex; flex-direction: column; align-items: center; border-top: 2px solid #333; }
-        .name-input { width: 90%; background: #222; border: 1px solid #444; color: #00e5ff; text-align: center; font-size: 13px; margin-top: 5px; border-radius: 4px; }
-        .power-val { color: var(--accent); font-size: 22px; font-weight: 800; margin: 2px 0; font-family: monospace; }
-        .nav-btns { display: flex; width: 100%; justify-content: space-between; padding: 0 5px; box-sizing: border-box; }
-        .nav-btn { background: #333; color: white; border: none; font-size: 16px; cursor: pointer; padding: 2px 10px; border-radius: 4px; }
+        /* 騎士與發光效果 */
+        .rider-container { position: absolute; bottom: 15%; width: 100%; display: flex; justify-content: center; z-index: 5; will-change: bottom; }
+        .rider { font-size: 40px; transition: transform 0.2s; }
+        .glow-effect { position: absolute; bottom: -10px; width: 40px; height: 20px; border-radius: 50%; filter: blur(15px); opacity: 0.8; }
 
-        #overlay { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; font-weight: 900; color: var(--accent); z-index: 100; pointer-events: none; text-shadow: 0 0 20px rgba(0,255,136,0.8); }
-        #resultsModal { display: none; position: fixed; top: 5%; left: 5%; width: 90%; height: 90%; background: rgba(10,10,10,0.98); border: 2px solid var(--accent); border-radius: 15px; z-index: 200; padding: 20px; box-sizing: border-box; overflow-y: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
+        .track-footer { position: absolute; bottom: 0; width: 100%; height: 15%; background: #111; display: flex; flex-direction: column; align-items: center; border-top: 1px solid #333; }
+        .name-input { width: 85%; background: #000; border: 1px solid #444; color: #fff; text-align: center; font-size: 11px; margin-top: 5px; }
+        .power-val { font-size: 18px; font-weight: bold; margin: 2px 0; }
+        
+        .btn { padding: 8px 15px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-start { background: var(--accent); }
+
+        #overlay { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 100px; font-weight: 900; color: white; z-index: 100; pointer-events: none; }
+        #resultsModal { display: none; position: fixed; top: 10%; left: 10%; width: 80%; height: 80%; background: #111; border: 2px solid var(--accent); border-radius: 20px; z-index: 200; padding: 20px; overflow-y: auto; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #333; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <button class="btn btn-add" id="addBike">➕ 新增單車</button>
+    <button class="btn" style="background:#444; color:white;" id="addBike">➕ 連接單車</button>
     <button class="btn btn-start" id="startRace">🏁 開始比賽</button>
-    
-    <div class="setting-group">
-        <span>難度:</span>
-        <input type="range" id="difficultyRange" min="1" max="100" value="10">
-        <span id="diffValue">10</span>
+    <div class="setting-group" style="font-size:12px; display:flex; gap:10px;">
+        難度: <input type="range" id="diffRange" min="1" max="50" value="5">
     </div>
+    <div class="stats-box">
+        <div>即時總功率: <span id="liveTotalW" style="color:var(--accent)">0</span> W</div>
+        <div>累積總能量: <span id="accumTotalW" style="color:cyan">0</span> Ws</div>
+    </div>
+</div>
 
-    <div id="globalStats" style="margin-left:auto; font-weight:bold;">即時總功率: <span id="totalW">0</span> W</div>
-    <button class="btn btn-add" onclick="downloadCSV()" id="dlBtn" style="display:none;">📥 下載最後賽績</button>
+<div id="liveRank">
+    <div style="font-weight:bold; color:gold; border-bottom:1px solid #444; margin-bottom:5px;">即時排名</div>
+    <div id="rankList"></div>
 </div>
 
 <div id="overlay"></div>
 <div id="raceField"></div>
 
 <div id="resultsModal">
-    <h1 style="color: var(--accent);">🏆 比賽結果</h1>
-    <div id="rankings"></div>
-    <div id="totalSumGroup" style="margin-top:20px; font-size:1.2em; border-top:1px solid #444; padding-top:10px;"></div>
-    <button class="btn btn-start" onclick="closeResults()" style="margin-top:30px;">準備下一場</button>
+    <h1 id="resultTitle">🏆 比賽結束</h1>
+    <div id="finalTable"></div>
+    <button class="btn btn-start" onclick="closeResults()" style="margin-top:20px;">關閉</button>
+    <button class="btn" style="background:white;" onclick="downloadCSV()">📥 下載 CSV</button>
 </div>
 
 <script>
     let bikes = [];
     let isRacing = false;
     let raceStartTime = 0;
-    let results = [];
-    let difficulty = 10;
-
-    document.getElementById('difficultyRange').oninput = function() {
-        difficulty = this.value;
-        document.getElementById('diffValue').innerText = this.value;
-    };
+    let totalEnergy = 0;
+    const colors = ['#00ff88', '#00e5ff', '#ff007f', '#ffeb3b', '#9d4edd', '#ff9100'];
 
     class Bike {
-        constructor(device) {
+        constructor(device, color) {
             this.device = device;
             this.id = Math.random().toString(36).substr(2, 5);
-            this.customName = `騎士 ${device.name ? device.name.split(' ')[0] : this.id}`;
+            this.color = color;
+            this.customName = `ID-${this.id}`;
             this.watts = 0;
             this.distance = 0; 
             this.finished = false;
-            this.finishTime = null;
             this.allWatts = [];
+            this.finishTime = null;
             this.createTrack();
         }
 
         createTrack() {
             this.trackDiv = document.createElement('div');
             this.trackDiv.className = 'track';
-            this.trackDiv.id = `cont-${this.id}`;
+            this.trackDiv.id = `track-${this.id}`;
             this.trackDiv.innerHTML = `
-                <div class="finish-line">🏁</div>
-                <div class="start-line">🚩</div>
+                <div class="finish-line">🏁 FINISH</div>
+                <div class="start-line">🚩 START</div>
                 <div id="rider-cont-${this.id}" class="rider-container">
+                    <div class="glow-effect" style="background:${this.color}; box-shadow: 0 0 20px ${this.color};"></div>
                     <div class="rider">🚴</div>
                 </div>
                 <div class="track-footer">
-                    <input class="name-input" id="input-${this.id}" value="${this.customName}" oninput="updateBikeName('${this.id}', this.value)">
-                    <div id="w-${this.id}" class="power-val">0 W</div>
-                    <div class="nav-btns">
-                        <button class="nav-btn" onclick="moveTrack('${this.id}', -1)">◀</button>
-                        <button class="nav-btn" onclick="moveTrack('${this.id}', 1)">▶</button>
-                    </div>
+                    <input class="name-input" value="${this.customName}" oninput="updateName('${this.id}', this.value)">
+                    <div id="w-${this.id}" class="power-val" style="color:${this.color}">0 W</div>
                 </div>
             `;
             document.getElementById('raceField').appendChild(this.trackDiv);
@@ -121,151 +114,134 @@
             const char = await service.getCharacteristic('cycling_power_measurement');
             await char.startNotifications();
             char.addEventListener('characteristicvaluechanged', (e) => {
-                this.watts = e.target.value.getInt16(2, true);
-                if (this.watts < 0) this.watts = 0;
+                this.watts = Math.max(0, e.target.value.getInt16(2, true));
                 document.getElementById(`w-${this.id}`).innerText = `${this.watts} W`;
-                updateGlobalTotal();
+            });
+        }
 
-                if(isRacing && !this.finished) {
-                    this.allWatts.push(this.watts);
-                    this.distance += (this.watts / (difficulty * 100)); 
-                    this.updateUI();
+        updateFrame() {
+            if (isRacing && !this.finished) {
+                this.allWatts.push(this.watts);
+                totalEnergy += (this.watts / 60); // 簡易累加
+                
+                // 運動邏輯：瓦特轉化為移動量。難度分母調小會變快。
+                const diff = document.getElementById('diffRange').value;
+                this.distance += (this.watts / (diff * 1000)); 
+                
+                // 賽道短一半：原本 90% 終點，現在 30% 就是終點 (15%起點 -> 30%終點，距離只需 15)
+                // 這裡我們把距離正規化，讓 pos 計算更準
+                let pos = 15 + (this.distance * 100);
+                if (pos >= 30) {
+                    pos = 30;
+                    this.finished = true;
+                    this.finishTime = (Date.now() - raceStartTime) / 1000;
+                    checkFirstFinish();
                 }
-            });
-        }
-
-        updateUI() {
-            const container = document.getElementById(`rider-cont-${this.id}`);
-            let pos = 15 + (this.distance);
-            if (pos >= 90) {
-                pos = 90;
-                if(!this.finished) this.complete();
+                document.getElementById(`rider-cont-${this.id}`).style.bottom = `${pos}%`;
             }
-            container.style.bottom = `${pos}%`;
-        }
-
-        // 重置此單車狀態，準備下一場，但保留 customName 和藍牙連線
-        resetForNewRace() {
-            this.distance = 0;
-            this.finished = false;
-            this.finishTime = null;
-            this.allWatts = [];
-            this.updateUI();
-            document.getElementById(`w-${this.id}`).innerText = `0 W`;
-        }
-
-        complete() {
-            this.finished = true;
-            this.finishTime = (Date.now() - raceStartTime) / 1000;
-            results.push({
-                name: this.customName,
-                time: this.finishTime,
-                avgW: Math.round(this.allWatts.reduce((a,b)=>a+b, 0) / this.allWatts.length) || 0,
-                totalW: this.allWatts.reduce((a,b)=>a+b, 0)
-            });
-            checkRaceEnd();
         }
     }
 
-    function updateGlobalTotal() {
-        const sum = bikes.reduce((a, b) => a + b.watts, 0);
-        document.getElementById('totalW').innerText = sum;
+    // 動態循環 (60FPS)
+    function animationLoop() {
+        bikes.forEach(b => b.updateFrame());
+        updateGlobalStats();
+        updateLiveRank();
+        requestAnimationFrame(animationLoop);
+    }
+    requestAnimationFrame(animationLoop);
+
+    function updateGlobalStats() {
+        const currentTotal = bikes.reduce((a, b) => a + b.watts, 0);
+        document.getElementById('liveTotalW').innerText = currentTotal;
+        document.getElementById('accumTotalW').innerText = Math.round(totalEnergy);
     }
 
-    function updateBikeName(id, val) {
-        const bike = bikes.find(b => b.id === id);
-        if(bike) bike.customName = val;
+    function updateLiveRank() {
+        const sorted = [...bikes].sort((a, b) => b.distance - a.distance);
+        let html = '';
+        sorted.forEach((b, i) => {
+            html += `<div class="rank-item" style="color:${b.color}">
+                <span>${i+1}. ${b.customName}</span>
+                <span>${Math.round(b.distance * 100)}%</span>
+            </div>`;
+        });
+        document.getElementById('rankList').innerHTML = html;
+    }
+
+    let firstFinisherDetected = false;
+    function checkFirstFinish() {
+        if (!firstFinisherDetected) {
+            firstFinisherDetected = true;
+            // 第一個衝線後，延遲顯示最終排名
+            setTimeout(showFinalResults, 2000); 
+        }
+    }
+
+    function showFinalResults() {
+        isRacing = false;
+        const modal = document.getElementById('resultsModal');
+        modal.style.display = 'block';
+        
+        // 根據距離排名 (即便沒衝線)
+        const finalRank = [...bikes].sort((a,b) => b.distance - a.distance);
+        
+        let html = '<table><tr><th>排名</th><th>選手</th><th>狀態</th><th>平均功率</th></tr>';
+        finalRank.forEach((r, i) => {
+            const status = r.finished ? `${r.finishTime.toFixed(1)}s` : '未完成';
+            const avg = Math.round(r.allWatts.reduce((a,b)=>a+b,0)/r.allWatts.length) || 0;
+            html += `<tr><td>${i+1}</td><td style="color:${r.color}">${r.name || r.customName}</td><td>${status}</td><td>${avg} W</td></tr>`;
+        });
+        html += '</table>';
+        document.getElementById('finalTable').innerHTML = html;
     }
 
     document.getElementById('addBike').onclick = async () => {
         try {
-            const device = await navigator.bluetooth.requestDevice({
-                filters: [{ services: ['cycling_power'] }]
-            });
-            const b = new Bike(device);
+            const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['cycling_power'] }] });
+            const color = colors[bikes.length % colors.length];
+            const b = new Bike(device, color);
             await b.connect();
             bikes.push(b);
-        } catch (e) { console.warn(e); }
+        } catch (e) {}
     };
 
     document.getElementById('startRace').onclick = () => {
-        if(bikes.length === 0) return alert("請先連接單車！");
-        
-        // 比賽開始前先重置所有人的位置和數據 (不 reload 頁面)
-        bikes.forEach(b => b.resetForNewRace());
-        results = [];
-        
-        document.getElementById('startRace').disabled = true;
-        document.getElementById('addBike').disabled = true;
-
-        let count = 3;
-        const overlay = document.getElementById('overlay');
-        const timer = setInterval(() => {
-            if(count > 0) {
-                overlay.innerText = count;
-            } else if(count === 0) {
-                overlay.innerText = "GO!";
-                isRacing = true;
-                raceStartTime = Date.now();
-            } else {
-                clearInterval(timer);
-                overlay.innerText = "";
-            }
-            count--;
+        if (bikes.length === 0) return;
+        firstFinisherDetected = false;
+        bikes.forEach(b => {
+            b.distance = 0;
+            b.finished = false;
+            b.allWatts = [];
+        });
+        let c = 3;
+        const o = document.getElementById('overlay');
+        const t = setInterval(() => {
+            o.innerText = c > 0 ? c : (c === 0 ? "GO!" : "");
+            if (c === 0) { isRacing = true; raceStartTime = Date.now(); }
+            if (c < 0) clearInterval(t);
+            c--;
         }, 1000);
     };
 
-    function checkRaceEnd() {
-        if (results.length === bikes.length) {
-            endRace();
-        } else if (results.length === 1) {
-            setTimeout(() => { if(isRacing) endRace(); }, 10000);
-        }
+    function updateName(id, val) {
+        const b = bikes.find(x => x.id === id);
+        if(b) b.customName = val;
     }
 
-    function endRace() {
-        isRacing = false;
-        document.getElementById('resultsModal').style.display = 'block';
-        results.sort((a,b) => a.time - b.time);
-        
-        let totalGroupWatts = results.reduce((a, b) => a + b.totalW, 0);
-        let html = '<table><tr><th>排名</th><th>選手</th><th>用時</th><th>平均功率</th><th>個人總功(Ws)</th></tr>';
-        results.forEach((r, i) => {
-            html += `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.time.toFixed(1)}s</td><td>${r.avgW} W</td><td>${r.totalW}</td></tr>`;
-        });
-        html += '</table>';
-        
-        document.getElementById('rankings').innerHTML = html;
-        document.getElementById('totalSumGroup').innerHTML = `<strong>本場團隊總功：</strong> ${totalGroupWatts} W·s`;
-        document.getElementById('dlBtn').style.display = 'block';
-    }
-
-    function closeResults() {
-        document.getElementById('resultsModal').style.display = 'none';
-        document.getElementById('startRace').disabled = false;
-        document.getElementById('addBike').disabled = false;
-        // 騎士會留在終點，直到下次按「開始比賽」才會回到起點
-    }
-
-    function moveTrack(id, dir) {
-        const track = document.getElementById(`cont-${id}`);
-        if(dir === -1 && track.previousElementSibling) {
-            track.parentNode.insertBefore(track, track.previousElementSibling);
-        } else if(dir === 1 && track.nextElementSibling) {
-            track.parentNode.insertBefore(track.nextElementSibling, track);
-        }
-    }
-
+    function closeResults() { document.getElementById('resultsModal').style.display = 'none'; }
+    
     function downloadCSV() {
-        if(results.length === 0) return;
-        let csv = "\uFEFF選手名稱,比賽用時(s),平均功率(W),個人總功(Ws)\n";
-        results.forEach(r => {
-            csv += `"${r.name}",${r.time.toFixed(2)},${r.avgW},${r.totalW}\n`;
+        let csv = "\uFEFF排名,選手,平均功率(W)\n";
+        const finalRank = [...bikes].sort((a,b) => b.distance - a.distance);
+        finalRank.forEach((r, i) => {
+            const avg = Math.round(r.allWatts.reduce((a,b)=>a+b,0)/r.allWatts.length) || 0;
+            csv += `${i+1},${r.customName},${avg}\n`;
         });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", `賽事紀錄_${new Date().toLocaleTimeString().replace(/:/g,'-')}.csv`);
+        link.download = `Race_${Date.now()}.csv`;
         link.click();
     }
 </script>
