@@ -9,26 +9,36 @@
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
         
-        /* Full screen video container */
-        #container { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        #container { position: relative; width: 100vw; height: 100vh; }
         video { object-fit: cover; width: 100%; height: 100%; }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 
-        /* Modern UI Elements */
-        #ui-overlay { position: absolute; bottom: 50px; left: 0; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 10; }
-        
-        #result { color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); font-size: 1.5rem; margin-bottom: 20px; min-height: 1.6em; text-align: center; }
-
-        /* The Circular Toggle Button */
-        #main-btn {
-            width: 80px; height: 80px; border-radius: 50%; border: 5px solid white;
-            background: rgba(255, 255, 255, 0.3); cursor: pointer; display: flex;
-            justify-content: center; align-items: center; transition: all 0.2s;
-            outline: none; -webkit-tap-highlight-color: transparent;
+        /* Positioning the UI at 75% depth */
+        #ui-overlay { 
+            position: absolute; 
+            top: 75%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            width: 100%; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            z-index: 10; 
         }
-        #main-btn:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.6); }
-        #btn-inner { width: 60px; height: 60px; border-radius: 50%; background: #fff; transition: 0.3s; }
-        .is-active #btn-inner { background: #ff4757; border-radius: 10px; transform: scale(0.7); }
+        
+        #result { color: white; text-shadow: 2px 2px 8px rgba(0,0,0,1); font-size: 1.8rem; margin-bottom: 20px; min-height: 1.6em; text-align: center; font-weight: bold; }
+
+        #main-btn {
+            width: 85px; height: 85px; border-radius: 50%; border: 4px solid white;
+            background: rgba(255, 255, 255, 0.2); cursor: pointer; display: flex;
+            justify-content: center; align-items: center; transition: all 0.2s;
+            outline: none; -webkit-tap-highlight-color: transparent; box-shadow: 0 0 15px rgba(0,0,0,0.3);
+        }
+        
+        #btn-inner { width: 65px; height: 65px; border-radius: 50%; background: #fff; transition: 0.3s; }
+        
+        /* State when shuffling (Start) */
+        .is-active #btn-inner { background: #ff4757; border-radius: 12px; transform: scale(0.7); }
     </style>
 </head>
 <body>
@@ -39,7 +49,7 @@
 
     <div id="ui-overlay">
         <div id="result"></div>
-        <button id="main-btn">
+        <button id="main-btn" class="is-active">
             <div id="btn-inner"></div>
         </button>
     </div>
@@ -54,15 +64,20 @@
     
     const images = ['善良.png', '正直.png', '誠實.png'];
     let loadedImages = [];
-    let isShuffling = false;
+    let isShuffling = true; // Default to true
     let currentIndex = 0;
-    let lastDetection = null;
+    let shuffleTimer;
 
     // Preload
+    let loadedCount = 0;
     images.forEach(name => {
         const img = new Image();
         img.src = `source/character/${name}`;
         img.label = name.replace('.png', '');
+        img.onload = () => {
+            loadedCount++;
+            if(loadedCount === images.length) startAutoShuffle();
+        };
         loadedImages.push(img);
     });
 
@@ -85,8 +100,8 @@
 
             if (isShuffling || resultText.innerText !== "") {
                 const img = loadedImages[currentIndex];
-                // Draw floating above head
-                ctx.drawImage(img, x, y - (h * 0.9), w, h * 0.8);
+                // Draw slightly higher for mobile visibility
+                ctx.drawImage(img, x, y - (h * 1.0), w, h * 0.9);
             }
         }
     });
@@ -97,19 +112,19 @@
     });
     camera.start();
 
-    // Toggle logic
-    let shuffleTimer;
+    function startAutoShuffle() {
+        isShuffling = true;
+        mainBtn.classList.add('is-active');
+        shuffleTimer = setInterval(() => {
+            currentIndex = Math.floor(Math.random() * loadedImages.length);
+        }, 80);
+    }
+
     mainBtn.onclick = () => {
         if (!isShuffling) {
-            // Start
-            isShuffling = true;
-            mainBtn.classList.add('is-active');
             resultText.innerText = "";
-            shuffleTimer = setInterval(() => {
-                currentIndex = Math.floor(Math.random() * loadedImages.length);
-            }, 80);
+            startAutoShuffle();
         } else {
-            // Stop
             isShuffling = false;
             mainBtn.classList.remove('is-active');
             clearInterval(shuffleTimer);
