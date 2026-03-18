@@ -1,42 +1,56 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
-  <title>Face Image Selector</title>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
-  <style>
-    body { font-family: sans-serif; text-align: center; background: #f0f0f0; }
-    #container { position: relative; display: inline-block; margin-top: 20px; }
-    video, canvas { border-radius: 10px; }
-    canvas { position: absolute; top: 0; left: 0; }
-    .controls { margin-top: 20px; }
-    button { padding: 10px 25px; font-size: 16px; cursor: pointer; border-radius: 5px; border: none; margin: 0 10px; }
-    #start { background: #28a745; color: white; }
-    #stop { background: #dc3545; color: white; }
-    #result { font-size: 24px; font-weight: bold; margin-top: 20px; color: #333; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Face Character Picker</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
+        
+        /* Full screen video container */
+        #container { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        video { object-fit: cover; width: 100%; height: 100%; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
+        /* Modern UI Elements */
+        #ui-overlay { position: absolute; bottom: 50px; left: 0; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 10; }
+        
+        #result { color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); font-size: 1.5rem; margin-bottom: 20px; min-height: 1.6em; text-align: center; }
+
+        /* The Circular Toggle Button */
+        #main-btn {
+            width: 80px; height: 80px; border-radius: 50%; border: 5px solid white;
+            background: rgba(255, 255, 255, 0.3); cursor: pointer; display: flex;
+            justify-content: center; align-items: center; transition: all 0.2s;
+            outline: none; -webkit-tap-highlight-color: transparent;
+        }
+        #main-btn:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.6); }
+        #btn-inner { width: 60px; height: 60px; border-radius: 50%; background: #fff; transition: 0.3s; }
+        .is-active #btn-inner { background: #ff4757; border-radius: 10px; transform: scale(0.7); }
+    </style>
 </head>
 <body>
 
-  <h1>性格選取器</h1>
-  
-  <div id="container">
+<div id="container">
     <video id="webcam" autoplay playsinline></video>
     <canvas id="output_canvas"></canvas>
-  </div>
 
-  <div class="controls">
-    <button id="start">開始 (Start)</button>
-    <button id="stop">停止 (Stop)</button>
-  </div>
+    <div id="ui-overlay">
+        <div id="result"></div>
+        <button id="main-btn">
+            <div id="btn-inner"></div>
+        </button>
+    </div>
+</div>
 
-  <div id="result"></div>
-
-  <script>
+<script>
     const video = document.getElementById('webcam');
     const canvas = document.getElementById('output_canvas');
     const ctx = canvas.getContext('2d');
     const resultText = document.getElementById('result');
+    const mainBtn = document.getElementById('main-btn');
     
     const images = ['善良.png', '正直.png', '誠實.png'];
     let loadedImages = [];
@@ -44,77 +58,64 @@
     let currentIndex = 0;
     let lastDetection = null;
 
-    // Preload images
+    // Preload
     images.forEach(name => {
-      const img = new Image();
-      img.src = `source/character/${name}`;
-      img.label = name.replace('.png', '');
-      loadedImages.push(img);
+        const img = new Image();
+        img.src = `source/character/${name}`;
+        img.label = name.replace('.png', '');
+        loadedImages.push(img);
     });
 
     const faceDetection = new FaceDetection({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`
     });
 
     faceDetection.setOptions({ model: 'short', minDetectionConfidence: 0.5 });
-    faceDetection.onResults(onResults);
+    faceDetection.onResults((results) => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (results.detections.length > 0) {
+            const det = results.detections[0].boundingBox;
+            const x = (det.xCenter - det.width / 2) * canvas.width;
+            const y = (det.yCenter - det.height / 2) * canvas.height;
+            const w = det.width * canvas.width;
+            const h = det.height * canvas.height;
+
+            if (isShuffling || resultText.innerText !== "") {
+                const img = loadedImages[currentIndex];
+                // Draw floating above head
+                ctx.drawImage(img, x, y - (h * 0.9), w, h * 0.8);
+            }
+        }
+    });
 
     const camera = new Camera(video, {
-      onFrame: async () => { await faceDetection.send({image: video}); },
-      width: 640, height: 480
+        onFrame: async () => { await faceDetection.send({image: video}); },
+        width: 1280, height: 720
     });
     camera.start();
 
-    function onResults(results) {
-      // Set canvas size to match video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      if (results.detections.length > 0) {
-        lastDetection = results.detections[0].boundingBox;
-        drawOverlay();
-      }
-    }
-
-    function drawOverlay() {
-      if (!lastDetection) return;
-
-      const { xCenter, yCenter, width, height } = lastDetection;
-      
-      // Calculate position (Top of head)
-      const x = (xCenter - width / 2) * canvas.width;
-      const y = (yCenter - height / 2) * canvas.height;
-      const w = width * canvas.width;
-      const h = height * canvas.height;
-
-      if (isShuffling || resultText.innerText !== "") {
-        const img = loadedImages[currentIndex];
-        // Draw image floating above the bounding box
-        ctx.drawImage(img, x, y - (h * 0.8), w, h * 0.8);
-      }
-    }
-
-    document.getElementById('start').onclick = () => {
-      isShuffling = true;
-      resultText.innerText = "";
-      const shuffleInterval = setInterval(() => {
+    // Toggle logic
+    let shuffleTimer;
+    mainBtn.onclick = () => {
         if (!isShuffling) {
-          clearInterval(shuffleInterval);
-          return;
+            // Start
+            isShuffling = true;
+            mainBtn.classList.add('is-active');
+            resultText.innerText = "";
+            shuffleTimer = setInterval(() => {
+                currentIndex = Math.floor(Math.random() * loadedImages.length);
+            }, 80);
+        } else {
+            // Stop
+            isShuffling = false;
+            mainBtn.classList.remove('is-active');
+            clearInterval(shuffleTimer);
+            resultText.innerText = `我是一個${loadedImages[currentIndex].label}的人`;
         }
-        currentIndex = Math.floor(Math.random() * loadedImages.length);
-      }, 100);
     };
-
-    document.getElementById('stop').onclick = () => {
-      if (isShuffling) {
-        isShuffling = false;
-        const finalName = loadedImages[currentIndex].label;
-        resultText.innerText = `我是一個${finalName}的人`;
-      }
-    };
-  </script>
+</script>
 </body>
 </html>
