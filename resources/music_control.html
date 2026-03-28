@@ -1,387 +1,132 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Audio Routing Engine Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P 音樂同步控制器</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --accent-cyan: #22d3ee;
-            --accent-green: #4ade80;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 600px;
-        }
-
-        h1 {
-            color: var(--accent-cyan);
-            text-align: center;
-            font-size: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 30px;
-            border-bottom: 2px solid var(--accent-cyan);
-            padding-bottom: 10px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .section-title {
-            font-size: 1rem;
-            color: var(--accent-green);
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* Form Elements */
-        .file-group {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .file-input-wrapper {
-            position: relative;
-        }
-
-        input[type="file"] {
-            width: 100%;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        select, button {
-            width: 100%;
-            height: 50px;
-            background: #334155;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 10px;
-            appearance: none;
-            padding: 0 15px;
-        }
-
-        select {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 15px center;
-            background-size: 15px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent-cyan), #0891b2);
-            box-shadow: 0 4px 14px 0 rgba(34, 211, 238, 0.39);
-        }
-
-        .btn-primary:active {
-            transform: scale(0.98);
-        }
-
-        /* Sliders */
-        .control-group {
-            margin-top: 20px;
-        }
-
-        .label-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-        }
-
-        input[type="range"] {
-            width: 100%;
-            height: 12px;
-            background: #334155;
-            border-radius: 6px;
-            appearance: none;
-            outline: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            appearance: none;
-            width: 24px;
-            height: 24px;
-            background: var(--accent-green);
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            background: rgba(74, 222, 128, 0.1);
-            color: var(--accent-green);
-            margin-top: 10px;
-        }
-
-        .warning {
-            color: #fb7185;
-            font-size: 0.8rem;
-            margin-top: 10px;
-            display: none;
-        }
-
-        #playBtn.playing {
-            background: #ef4444;
-        }
+        body { font-family: sans-serif; background: #121212; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 15px; width: 100%; max-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: 20px; }
+        h2 { margin-top: 0; color: #1DB954; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; margin: 5px 0; }
+        .btn-connect { background: #1DB954; color: white; }
+        .btn-play { background: #ffffff; color: black; font-size: 1.2em; height: 60px; }
+        .btn-pause { background: #ff4444; color: white; }
+        .status { font-size: 0.9em; color: #888; margin-bottom: 10px; }
+        .delay-control { margin: 20px 0; }
+        label { display: block; margin-bottom: 5px; }
+        #peer-id-display { font-weight: bold; color: #1DB954; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Audio Engine v1.0</h1>
-
     <div class="card">
-        <div class="section-title">Step 1: 匯入音訊來源</div>
-        <div class="file-group">
-            <div class="file-input-wrapper">
-                <label class="label-row"><span>音樂 A (主要)</span></label>
-                <input type="file" id="fileA" accept="audio/*">
-            </div>
-            <div class="file-input-wrapper">
-                <label class="label-row"><span>音樂 B (背景/附加)</span></label>
-                <input type="file" id="fileB" accept="audio/*">
-            </div>
-        </div>
+        <h2>1. 連線設定</h2>
+        <div class="status">我的 ID: <span id="peer-id-display">正在取得...</span></div>
+        <input type="text" id="remote-id" placeholder="輸入另一台手機的 ID">
+        <button class="btn-connect" onclick="connectToPeer()">連接到對方</button>
+        <div id="connection-status" style="color: orange; margin-top: 10px;">尚未連線</div>
     </div>
 
     <div class="card">
-        <div class="section-title">輸出通道 1 (只播放 A)</div>
-        <select id="deviceSelect1">
-            <option value="">載入中裝置清單...</option>
-        </select>
-        <div class="control-group">
-            <div class="label-row">
-                <span>延遲校正 (Latency)</span>
-                <span id="delayVal1">0ms</span>
-            </div>
-            <input type="range" id="delay1" min="0" max="2000" value="0">
-        </div>
-        <div id="sinkWarning1" class="warning">⚠️ 您的瀏覽器不支援 setSinkId()，將使用預設輸出。</div>
+        <h2>2. 音樂上傳</h2>
+        <input type="file" id="audio-file" accept="audio/*">
+        <audio id="audio-player" style="width: 100%; margin-top:10px;" controls></audio>
     </div>
 
     <div class="card">
-        <div class="section-title">輸出通道 2 (播放 A + B)</div>
-        <select id="deviceSelect2">
-            <option value="">載入中裝置清單...</option>
-        </select>
-        <div class="control-group">
-            <div class="label-row">
-                <span>延遲校正 (Latency)</span>
-                <span id="delayVal2">0ms</span>
-            </div>
-            <input type="range" id="delay2" min="0" max="2000" value="0">
+        <h2>3. 控制台</h2>
+        <div class="delay-control">
+            <label>播放延遲: <span id="delay-val">0</span> ms</label>
+            <input type="range" id="delay-slider" min="0" max="2000" value="0" style="width: 100%;">
+            <small style="color: #888;">* 用於微調兩台手機的同步率</small>
         </div>
-        <div id="sinkWarning2" class="warning">⚠️ 您的瀏覽器不支援 setSinkId()。</div>
+        <button class="btn-play" id="play-btn">播放 / 暫停同步</button>
+        <p style="font-size: 0.8em; color: #aaa; text-align: center;">注意：iOS 需先手動按一下播放器才能遠端觸發</p>
     </div>
 
-    <button id="playBtn" class="btn-primary">啟動音訊系統</button>
-    <div style="text-align: center; margin-top: 20px;">
-        <div id="status" class="status-badge">系統就緒：請選擇檔案後點擊啟動</div>
-    </div>
-</div>
+    <script>
+        let peer = new Peer();
+        let conn = null;
+        const audioPlayer = document.getElementById('audio-player');
+        const peerIdDisplay = document.getElementById('peer-id-display');
+        const connStatus = document.getElementById('connection-status');
+        const delaySlider = document.getElementById('delay-slider');
+        const delayVal = document.getElementById('delay-val');
+        const playBtn = document.getElementById('play-btn');
 
-<script>
-    /**
-     * Senior Front-end Engineer Implementation
-     * Note: Multi-device routing requires https or localhost in most browsers.
-     */
-
-    let ctx1, ctx2;
-    let sourceA1, sourceA2, sourceB2;
-    let delayNode1, delayNode2;
-    let bufferA = null, bufferB = null;
-    let isPlaying = false;
-
-    const playBtn = document.getElementById('playBtn');
-    const statusEl = document.getElementById('status');
-
-    // Initialize Web Audio Contexts
-    async function initAudio() {
-        if (!ctx1) {
-            ctx1 = new (window.AudioContext || window.webkitAudioContext)();
-            ctx2 = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        
-        if (ctx1.state === 'suspended') {
-            await ctx1.resume();
-            await ctx2.resume();
-        }
-    }
-
-    // Load Devices
-    async function getDevices() {
-        try {
-            await navigator.mediaDevices.getUserMedia({ audio: true }); // Request permission to see names
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const outputs = devices.filter(d => d.kind === 'audiooutput');
-            
-            const selectors = [document.getElementById('deviceSelect1'), document.getElementById('deviceSelect2')];
-            
-            selectors.forEach(select => {
-                select.innerHTML = '';
-                outputs.forEach(device => {
-                    const opt = document.createElement('option');
-                    opt.value = device.deviceId;
-                    opt.text = device.label || `未知裝置 (${device.deviceId.slice(0,5)})`;
-                    select.appendChild(opt);
-                });
-            });
-        } catch (err) {
-            console.error('Error fetching devices:', err);
-            statusEl.innerText = "無法獲取裝置權限";
-        }
-    }
-
-    // Decode File Helper
-    async function loadBuffer(file) {
-        const arrayBuffer = await file.arrayBuffer();
-        return await ctx1.decodeAudioData(arrayBuffer);
-    }
-
-    // Set Sink ID with Error Handling
-    async function updateOutputDevice(context, deviceId, warningId) {
-        if (typeof context.setSinkId === 'function') {
-            try {
-                await context.setSinkId(deviceId);
-            } catch (err) {
-                console.error('setSinkId error:', err);
-            }
-        } else {
-            document.getElementById(warningId).style.display = 'block';
-        }
-    }
-
-    // Start Playback
-    async function startEngine() {
-        const fileA = document.getElementById('fileA').files[0];
-        const fileB = document.getElementById('fileB').files[0];
-
-        if (!fileA || !fileB) {
-            alert("請先選擇兩個音樂檔案！");
-            return;
-        }
-
-        statusEl.innerText = "正在解碼音訊內容...";
-        bufferA = await loadBuffer(fileA);
-        bufferB = await loadBuffer(fileB);
-
-        // Setup Output 1 (A only)
-        await updateOutputDevice(ctx1, document.getElementById('deviceSelect1').value, 'sinkWarning1');
-        sourceA1 = ctx1.createBufferSource();
-        sourceA1.buffer = bufferA;
-        delayNode1 = ctx1.createDelay(2.0);
-        delayNode1.delayTime.value = document.getElementById('delay1').value / 1000;
-        
-        sourceA1.connect(delayNode1);
-        delayNode1.connect(ctx1.destination);
-
-        // Setup Output 2 (A + B)
-        await updateOutputDevice(ctx2, document.getElementById('deviceSelect2').value, 'sinkWarning2');
-        sourceA2 = ctx2.createBufferSource();
-        sourceB2 = ctx2.createBufferSource();
-        sourceA2.buffer = bufferA;
-        sourceB2.buffer = bufferB;
-        
-        delayNode2 = ctx2.createDelay(2.0);
-        delayNode2.delayTime.value = document.getElementById('delay2').value / 1000;
-
-        sourceA2.connect(delayNode2);
-        sourceB2.connect(delayNode2);
-        delayNode2.connect(ctx2.destination);
-
-        // Precise Sync Start
-        const startTime = ctx1.currentTime + 0.1;
-        sourceA1.start(startTime);
-        sourceA2.start(startTime);
-        sourceB2.start(startTime);
-
-        isPlaying = true;
-        playBtn.innerText = "停止播放";
-        playBtn.classList.add('playing');
-        statusEl.innerText = "播放中 - 引擎已同步";
-    }
-
-    function stopEngine() {
-        [sourceA1, sourceA2, sourceB2].forEach(s => {
-            if (s) {
-                try { s.stop(); } catch(e) {}
-            }
+        // 1. 顯示自己的 ID
+        peer.on('open', (id) => {
+            peerIdDisplay.innerText = id;
         });
-        isPlaying = false;
-        playBtn.innerText = "啟動音訊系統";
-        playBtn.classList.remove('playing');
-        statusEl.innerText = "系統已停止";
-    }
 
-    // Event Listeners
-    playBtn.addEventListener('click', async () => {
-        await initAudio();
-        if (isPlaying) {
-            stopEngine();
-        } else {
-            startEngine();
+        // 2. 監聽他人連線
+        peer.on('connection', (c) => {
+            setupConnection(c);
+        });
+
+        function connectToPeer() {
+            const remoteId = document.getElementById('remote-id').value;
+            if (!remoteId) return alert("請輸入 ID");
+            const c = peer.connect(remoteId);
+            setupConnection(c);
         }
-    });
 
-    // Real-time Latency Updates
-    document.getElementById('delay1').addEventListener('input', (e) => {
-        const val = e.target.value;
-        document.getElementById('delayVal1').innerText = `${val}ms`;
-        if (delayNode1) {
-            delayNode1.delayTime.setTargetAtTime(val / 1000, ctx1.currentTime, 0.05);
+        function setupConnection(c) {
+            conn = c;
+            conn.on('open', () => {
+                connStatus.innerText = "連線成功！";
+                connStatus.style.color = "#1DB954";
+            });
+
+            // 3. 接收指令
+            conn.on('data', (data) => {
+                const delay = parseInt(delaySlider.value);
+                if (data.action === 'play') {
+                    setTimeout(() => { audioPlayer.play(); }, delay);
+                } else if (data.action === 'pause') {
+                    audioPlayer.pause();
+                }
+            });
         }
-    });
 
-    document.getElementById('delay2').addEventListener('input', (e) => {
-        const val = e.target.value;
-        document.getElementById('delayVal2').innerText = `${val}ms`;
-        if (delayNode2) {
-            delayNode2.delayTime.setTargetAtTime(val / 1000, ctx2.currentTime, 0.05);
-        }
-    });
+        // 4. 音檔上傳處理
+        document.getElementById('audio-file').onchange = function(e) {
+            const file = e.target.files[0];
+            const url = URL.createObjectURL(file);
+            audioPlayer.src = url;
+        };
 
-    // Init
-    window.addEventListener('DOMContentLoaded', getDevices);
-</script>
+        // 5. 控制邏輯
+        playBtn.onclick = function() {
+            const action = audioPlayer.paused ? 'play' : 'pause';
+            const delay = parseInt(delaySlider.value);
 
+            // 發送指令給對方
+            if (conn) {
+                conn.send({ action: action });
+            }
+
+            // 本地執行
+            if (action === 'play') {
+                setTimeout(() => { audioPlayer.play(); }, delay);
+            } else {
+                audioPlayer.pause();
+            }
+        };
+
+        // 延遲數值顯示
+        delaySlider.oninput = function() {
+            delayVal.innerText = this.value;
+        };
+
+        // 點擊 ID 可複製
+        peerIdDisplay.onclick = () => {
+            navigator.clipboard.writeText(peerIdDisplay.innerText);
+            alert("ID 已複製");
+        };
+    </script>
 </body>
 </html>
