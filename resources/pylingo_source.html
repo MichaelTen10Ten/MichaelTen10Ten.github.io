@@ -3,56 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PyLingo Learning</title>
-    <link rel="stylesheet" href="css/pylingo_style.css">
+    <title>Pylingo - Python 學習</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card-container { position: relative; width: 300px; height: 450px; }
+        .card {
+            position: absolute; width: 100%; height: 100%;
+            background: #2d3748; color: white; border-radius: 15px;
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; padding: 20px; cursor: grab;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            user-select: none; touch-action: none;
+        }
+        .card-inner { font-family: 'Courier New', Courier, monospace; white-space: pre-wrap; }
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 15px; opacity: 0; pointer-events: none;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 2rem; font-weight: bold;
+        }
+        .overlay.true { background: rgba(72, 187, 120, 0.7); color: white; } /* 綠色 */
+        .overlay.false { background: rgba(245, 101, 101, 0.7); color: white; } /* 紅色 */
+        
+        #sidebar { transition: transform 0.3s ease-in-out; z-index: 50; }
+        .hidden-sidebar { transform: translateX(-100%); }
+    </style>
 </head>
-<body>
+<body class="bg-gray-900 min-h-screen flex flex-col items-center justify-center overflow-hidden">
 
-    <div id="sidebar" class="sidebar">
-        <button class="close-btn" onclick="toggleMenu()">×</button>
-        <div class="leaderboard-section">
-            <h3>龍虎榜 (Top Streaks)</h3>
-            <ul id="leaderboard-list"></ul>
+    <button id="menu-btn" class="absolute top-5 left-5 text-white text-3xl">☰</button>
+
+    <div id="sidebar" class="fixed top-0 left-0 w-80 h-full bg-gray-800 text-white p-6 hidden-sidebar shadow-2xl overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold">龍虎榜 🏆</h2>
+            <button id="close-btn" class="text-xl">✕</button>
         </div>
-        <div class="auth-section" id="auth-section">
-            <input type="text" id="username" placeholder="Username">
-            <input type="password" id="password" placeholder="Password">
-            <button onclick="handleAuth('login')">Login</button>
-            <button onclick="handleAuth('register')">Register</button>
-        </div>
-        <div id="user-status" class="hidden">
-            <p>Welcome, <span id="display-name"></span>!</p>
-            <button onclick="logout()">Logout</button>
+        
+        <div id="leaderboard" class="space-y-4 mb-10">
+            </div>
+
+        <div class="border-t border-gray-600 pt-6">
+            <h3 class="text-lg mb-4">帳戶管理</h3>
+            <div id="user-info" class="hidden mb-4 text-green-400"></div>
+            <input id="auth-user" type="text" placeholder="Username" class="w-full p-2 mb-2 bg-gray-700 rounded">
+            <input id="auth-pass" type="password" placeholder="Password" class="w-full p-2 mb-4 bg-gray-700 rounded">
+            <div class="flex gap-2">
+                <button onclick="handleAuth('login')" class="flex-1 bg-blue-600 p-2 rounded">登入</button>
+                <button onclick="handleAuth('register')" class="flex-1 bg-green-600 p-2 rounded">註冊</button>
+            </div>
         </div>
     </div>
 
-    <nav>
-        <button class="menu-icon" onclick="toggleMenu()">☰</button>
-        <h1 id="app-title">PyLingo</h1>
-    </nav>
+    <div id="main-menu" class="text-center">
+        <h1 class="text-4xl font-bold text-white mb-8">Pylingo</h1>
+        <div id="topic-list" class="grid grid-cols-1 gap-4">
+            </div>
+    </div>
 
-    <main id="main-content">
-        <div id="menu-screen" class="screen">
-            <h2>選擇題目</h2>
-            <div id="file-list" class="button-grid"></div>
+    <div id="game-ui" class="hidden flex flex-col items-center">
+        <div class="card-container mb-8" id="card-anchor">
+            </div>
+        <div class="flex gap-10">
+            <button onclick="swipeManual(false)" class="bg-red-500 hover:bg-red-600 text-white p-4 rounded-full w-16 h-16 shadow-lg">✕</button>
+            <button onclick="swipeManual(true)" class="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full w-16 h-16 shadow-lg">✓</button>
         </div>
+        <button onclick="location.reload()" class="mt-8 text-gray-400 underline">返回主選單</button>
+    </div>
 
-        <div id="game-screen" class="screen hidden">
-            <button class="back-btn" onclick="showMenu()">← Back</button>
-            <div class="card-container" id="card-container">
-                <div class="card" id="current-card">
-                    <p id="question-text"></p>
-                    <div class="overlay left">FALSE</div>
-                    <div class="overlay right">TRUE</div>
+    <script>
+        const API_BASE = "http://student.plkcastar.edu.hk:7861";
+        let questions = [];
+        let currentIndex = 0;
+        let currentUser = null;
+
+        // --- 初始化與 API 獲取 ---
+        async function init() {
+            try {
+                const res = await fetch(`${API_BASE}/pylingo`);
+                const files = await res.json();
+                const list = document.getElementById('topic-list');
+                files.forEach(file => {
+                    const name = file.replace('.txt', '');
+                    const btn = document.createElement('button');
+                    btn.className = "bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg text-lg transition";
+                    btn.innerText = name;
+                    btn.onclick = () => loadQuestions(file);
+                    list.appendChild(btn);
+                });
+                fetchLeaderboard();
+            } catch (e) { console.error("API Error", e); }
+        }
+
+        async function loadQuestions(filename) {
+            const res = await fetch(`${API_BASE}/pylingo/${filename}`);
+            questions = await res.json();
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('game-ui').classList.remove('hidden');
+            renderCard();
+        }
+
+        // --- 卡片渲染與邏輯 ---
+        function renderCard() {
+            if (currentIndex >= questions.length) {
+                alert("已完成所有題目！");
+                location.reload();
+                return;
+            }
+            const q = questions[currentIndex];
+            const container = document.getElementById('card-anchor');
+            container.innerHTML = `
+                <div class="card" id="active-card">
+                    <div class="overlay false">FALSE</div>
+                    <div class="overlay true">TRUE</div>
+                    <div class="card-inner text-sm font-mono">${q.question}</div>
+                    <div class="mt-4 text-xs text-gray-400 italic">${q.explain_chinese}</div>
                 </div>
-            </div>
-            <div class="controls">
-                <button class="btn-false" onclick="handleButtonClick(false)">✕ (False)</button>
-                <button class="btn-true" onclick="handleButtonClick(true)">O (True)</button>
-            </div>
-        </div>
-    </main>
+            `;
+            initTinderEffect();
+        }
 
-    <script src="js/pylingo_script.js"></script>
+        function initTinderEffect() {
+            const card = document.getElementById('active-card');
+            const trueOverlay = card.querySelector('.overlay.true');
+            const falseOverlay = card.querySelector('.overlay.false');
+            let startX = 0;
+            let currentX = 0;
+
+            card.onpointerdown = (e) => {
+                startX = e.clientX;
+                card.style.transition = 'none';
+                card.style.cursor = 'grabbing';
+            };
+
+            document.onpointermove = (e) => {
+                if (startX === 0) return;
+                currentX = e.clientX - startX;
+                const rotation = currentX / 10;
+                card.style.transform = `translateX(${currentX}px) rotate(${rotation}deg)`;
+                
+                // 顯示半透明顏色
+                if (currentX > 0) {
+                    trueOverlay.style.opacity = Math.min(currentX / 100, 1);
+                    falseOverlay.style.opacity = 0;
+                } else {
+                    falseOverlay.style.opacity = Math.min(Math.abs(currentX) / 100, 1);
+                    trueOverlay.style.opacity = 0;
+                }
+            };
+
+            document.onpointerup = () => {
+                if (startX === 0) return;
+                const threshold = 120;
+                if (currentX > threshold) {
+                    checkAnswer(true);
+                } else if (currentX < -threshold) {
+                    checkAnswer(false);
+                } else {
+                    // 彈回原位
+                    card.style.transition = 'transform 0.3s ease';
+                    card.style.transform = 'translateX(0) rotate(0)';
+                    trueOverlay.style.opacity = 0;
+                    falseOverlay.style.opacity = 0;
+                }
+                startX = 0;
+                card.style.cursor = 'grab';
+            };
+        }
+
+        function checkAnswer(userAnswer) {
+            const q = questions[currentIndex];
+            if (userAnswer === q.answer) {
+                // 正確：滑走
+                const card = document.getElementById('active-card');
+                card.style.transition = 'transform 0.5s ease, opacity 0.5s';
+                card.style.transform = `translateX(${userAnswer ? 500 : -500}px) rotate(${userAnswer ? 45 : -45}deg)`;
+                card.style.opacity = 0;
+                setTimeout(() => {
+                    currentIndex++;
+                    renderCard();
+                    if(currentUser) updateScore(1); // 如果登入了就加分
+                }, 300);
+            } else {
+                // 錯誤：彈回
+                alert(`答錯了！\n${q.explain_chinese}\n${q.explain_english}`);
+                const card = document.getElementById('active-card');
+                card.style.transition = 'transform 0.3s ease';
+                card.style.transform = 'translateX(0) rotate(0)';
+                card.querySelector('.overlay.true').style.opacity = 0;
+                card.querySelector('.overlay.false').style.opacity = 0;
+            }
+        }
+
+        function swipeManual(dir) {
+            checkAnswer(dir);
+        }
+
+        // --- 龍虎榜與帳戶 ---
+        async function fetchLeaderboard() {
+            const res = await fetch(`${API_BASE}/pylingodata/streaks`);
+            const data = await res.json();
+            const list = document.getElementById('leaderboard');
+            list.innerHTML = data.sort((a,b) => b.score - a.score).map((u, i) => `
+                <div class="flex justify-between bg-gray-700 p-3 rounded">
+                    <span>${i+1}. ${u.username}</span>
+                    <span class="text-yellow-400">${u.score} pts</span>
+                </div>
+            `).join('');
+        }
+
+        async function handleAuth(type) {
+            const u = document.getElementById('auth-user').value;
+            const p = document.getElementById('auth-pass').value;
+            const res = await fetch(`${API_BASE}/pylingodata/${type}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `username=${u}&password=${p}`
+            });
+            const data = await res.json();
+            
+            if (data.detail === "True" || data.message?.includes("success")) {
+                currentUser = { username: u, password: p };
+                document.getElementById('user-info').innerText = `你好, ${u}!`;
+                document.getElementById('user-info').classList.remove('hidden');
+                alert("操作成功！");
+            } else {
+                alert(data.detail || "出錯了");
+            }
+        }
+
+        // --- 側邊欄控制 ---
+        document.getElementById('menu-btn').onclick = () => document.getElementById('sidebar').classList.remove('hidden-sidebar');
+        document.getElementById('close-btn').onclick = () => document.getElementById('sidebar').classList.add('hidden-sidebar');
+
+        init();
+    </script>
 </body>
 </html>
