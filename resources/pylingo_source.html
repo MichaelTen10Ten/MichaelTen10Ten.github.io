@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyLingo Learning</title>
+    <link rel="stylesheet" href="css/pylingo_style.css">
+</head>
+<body>
+
+    <div id="sidebar" class="sidebar">
+        <button class="close-btn" onclick="toggleMenu()">×</button>
+        <div class="leaderboard-section">
+            <h3>龍虎榜 (Top Streaks)</h3>
+            <ul id="leaderboard-list"></ul>
+        </div>
+        <div class="auth-section" id="auth-section">
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="handleAuth('login')">Login</button>
+            <button onclick="handleAuth('register')">Register</button>
+        </div>
+        <div id="user-status" class="hidden">
+            <p>Welcome, <span id="display-name"></span>!</p>
+            <button onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <nav>
+        <button class="menu-icon" onclick="toggleMenu()">☰</button>
+        <h1 id="app-title">PyLingo</h1>
+    </nav>
+
+    <main id="main-content">
+        <div id="menu-screen" class="screen">
+            <h2>選擇題目</h2>
+            <div id="file-list" class="button-grid"></div>
+        </div>
+
+        <div id="game-screen" class="screen hidden">
+            <button class="back-btn" onclick="showMenu()">← Back</button>
+            <div class="card-container" id="card-container">
+                <div class="card" id="current-card">
+                    <p id="question-text"></p>
+                    <div class="overlay left">FALSE</div>
+                    <div class="overlay right">TRUE</div>
+                </div>
+            </div>
+            <div class="controls">
+                <button class="btn-false" onclick="handleButtonClick(false)">✕ (False)</button>
+                <button class="btn-true" onclick="handleButtonClick(true)">O (True)</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/pylingo_script.js"></script>
+</body>
+</html>
