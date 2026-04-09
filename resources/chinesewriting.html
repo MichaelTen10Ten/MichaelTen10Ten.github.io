@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>難忘的校園活動 - 語音寫作遊戲 (NVIDIA Gemma-3)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans HK', sans-serif;
+            background-color: #f0fdfa;
+            user-select: none;
+        }
+        /* 顏色編碼 */
+        .color-who { background-color: #bfdbfe; border-color: #3b82f6; color: #1e3a8a; } 
+        .color-action { background-color: #bbf7d0; border-color: #22c55e; color: #14532d; } 
+        .color-what { background-color: #fed7aa; border-color: #f97316; color: #7c2d12; } 
+        .color-feel { background-color: #fecaca; border-color: #ef4444; color: #7f1d1d; } 
+        
+        .word-card {
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            border-width: 4px;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .word-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .word-card:active {
+            transform: scale(0.95);
+        }
+        .pulse-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 relative">
+
+    <div id="login-screen" class="max-w-md mx-auto mt-10 md:mt-20 bg-white rounded-3xl shadow-2xl overflow-hidden border-8 border-teal-400 p-8 transform transition-all relative">
+        <button onclick="requireTeacherPassword()" class="absolute top-5 right-5 text-teal-200 hover:text-teal-600 transition-colors" title="老師專區">
+            <i class="fas fa-lock text-3xl"></i>
+        </button>
+        <div class="text-center mb-8 mt-4">
+            <h1 class="text-4xl font-black text-teal-600 mb-2"><i class="fas fa-school mr-2"></i>歡迎來到</h1>
+            <h2 class="text-3xl font-bold text-orange-500">校園活動寫作班</h2>
+            <p class="text-gray-500 mt-4 text-lg">輸入資料，準備出發囉！</p>
+        </div>
+        <div class="space-y-6">
+            <div>
+                <label class="block text-xl font-bold text-gray-700 mb-2"><i class="fas fa-users text-blue-400 mr-2"></i>班別 (例如：3A)</label>
+                <input type="text" id="input-class" class="w-full text-2xl p-4 border-4 border-blue-200 rounded-2xl focus:outline-none focus:border-blue-500 text-center uppercase" placeholder="3A">
+            </div>
+            <div>
+                <label class="block text-xl font-bold text-gray-700 mb-2"><i class="fas fa-list-ol text-green-400 mr-2"></i>學號</label>
+                <input type="number" id="input-id" class="w-full text-2xl p-4 border-4 border-green-200 rounded-2xl focus:outline-none focus:border-green-500 text-center" placeholder="1">
+            </div>
+            <div>
+                <label class="block text-xl font-bold text-gray-700 mb-2"><i class="fas fa-user-edit text-purple-400 mr-2"></i>中文姓名</label>
+                <input type="text" id="input-name" class="w-full text-2xl p-4 border-4 border-purple-200 rounded-2xl focus:outline-none focus:border-purple-500 text-center" placeholder="陳大文">
+            </div>
+            <button onclick="startGame()" class="w-full mt-8 py-4 bg-teal-500 hover:bg-teal-600 text-white text-2xl font-black rounded-full shadow-lg transform hover:scale-105 transition-all border-4 border-teal-700">
+                🚀 開始遊戲！
+            </button>
+        </div>
+    </div>
+
+    <div id="app-container" class="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border-8 border-teal-500 hidden relative">
+        <div class="bg-teal-500 p-4 text-white flex flex-wrap justify-between items-center gap-4">
+            <h1 class="text-3xl font-black tracking-wider"><i class="fas fa-trophy mr-2"></i>難忘的校園活動</h1>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="switchTab('basic')" id="btn-basic" class="px-4 py-2 bg-yellow-400 text-yellow-900 font-bold rounded-full border-4 border-yellow-500 hover:bg-yellow-300">⭐ 基礎篇</button>
+                <button onclick="switchTab('advanced')" id="btn-advanced" class="px-4 py-2 bg-white text-teal-700 font-bold rounded-full border-4 border-white hover:bg-gray-100">🚀 進階篇</button>
+                <button onclick="backToHome()" class="px-4 py-2 bg-red-400 text-white font-bold rounded-full border-4 border-red-500 hover:bg-red-500 ml-4"><i class="fas fa-home"></i> 離開</button>
+            </div>
+        </div>
+
+        <div id="tab-basic" class="p-6 md:p-10 block">
+            <div class="mb-8 bg-blue-50 p-6 rounded-2xl border-4 border-blue-200">
+                <h2 class="text-2xl font-bold text-blue-800 mb-2"><i class="fas fa-volume-up text-blue-500 mr-2"></i>任務一：聽一聽，點選詞語排成句子</h2>
+                <p class="text-lg text-blue-600">順序：誰(藍) ➡️ 動作(綠) ➡️ 什麼(橙)</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                <div class="col-span-1 md:col-span-2 bg-gray-50 p-6 rounded-2xl border-4 border-dashed border-gray-300">
+                    <h3 class="text-xl font-bold mb-4 text-gray-700">詞語寶庫 (點擊聽聲音)</h3>
+                    <div class="flex flex-wrap gap-4" id="vocab-container-basic"></div>
+                </div>
+                <div class="col-span-1 bg-orange-50 p-6 rounded-2xl border-4 border-orange-300 flex flex-col items-center justify-center min-h-[300px]">
+                    <h3 class="text-xl font-bold mb-4 text-orange-800">我的句子</h3>
+                    <div id="sentence-builder" class="flex flex-col gap-3 w-full min-h-[150px] bg-white p-4 rounded-xl border-2 border-orange-200"></div>
+                    <div class="mt-4 flex flex-wrap gap-2 justify-center">
+                        <button onclick="speakSentence('sentence-builder')" class="px-6 py-3 bg-blue-500 text-white text-xl font-bold rounded-full hover:bg-blue-600 shadow-lg"><i class="fas fa-play mr-2"></i>讀出句子</button>
+                        <button onclick="clearSentence('sentence-builder')" class="px-4 py-3 bg-red-400 text-white text-xl font-bold rounded-full hover:bg-red-500 shadow-lg"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-advanced" class="p-6 md:p-10 hidden">
+            <div class="mb-8 bg-purple-50 p-6 rounded-2xl border-4 border-purple-200 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-purple-800 mb-2"><i class="fas fa-microphone-alt text-purple-500 mr-2"></i>任務二：語音魔法搜詞</h2>
+                    <p class="text-lg text-purple-600">按下麥克風說出詞語，或點擊扭蛋獲取靈感！</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button id="btn-inspire" onclick="getInspiration()" class="px-6 py-3 bg-gradient-to-r from-pink-400 to-purple-500 text-white rounded-full font-bold shadow-lg hover:scale-105 transition-transform text-lg border-2 border-white">
+                        ✨ 靈感扭蛋
+                    </button>
+                    <button id="btn-mic" onclick="startVoiceRecognition()" class="w-20 h-20 bg-red-500 rounded-full text-white text-3xl shadow-xl border-4 border-red-700 hover:bg-red-600 transition-all flex justify-center items-center">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 p-6 rounded-2xl border-4 border-dashed border-gray-300 mb-8 min-h-[120px]">
+                 <h3 class="text-xl font-bold mb-4 text-gray-700">語音與 AI 搜詞結果</h3>
+                 <div id="voice-result-container" class="flex flex-wrap gap-4">
+                     <p class="text-gray-400 italic">還未搜尋詞語...</p>
+                 </div>
+            </div>
+
+            <div class="bg-indigo-50 p-6 rounded-2xl border-4 border-indigo-300">
+                <h3 class="text-2xl font-bold mb-4 text-indigo-800"><i class="fas fa-train mr-2"></i>段落小火車</h3>
+                <div id="paragraph-builder" class="flex flex-wrap gap-3 min-h-[150px] bg-white p-6 rounded-xl border-2 border-indigo-200 text-2xl leading-loose"></div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <button onclick="speakSentence('paragraph-builder')" class="px-6 py-3 bg-green-500 text-white text-xl font-bold rounded-full hover:bg-green-600 shadow-lg"><i class="fas fa-bullhorn mr-2"></i>朗讀段落</button>
+                    <button id="btn-expand" onclick="expandSentence()" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xl font-bold rounded-full shadow-lg hover:scale-105 transition-transform"><i class="fas fa-magic mr-2"></i>✨ 魔法擴句</button>
+                    <button onclick="clearSentence('paragraph-builder')" class="px-4 py-3 bg-red-400 text-white text-xl font-bold rounded-full hover:bg-red-500 shadow-lg"><i class="fas fa-trash"></i></button>
+                </div>
+                
+                <div id="ai-result-box" class="mt-6 bg-yellow-100 p-5 rounded-xl border-4 border-yellow-300 hidden transition-all">
+                    <h4 class="text-lg font-bold text-yellow-800 mb-2"><i class="fas fa-star text-yellow-500 mr-2"></i>AI 魔法加工後的句子：</h4>
+                    <p id="ai-expanded-text" class="text-2xl font-bold text-gray-800 leading-relaxed"></p>
+                    <button onclick="speak(document.getElementById('ai-expanded-text').innerText)" class="mt-3 px-4 py-2 bg-yellow-400 text-yellow-900 rounded-lg font-bold shadow hover:bg-yellow-500"><i class="fas fa-play mr-2"></i>聽聽看</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="teacher-dashboard" class="max-w-6xl mx-auto bg-gray-800 rounded-3xl shadow-xl overflow-hidden border-8 border-purple-500 hidden p-6 md:p-10 text-white min-h-[600px] mt-10 relative">
+        <div class="flex justify-between items-center mb-8 border-b-2 border-gray-600 pb-4">
+            <h2 class="text-3xl font-bold text-purple-400"><i class="fas fa-laptop-code mr-2"></i>全班學習動態監控中心</h2>
+            <div class="flex gap-4 items-center">
+                <span class="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center"><i class="fas fa-check-circle mr-1"></i>已解鎖</span>
+                <button onclick="exitTeacherDashboard()" class="px-5 py-2 bg-gray-600 hover:bg-gray-500 rounded-full font-bold transition-colors border-2 border-gray-400"><i class="fas fa-sign-out-alt mr-2"></i>登出後台</button>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-gray-700 p-6 rounded-2xl border-2 border-gray-600">
+                <h3 class="text-xl font-bold mb-4 text-yellow-400"><i class="fas fa-list-ul mr-2"></i>即時操作動態</h3>
+                <ul id="teacher-log" class="space-y-2 h-96 overflow-y-auto font-mono text-sm text-green-300 pr-2">
+                    <li>[系統] 紀錄系統已啟動...等待學生操作</li>
+                </ul>
+            </div>
+            <div class="bg-gray-700 p-6 rounded-2xl border-2 border-gray-600">
+                <h3 class="text-xl font-bold mb-4 text-blue-400"><i class="fas fa-pen-fancy mr-2"></i>學生成果紀錄 (句子)</h3>
+                <ul id="teacher-sentences" class="space-y-4 h-96 overflow-y-auto text-lg pr-2"></ul>
+            </div>
+        </div>
+    </div>
+    
+    <div id="password-modal" class="absolute inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center hidden backdrop-blur-sm rounded-2xl">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full border-8 border-purple-500 transform transition-all text-center relative mt-20">
+            <h3 class="text-3xl font-black text-purple-800 mb-4"><i class="fas fa-lock text-purple-500 mr-2"></i>老師專區</h3>
+            <p class="text-gray-600 font-bold mb-6 text-lg">請輸入管理密碼</p>
+            <input type="password" id="teacher-password-input" class="w-full text-4xl p-4 border-4 border-purple-200 rounded-2xl focus:outline-none focus:border-purple-500 text-center mb-6 tracking-[0.5em]" placeholder="****">
+            <div class="flex justify-center gap-4">
+                <button onclick="closePasswordModal()" class="w-1/2 py-3 bg-gray-200 text-gray-700 text-xl font-bold rounded-xl hover:bg-gray-300 transition border-b-4 border-gray-300">取消</button>
+                <button onclick="verifyTeacherPassword()" class="w-1/2 py-3 bg-purple-500 text-white text-xl font-bold rounded-xl hover:bg-purple-600 transition border-b-4 border-purple-700 shadow-lg">解鎖</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-full shadow-2xl hidden opacity-0 transition-opacity duration-300 z-50 text-xl font-bold"></div>
+
+    <script>
+        // === 密碼設定 ===
+        const TEACHER_PASSWORD = "1234"; 
+
+        // === 詞彙資料庫 ===
+        const vocabDB = [
+            { word: '我', type: 'who', icon: '👦' }, { word: '同學', type: 'who', icon: '👫' }, { word: '老師', type: 'who', icon: '🧑‍🏫' },
+            { word: '參加', type: 'action', icon: '🏃‍♂️' }, { word: '跑', type: 'action', icon: '💨' }, { word: '拿', type: 'action', icon: '🙌' }, { word: '歡呼', type: 'action', icon: '📣' },
+            { word: '陸運會', type: 'what', icon: '🏟️' }, { word: '操場', type: 'what', icon: '🏫' }, { word: '接力賽', type: 'what', icon: '🏃‍♀️' }, { word: '獎牌', type: 'what', icon: '🥇' },
+            { word: '開心', type: 'feel', icon: '😄' }, { word: '緊張', type: 'feel', icon: '😬' }, { word: '難忘', type: 'feel', icon: '🥹' }
+        ];
+
+        let studentInfo = { className: '', id: '', name: '' };
+        let studentDisplayName = "未知學生";
+
+        window.onload = () => renderBasicVocab();
+
+        function startGame() {
+            const className = document.getElementById('input-class').value.trim().toUpperCase();
+            const id = document.getElementById('input-id').value.trim();
+            const name = document.getElementById('input-name').value.trim();
+
+            if (!className || !id || !name) {
+                showToast("請填妥所有資料喔！"); return;
+            }
+            studentInfo = { className, id, name };
+            studentDisplayName = `${className} (${id}) ${name}`;
+
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            switchTab('basic'); 
+            speak(`歡迎進入校園活動寫作班，${name}！`);
+            logToTeacher("學生已登入系統");
+        }
+
+        function backToHome() {
+            logToTeacher("學生結束操作，登出系統");
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('input-name').value = '';
+            clearSentence('sentence-builder');
+            clearSentence('paragraph-builder');
+            document.getElementById('voice-result-container').innerHTML = '<p class="text-gray-400 italic">還未搜尋詞語...</p>';
+            document.getElementById('ai-result-box').classList.add('hidden');
+        }
+
+        function switchTab(tabId) {
+            ['basic', 'advanced'].forEach(id => document.getElementById(`tab-${id}`).classList.add('hidden'));
+            document.getElementById('btn-basic').className = "px-4 py-2 bg-yellow-400 text-yellow-900 font-bold rounded-full border-4 border-yellow-500 hover:bg-yellow-300";
+            document.getElementById('btn-advanced').className = "px-4 py-2 bg-white text-teal-700 font-bold rounded-full border-4 border-white hover:bg-gray-100";
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            
+            if(tabId === 'basic') document.getElementById('btn-basic').classList.replace('bg-white', 'bg-yellow-400');
+            if(tabId === 'advanced') {
+                document.getElementById('btn-advanced').classList.replace('bg-white', 'bg-teal-200');
+                document.getElementById('btn-advanced').classList.replace('border-white', 'border-teal-500');
+            }
+        }
+
+        // === 老師後台邏輯 ===
+        function requireTeacherPassword() {
+            document.getElementById('password-modal').classList.remove('hidden');
+            document.getElementById('teacher-password-input').value = '';
+            document.getElementById('teacher-password-input').focus();
+        }
+        function closePasswordModal() { document.getElementById('password-modal').classList.add('hidden'); }
+        function verifyTeacherPassword() {
+            if (document.getElementById('teacher-password-input').value === TEACHER_PASSWORD) {
+                closePasswordModal();
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('teacher-dashboard').classList.remove('hidden');
+            } else {
+                showToast("❌ 密碼錯誤！");
+            }
+        }
+        document.getElementById('teacher-password-input').addEventListener('keypress', e => { if (e.key === 'Enter') verifyTeacherPassword(); });
+        function exitTeacherDashboard() {
+            document.getElementById('teacher-dashboard').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+        }
+
+        // === 介面與核心邏輯 ===
+        function renderBasicVocab() {
+            const container = document.getElementById('vocab-container-basic');
+            container.innerHTML = '';
+            vocabDB.filter(v => ['who', 'action', 'what'].includes(v.type)).forEach(item => {
+                container.appendChild(createWordCard(item, 'sentence-builder'));
+            });
+        }
+
+        function createWordCard(item, targetContainerId) {
+            const btn = document.createElement('div');
+            btn.className = `word-card color-${item.type} p-4 flex flex-col items-center justify-center w-28 h-28`;
+            btn.innerHTML = `<span class="text-3xl mb-1">${item.icon}</span><span class="text-xl font-bold">${item.word}</span>`;
+            btn.onclick = () => {
+                speak(item.word); addToSentence(item, targetContainerId); logToTeacher(`聽了並選擇了：[${item.word}]`);
+            };
+            return btn;
+        }
+
+        function addToSentence(item, containerId) {
+            const container = document.getElementById(containerId);
+            const wordEl = document.createElement('div');
+            wordEl.className = `inline-flex items-center gap-2 color-${item.type} px-4 py-2 rounded-xl text-2xl font-bold word-card w-full md:w-auto`;
+            wordEl.innerHTML = `<span>${item.icon}</span> <span>${item.word}</span>`;
+            wordEl.dataset.word = item.word;
+            wordEl.onclick = function() { this.remove(); logToTeacher(`移除了：[${item.word}]`); };
+            container.appendChild(wordEl);
+            checkAndSendSentence(containerId);
+        }
+
+        function clearSentence(id) { const el = document.getElementById(id); if(el) el.innerHTML = ''; }
+
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const cleanText = text.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{1F1E0}-\u{1F1FF}\u{200D}\u{FE0F}]/gu, '');
+                const u = new SpeechSynthesisUtterance(cleanText);
+                u.lang = 'zh-HK'; u.rate = 0.8; u.pitch = 1.1;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        function speakSentence(id) {
+            const words = Array.from(document.getElementById(id).children).map(e => e.dataset.word).join('');
+            if(words) { speak(words); logToTeacher(`朗讀了：${words}`); } else { speak("請先選擇詞語"); }
+        }
+
+        function startVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) { showToast("瀏覽器不支援語音。"); return; }
+            
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'zh-HK'; recognition.maxAlternatives = 1;
+            const micBtn = document.getElementById('btn-mic');
+            
+            recognition.onstart = () => { micBtn.classList.add('pulse-animation'); micBtn.classList.replace('bg-red-500', 'bg-green-500'); };
+            recognition.onresult = (e) => { processVoiceResult(e.results[0][0].transcript); };
+            recognition.onerror = () => showToast("未能聽清楚，請再試一次！");
+            recognition.onend = () => { micBtn.classList.remove('pulse-animation'); micBtn.classList.replace('bg-green-500', 'bg-red-500'); };
+            try { recognition.start(); } catch (e) { showToast("請允許麥克風權限"); }
+        }
+
+        function processVoiceResult(text) {
+            const container = document.getElementById('voice-result-container');
+            container.innerHTML = ''; 
+            let matched = vocabDB.filter(v => text.includes(v.word));
+            if (matched.length === 0) matched = [{ word: text, type: 'what', icon: '📝' }];
+            matched.forEach(item => container.appendChild(createWordCard(item, 'paragraph-builder')));
+            speak("為你找到這些詞語");
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg; toast.classList.remove('hidden', 'opacity-0');
+            setTimeout(() => { toast.classList.add('opacity-0'); setTimeout(() => toast.classList.add('hidden'), 300); }, 3000);
+        }
+
+        function logToTeacher(msg) {
+            if(studentDisplayName === "未知學生") return;
+            const time = new Date().toLocaleTimeString('zh-HK', { hour12: false });
+            const li = document.createElement('li');
+            li.innerHTML = `<span class="text-gray-400">[${time}]</span> <span class="text-white">${studentDisplayName}</span>: ${msg}`;
+            document.getElementById('teacher-log').prepend(li);
+        }
+
+        function checkAndSendSentence(id) {
+            const wordEls = Array.from(document.getElementById(id).children);
+            if (wordEls.length >= 3) {
+                const text = wordEls.map(e => e.dataset.word).join('');
+                const li = document.createElement('li');
+                li.className = "bg-gray-600 p-3 rounded-lg border-l-4 border-purple-400 flex justify-between items-center";
+                li.innerHTML = `<span>🧑‍🎓 ${studentDisplayName}：<br><strong class="text-2xl text-yellow-300">${text}</strong></span>`;
+                document.getElementById('teacher-sentences').prepend(li);
+            }
+        }
+
+        async function fetchWithRetry(url, options, retries = 3) {
+            const delays = [1000, 2000, 4000];
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(`API 錯誤: ${err.error?.message || response.status}`);
+                    }
+                    return await response.json();
+                } catch (e) {
+                    if (i === retries - 1) throw e;
+                    await new Promise(res => setTimeout(res, delays[i]));
+                }
+            }
+        }
+
+        const localAIData = {
+            // 靈感扭蛋：嚴格按照 [誰],[動作],[什麼] 的邏輯組合
+            // 格式: "詞語,Emoji|詞語,Emoji|詞語,Emoji"
+            inspirations: [
+                "運動員,🏃‍♂️|起跑,💨|接力賽,🏃‍♀️", 
+                "啦啦隊,👫|揮動,🙌|綵帶,🎀",
+                "校長,🧑‍🏫|頒發,🎖️|金牌,🥇",
+                "攝影師,📸|捕捉,📷|笑容,😊",
+                "小讀者,👦|描寫,✍️|陸運會,🏟️",
+                "全校同學,🏫|歡呼,📣|加油聲,💪"
+            ],
+            // 擴句範本：將學生拼好的 [誰+動作+什麼] 嵌入生動的環境描述中
+            openers: [
+                "在熱鬧的操場上，我看到", 
+                "看！陽光下，", 
+                "比賽開始了，", 
+                "全場安靜下來，接著", 
+                "我很興奮地看著"
+            ],
+            closers: [
+                "，場面非常壯觀！✨", 
+                "，大家都興奮得跳了起來！👏", 
+                "，這真是精彩的一幕。❤️", 
+                "，大家都為他加油打氣！", 
+                "，這件事令我十分難忘。"
+            ]
+        };
+
+        // ✨ 靈感扭蛋
+        async function getInspiration() {
+            const btn = document.getElementById('btn-inspire');
+            const originalHtml = btn.innerHTML; 
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>搜尋靈感中...'; 
+            btn.disabled = true;
+
+            // 模擬 800ms 的「施法時間」
+            setTimeout(() => {
+                const randomIndex = Math.floor(Math.random() * localAIData.inspirations.length);
+                const result = localAIData.inspirations[randomIndex];
+                const container = document.getElementById('voice-result-container'); 
+                container.innerHTML = ''; 
+                
+                const items = result.split('|');
+                const types = ['who', 'action', 'what']; // 強制指定類型以匹配顏色
+
+                items.forEach((w, index) => {
+                    const parts = w.split(',');
+                    if(parts.length === 2) {
+                        const item = { 
+                            word: parts[0].trim(), 
+                            type: types[index], // 按照索引分配類型 (0:who, 1:action, 2:what)
+                            icon: parts[1].trim() 
+                        };
+                        container.appendChild(createWordCard(item, 'paragraph-builder'));
+                    }
+                });
+
+                btn.innerHTML = originalHtml; 
+                btn.disabled = false;
+                speak("魔法扭蛋為你準備了三個新詞語！"); 
+                logToTeacher(`獲取了靈感組合：${result}`);
+            }, 800);
+        }
+
+        // ✨ 魔法擴句
+        function expandSentence() {
+            // 獲取目前拼出的所有詞語
+            const words = Array.from(document.getElementById('paragraph-builder').children)
+                            .map(e => e.dataset.word).join('');
+            
+            if(!words) {
+                showToast("請先用詞語積木拼出句子喔！");
+                return;
+            }
+            
+            const btn = document.getElementById('btn-expand');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>✨ 施法中...'; 
+            btn.disabled = true;
+
+            setTimeout(() => {
+                const randomOpener = localAIData.openers[Math.floor(Math.random() * localAIData.openers.length)];
+                const randomCloser = localAIData.closers[Math.floor(Math.random() * localAIData.closers.length)];
+                
+                // 最終組合
+                const result = `${randomOpener}${words}${randomCloser}`;
+                
+                btn.innerHTML = '<i class="fas fa-magic mr-2"></i>✨ 魔法擴句'; 
+                btn.disabled = false;
+                
+                document.getElementById('ai-result-box').classList.remove('hidden');
+                document.getElementById('ai-expanded-text').innerText = result;
+                
+                speak(result); 
+                logToTeacher(`本地擴寫結果：${result}`);
+            }, 600);
+        }
+    </script>
+</body>
+</html>
