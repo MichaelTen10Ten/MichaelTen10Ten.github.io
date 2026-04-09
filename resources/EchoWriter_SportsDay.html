@@ -1,201 +1,201 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>靈感語音筆 EchoWriter - 陸運會寫作版</title>
+    <title>靈感語音筆 - 寫作助手</title>
     <style>
-        :root { --primary: #4a90e2; --secondary: #f8fafc; --accent: #ff6b6b; --success: #27ae60; }
-        body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; min-height: 100vh; margin: 0; }
-        .container { background: white; width: 100%; max-width: 550px; border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); padding: 40px; text-align: center; height: fit-content; }
-        h1 { color: var(--primary); margin: 0 0 10px 0; font-size: 1.8rem; }
-        p.subtitle { color: #64748b; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.5; }
-        
-        /* 麥克風按鈕 */
-        #mic-btn { background: var(--primary); border: none; width: 90px; height: 90px; border-radius: 50%; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 8px 20px rgba(74,144,226,0.3); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 15px; }
-        #mic-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(74,144,226,0.4); }
-        #mic-btn.listening { background: var(--accent); animation: pulse 1.5s infinite; }
-        
+        :root {
+            --primary: #4a90e2;
+            --secondary: #f8fafc;
+            --accent: #ff6b6b;
+            --success: #27ae60;
+            --text-main: #1e293b;
+        }
+
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            width: 100%;
+            max-width: 550px;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin: 10px 0 25px;
+        }
+
+        #mic-btn {
+            background: var(--primary);
+            border: none;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 8px 20px rgba(74, 144, 226, 0.3);
+            outline: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #mic-btn.listening {
+            background: var(--accent);
+            animation: pulse 1.5s infinite;
+        }
+
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255,107,107,0.7); }
-            70% { box-shadow: 0 0 0 25px rgba(255,107,107,0); }
-            100% { box-shadow: 0 0 0 0 rgba(255,107,107,0); }
-        }
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7);
+            }
 
-        #status { margin-bottom: 20px; font-weight: 600; color: #334155; height: 24px; font-size: 1.1rem; }
-        
-        /* 結果呈現區 */
-        #result-area { margin-top: 10px; text-align: left; }
-        .card { background: var(--secondary); padding: 18px; border-radius: 16px; margin-bottom: 15px; border-left: 6px solid var(--primary); position: relative; animation: slideIn 0.4s ease; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .card h3 { margin: 0 0 10px 0; font-size: 1.05rem; color: #1e293b; display: flex; align-items: center; }
-        .card p { margin: 0; color: #475569; line-height: 1.7; font-size: 1rem; }
-        
-        /* 標籤樣式 */
-        .tag { display: inline-block; background: #fff; border: 1px solid #e2e8f0; padding: 4px 10px; border-radius: 8px; font-size: 0.9rem; margin: 4px 4px 4px 0; cursor: pointer; transition: 0.2s; }
-        .tag:hover { background: var(--primary); color: white; border-color: var(--primary); }
+            70% {
+                box-shadow: 0 0 0 20px rgba(255, 107, 107, 0);
+            }
 
-        .copy-hint { font-size: 0.75rem; color: #94a3b8; margin-top: 8px; display: block; }
-        
-        /* 提示區域 */
-        .hint-box { margin-top: 20px; padding: 15px; background: #f1f5f9; border-radius: 12px; font-size: 0.85rem; color: #64748b; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h1>🖋️ 靈感語音筆</h1>
-    <p class="subtitle">點擊下方麥克風，說出你想寫的主題<br>例如：「起跑」、「接力比賽」、「生氣」、「下雨」</p>
-    
-    <button id="mic-btn">
-        <svg viewBox="0 0 24 24" width="45" height="45" fill="white"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
-    </button>
-    
-    <div id="status">準備就緒</div>
-    
-    <div id="result-area"></div>
-
-    <div class="hint-box">
-        💡 <b>小技巧：</b>點擊下方的詞彙標籤或句子，可以自動複製喔！
-    </div>
-</div>
-
-<script>
-    // 寫作資料庫：整合通用與陸運會場景
-    const db = {
-        "起跑": {
-            verbs: ["屏息凝神", "蓄勢待發", "緊盯", "躬身"],
-            sensory: ["裁判的鳴槍聲劃破寧靜", "心臟劇烈敲擊著胸腔", "指尖觸碰跑道的冰冷感"],
-            rhetoric: "他蹲在起跑線上，像一張拉滿的弓，隨時準備射出。"
-        },
-        "接力": {
-            verbs: ["傳遞", "接應", "默契", "風馳電掣"],
-            sensory: ["手心傳來接力棒的溫熱", "後方傳來的急促腳步聲", "交接那一刻的嘶吼聲"],
-            rhetoric: "那根紅白相間的木棒，承載著全班同學的期待與榮譽。"
-        },
-        "衝刺": {
-            verbs: ["奮力", "反超", "咬緊牙關", "狂奔"],
-            sensory: ["肺部像火在燒", "雙腿如灌了鉛般沉重", "終點線在視線中劇烈晃動"],
-            rhetoric: "他最後的爆發，像是一頭覺醒的獵豹，在草地上留下一道殘影。"
-        },
-        "加油": {
-            verbs: ["吶喊", "助威", "震耳欲聾", "揮舞"],
-            sensory: ["喉嚨喊到沙啞", "鼓聲像雷鳴般隆隆作響", "看台上五顏六色的班旗"],
-            rhetoric: "全場的加油聲此起彼落，把操場的氣氛燃點到了最高溫。"
-        },
-        "失敗": {
-            verbs: ["跌倒", "懊悔", "垂頭喪氣", "不甘"],
-            sensory: ["膝蓋滲出的鮮紅血漬", "淚水在眼眶裡打轉", "沉重的腳步拖在塑膠跑道上"],
-            rhetoric: "雖然終點線近在咫尺，但那一刻，它卻顯得比地平線還要遙遠。"
-        },
-        "生氣": {
-            verbs: ["咆哮", "怒火中燒", "拍案而起", "咬牙切齒"],
-            sensory: ["呼吸變得急促", "血液湧向腦門", "拳頭微微顫抖"],
-            rhetoric: "他的怒火像沉寂已久的火山，瞬間爆發了。"
-        },
-        "下雨": {
-            verbs: ["傾瀉", "敲擊", "漫延", "洗刷"],
-            sensory: ["空氣中瀰漫著泥土味", "滴答滴答的節奏感", "冰冷的雨水滲進衣領"],
-            rhetoric: "雨絲如千萬條斷了線的珍珠，斷斷續續地垂下。"
-        },
-        "開心": {
-            verbs: ["雀躍", "眉開眼笑", "神采飛揚"],
-            sensory: ["嘴角不由自主地上揚", "步履變得輕盈"],
-            rhetoric: "他的心像喝了汽水一樣，不停地冒出喜悅的泡泡。"
-        },
-        "天氣": {
-            verbs: ["炙烤", "蒸騰", "籠罩", "揮灑"],
-            sensory: ["柏油路面冒出的熱氣", "汗水浸透了運動背心", "刺眼的陽光讓人睜不開眼"],
-            rhetoric: "太陽公公今天格外慷慨，把所有的熱情都灑在參賽者的脊背上。"
-        }
-    };
-
-    const micBtn = document.getElementById('mic-btn');
-    const status = document.getElementById('status');
-    const resultArea = document.getElementById('result-area');
-
-    // 初始化語音辨識
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
-    if (!SpeechRecognition) {
-        status.textContent = "您的瀏覽器不支援語音辨識，請使用 Chrome。";
-    } else {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'zh-TW';
-
-        micBtn.onclick = () => {
-            recognition.start();
-            micBtn.classList.add('listening');
-            status.textContent = "正在聆聽你的創意...";
-        };
-
-        recognition.onresult = (event) => {
-            const text = event.results[0][0].transcript;
-            status.textContent = `搜尋主題：${text}`;
-            micBtn.classList.remove('listening');
-            searchInspiration(text);
-        };
-
-        recognition.onerror = () => {
-            micBtn.classList.remove('listening');
-            status.textContent = "抱歉，我沒聽清楚。";
-        };
-    }
-
-    // 搜尋並呈現結果
-    function searchInspiration(query) {
-        resultArea.innerHTML = "";
-        let found = false;
-
-        for (let key in db) {
-            if (query.includes(key)) {
-                const data = db[key];
-                found = true;
-                
-                resultArea.innerHTML = `
-                    <div class="card">
-                        <h3>✨ 精確動詞</h3>
-                        <p>${data.verbs.map(v => `<span class="tag" onclick="copyText('${v}')">${v}</span>`).join('')}</p>
-                        <span class="copy-hint">點擊標籤可複製</span>
-                    </div>
-                    <div class="card">
-                        <h3>👁️ 感官描寫</h3>
-                        <p>${data.sensory.map(s => `<div style="cursor:pointer; margin-bottom:5px;" onclick="copyText('${s}')">• ${s}</div>`).join('')}</p>
-                        <span class="copy-hint">點擊句子可複製</span>
-                    </div>
-                    <div class="card">
-                        <h3>✍️ 修辭參考</h3>
-                        <p onclick="copyText('${data.rhetoric}')" style="cursor:pointer; font-style:italic; color:#2563eb;">「${data.rhetoric}」</p>
-                        <span class="copy-hint">點擊句子可複製</span>
-                    </div>
-                `;
-                break;
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 107, 107, 0);
             }
         }
 
-        if (!found) {
-            resultArea.innerHTML = `
-                <div class="card" style="border-left-color:#94a3b8">
-                    <h3>找不到相關靈感</h3>
-                    <p>試試看說「起跑」、「衝刺」或「天氣」！</p>
-                </div>`;
+        #status {
+            margin: 20px 0;
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 1.1rem;
+            min-height: 1.5em;
         }
-    }
 
-    // 複製功能
-    function copyText(text) {
-        navigator.clipboard.writeText(text).then(() => {
-            const originalStatus = status.textContent;
-            status.style.color = "#27ae60";
-            status.textContent = `已複製：${text}`;
-            setTimeout(() => {
-                status.style.color = "#334155";
-                status.textContent = originalStatus;
-            }, 1500);
-        });
-    }
-</script>
+        .card {
+            background: var(--secondary);
+            padding: 18px;
+            border-radius: 16px;
+            margin-bottom: 15px;
+            border-left: 6px solid var(--primary);
+            text-align: left;
+            animation: slideIn 0.3s ease;
+        }
 
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card h3 {
+            margin: 0 0 8px;
+            font-size: 1rem;
+            color: #334155;
+        }
+
+        .tag {
+            display: inline-block;
+            background: white;
+            border: 1px solid #e2e8f0;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin: 4px 4px 0 0;
+            cursor: pointer;
+        }
+
+        .tag:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .sentence {
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            margin-top: 5px;
+            font-size: 0.95rem;
+            transition: 0.2s;
+        }
+
+        .sentence:hover {
+            background: #e2e8f0;
+        }
+
+        .copy-hint {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-top: 5px;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🖋️ 靈感語音筆</h1>
+        <p class="subtitle">點擊麥克風說出主題（如：起跑、衝刺、生氣）</p>
+        <button id="mic-btn"><svg viewBox="0 0 24 24" width="40" height="40" fill="white">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                <path
+                    d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+            </svg></button>
+        <div id="status">準備就緒</div>
+        <div id="result-area"></div>
+    </div>
+    <script>
+        const db = {
+            "起跑": { v: ["屏息凝神", "蓄勢待發", "緊盯", "躬身"], s: ["鳴槍聲劃破寧靜", "心臟劇烈敲擊胸腔", "指尖觸碰跑道的冰冷"], r: "像一張拉滿的弓，隨時準備射出。" },
+            "接力": { v: ["傳遞", "接應", "默契", "風馳電掣"], s: ["接力棒的溫熱", "後方急促的腳步聲", "交接時的吶喊"], r: "那根紅白相間的木棒，承載著全班的榮譽。" },
+            "衝刺": { v: ["反超", "咬緊牙關", "狂奔", "爆發"], s: ["肺部像火在燒", "雙腿如灌了鉛般沉重", "終點線在視線中晃動"], r: "像一頭覺醒的獵豹，在草地上留下一道殘影。" },
+            "加油": { v: ["吶喊", "助威", "震耳欲聾", "揮舞"], s: ["喉嚨喊到沙啞", "鼓聲像雷鳴般隆隆", "看台上飛揚的班旗"], r: "全場的加油聲把氣氛燃點到了最高溫。" },
+            "失敗": { v: ["跌倒", "懊悔", "垂頭喪氣", "不甘"], s: ["膝蓋滲出的血漬", "淚水在眼眶打轉", "沉重的腳步拖在跑道上"], r: "終點線近在咫尺，卻顯得比地平線還遙遠。" },
+            "生氣": { v: ["咆哮", "怒火中燒", "咬牙切齒"], s: ["呼吸變得急促", "血液湧向腦門", "拳頭微微顫抖"], r: "怒火像沉寂已久的火山，瞬間爆發了。" }
+        };
+        const micBtn = document.getElementById('mic-btn'), status = document.getElementById('status'), res = document.getElementById('result-area');
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) { status.textContent = "請使用 Chrome 瀏覽器"; } else {
+            const rec = new SpeechRecognition(); rec.lang = 'zh-TW';
+            micBtn.onclick = () => { rec.start(); micBtn.classList.add('listening'); status.textContent = "正在聆聽..."; };
+            rec.onresult = (e) => {
+                const txt = e.results[0][0].transcript; micBtn.classList.remove('listening'); status.textContent = `搜尋：${txt}`;
+                res.innerHTML = ""; let found = false;
+                for (let k in db) {
+                    if (txt.includes(k)) {
+                        found = true; const d = db[k];
+                        res.innerHTML = `<div class="card"><h3>✨ 動詞</h3>${d.v.map(v => `<span class="tag" onclick="cp('${v}')">${v}</span>`).join('')}<span class="copy-hint">點擊複製</span></div><div class="card"><h3>👁️ 感官</h3>${d.s.map(s => `<div class="sentence" onclick="cp('${s}')">• ${s}</div>`).join('')}</div><div class="card"><h3>✍️ 修辭</h3><div class="sentence" style="color:#4a90e2;font-style:italic" onclick="cp('${d.r}')">「${d.r}」</div></div>`;
+                        break;
+                    }
+                }
+                if (!found) res.innerHTML = `<div class="card"><h3>無結果</h3><p>試試看說「起跑」或「生氣」！</p></div>`;
+            };
+            rec.onerror = () => { micBtn.classList.remove('listening'); status.textContent = "沒聽清楚，請重試"; };
+        }
+        function cp(t) { navigator.clipboard.writeText(t).then(() => { const old = status.textContent; status.style.color = "#27ae60"; status.textContent = `✅ 已複製：${t}`; setTimeout(() => { status.style.color = "#1e293b"; status.textContent = old; }, 1200); }); }
+    </script>
 </body>
+
 </html>
