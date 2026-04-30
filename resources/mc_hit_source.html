@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Whack-a-Mob</title>
+    <style>
+        :root {
+            --canvas-width: 800;
+            --canvas-height: 500;
+        }
+
+        @font-face {
+            font-family: 'MinecraftBold';
+            src: url('source/font/MinecraftBold-nMK1.otf') format('opentype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'MinecraftBold', 'Courier New', monospace;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            background-image: radial-gradient(ellipse at center, #2d2d2d 0%, #0a0a0a 100%);
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 500px;
+            border: 6px solid #3d2b1f;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0,0,0,0.7), 0 0 60px rgba(139,90,43,0.3), inset 0 0 10px rgba(0,0,0,0.5);
+            background: #000;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #video-feed {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            z-index: 20;
+        }
+        #overlay.active {
+            pointer-events: all;
+        }
+
+        .btn-minecraft {
+            font-family: 'MinecraftBold', 'Courier New', monospace;
+            font-size: 28px;
+            padding: 16px 48px;
+            background: #5a3a1f;
+            color: #fff;
+            border: 4px solid #2a1a0a;
+            border-bottom: 6px solid #1a0a00;
+            border-radius: 4px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0 #1a0a00;
+            transition: all 0.1s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            text-transform: uppercase;
+            image-rendering: pixelated;
+        }
+        .btn-minecraft:hover {
+            background: #7a4a2a;
+            border-color: #4a2a10;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.6);
+        }
+        .btn-minecraft:active {
+            background: #3a1a08;
+            border-bottom: 3px solid #1a0a00;
+            transform: translateY(3px);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+        }
+
+        #countdown-text {
+            font-family: 'MinecraftBold', 'Courier New', monospace;
+            font-size: 80px;
+            color: #ffdd00;
+            text-shadow: 4px 4px 0 #5a3a00, 0 0 40px rgba(255,220,0,0.6);
+            pointer-events: none;
+            letter-spacing: 4px;
+        }
+
+        #loading-indicator {
+            font-family: 'MinecraftBold', 'Courier New', monospace;
+            font-size: 18px;
+            color: #ccc;
+            text-shadow: 2px 2px 0 #333;
+            pointer-events: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<div id="game-container">
+    <canvas id="game-canvas" width="800" height="500"></canvas>
+    <video id="video-feed" autoplay playsinline muted></video>
+    <div id="overlay" class="active">
+        <button id="btn-start" class="btn-minecraft">Start Game</button>
+        <div id="countdown-text" style="display:none;"></div>
+        <div id="loading-indicator" style="display:none;">Initializing camera...</div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js" crossorigin="anonymous"></script>
+
+<script>
+    (function() {
+        // ============================================================
+        //  CONFIGURABLE COORDINATES - MODIFY THESE AS NEEDED
+        // ============================================================
+        const CONFIG = {
+            CANVAS_WIDTH: 800,
+            CANVAS_HEIGHT: 500,
+
+            GROUND_LINE_Y: 385,
+            GROUND_UI_Y: 340,
+            GROUND_UI_HEIGHT: 160,
+
+            TARGET_POSITIONS: [
+                { id: 0, x: 110, y: 260 },
+                { id: 1, x: 245, y: 260 },
+                { id: 2, x: 400, y: 260 },
+                { id: 3, x: 555, y: 260 },
+                { id: 4, x: 690, y: 260 },
+            ],
+
+            TARGET_WIDTH: 75,
+            TARGET_HEIGHT: 100,
+
+            EMERGE_DURATION: 600,
+            RETREAT_DURATION: 400,
+            EMERGE_START_OFFSET: 80,
+
+            PLAYER_HEART_SIZE: 28,
+            TARGET_HEART_SIZE: 14,
+
+            SWORD_WIDTH: 55,
+            SWORD_HEIGHT: 55,
+            ATTACK_COOLDOWN: 400,
+
+            MAX_ACTIVE_TARGETS: 3,
+
+            SPAWN_INTERVAL_MIN_INITIAL: 900,
+            SPAWN_INTERVAL_MAX_INITIAL: 1800,
+            SPAWN_INTERVAL_MIN_FINAL: 350,
+            SPAWN_INTERVAL_MAX_FINAL: 700,
+            DIFFICULTY_RAMP_TIME: 90000,
+
+            PLAYER_MAX_LIVES: 4,
+
+            ZOMBIE_LIVES: 3,
+            ZOMBIE_ATTACK_TIME: 3000,
+            ZOMBIE_ATTACK_DAMAGE: 1,
+            ZOMBIE_SCORE: 10,
+
+            CREEPER_LIVES: 3,
+            CREEPER_ATTACK_TIME: 6000,
+            CREEPER_ATTACK_DAMAGE: 2,
+            CREEPER_SCORE: 10,
+
+            ENDERMAN_LIVES: 5,
+            ENDERMAN_LEAVE_TIME: 2000,
+            ENDERMAN_ATTACK_DELAY: 2000,
+            ENDERMAN_ATTACK_DAMAGE: 2,
+            ENDERMAN_SCORE: 20,
+
+            VILLAGER_LIVES: 1,
+            VILLAGER_LEAVE_TIME: 2000,
+            VILLAGER_PENALTY: 5,
+            VILLAGER_ATTACK_DAMAGE_TO_PLAYER: 1,
+
+            FIXED_SWORD_TIER: { name: 'netherite', damage: 2, file: 'source/mc_hit/sword/netherite_sword.png' },
+
+            HAND_CENTER_LANDMARK: 9,
+
+            HAND_Y_MIN_CAM: 0.15,
+            HAND_Y_MAX_CAM: 0.85,
+            HAND_Y_MIN_CANVAS: 140,
+            HAND_Y_MAX_CANVAS: 430,
+            HAND_X_MARGIN_CANVAS: 30,
+
+            RECORDING_FPS: 30,
+        };
+
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const videoFeed = document.getElementById('video-feed');
+        const overlay = document.getElementById('overlay');
+        const btnStart = document.getElementById('btn-start');
+        const countdownText = document.getElementById('countdown-text');
+        const loadingIndicator = document.getElementById('loading-indicator');
+
+        canvas.width = CONFIG.CANVAS_WIDTH;
+        canvas.height = CONFIG.CANVAS_HEIGHT;
+
+        const GameState = { MENU: 'menu', COUNTDOWN: 'countdown', PLAYING: 'playing', GAMEOVER: 'gameover' };
+        let gameState = GameState.MENU;
+        let score = 0;
+        let playerLives = CONFIG.PLAYER_MAX_LIVES;
+        let activeTargets = [];
+        let occupiedPositions = new Set();
+        let spawnTimer = 0;
+        let lastSpawnTime = 0;
+        let handLandmarksData = [];
+        let detectedHandCount = 0;
+        let handAttackCooldowns = {};
+        let countdownValue = 3;
+        let countdownTimer = null;
+        let gameStartTime = 0;
+        let animationFrameId = null;
+        let mediaPipeReady = false;
+        let cameraReady = false;
+        let handsInstance = null;
+        let cameraInstance = null;
+        let bgmAudio = null;
+        let targetIdCounter = 0;
+
+        // Recording related
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let recordingStream = null;
+        let downloadRecording = true;
+
+        const imageCache = {};
+        const audioCache = {};
+
+        function loadImage(src) {
+            return new Promise((resolve, reject) => {
+                if (imageCache[src]) return resolve(imageCache[src]);
+                const img = new Image();
+                img.onload = () => { imageCache[src] = img; resolve(img); };
+                img.onerror = () => { console.warn('Failed to load image:', src); imageCache[src] = null; resolve(null); };
+                img.src = src;
+            });
+        }
+
+        function loadAudio(src) {
+            return new Promise((resolve, reject) => {
+                if (audioCache[src]) return resolve(audioCache[src]);
+                const audio = new Audio();
+                audio.oncanplaythrough = () => { audioCache[src] = audio; resolve(audio); };
+                audio.onerror = () => { console.warn('Failed to load audio:', src); audioCache[src] = null; resolve(null); };
+                audio.src = src;
+                audio.load();
+            });
+        }
+
+        function playAudio(src, volume = 0.7) {
+            const cached = audioCache[src];
+            if (!cached) return;
+            const clone = cached.cloneNode();
+            clone.volume = volume;
+            clone.play().catch(e => {});
+        }
+
+        const assetsToLoad = [
+            { type: 'image', key: 'ground_ui', src: 'source/mc_hit/ground_ui.png' },
+            { type: 'image', key: 'heart', src: 'source/mc_hit/heart.png' },
+            { type: 'image', key: 'heartless', src: 'source/mc_hit/heartless.png' },
+            { type: 'image', key: 'target_zombie', src: 'source/mc_hit/target/zombie.png' },
+            { type: 'image', key: 'target_creeper', src: 'source/mc_hit/target/creeper.png' },
+            { type: 'image', key: 'target_enderman', src: 'source/mc_hit/target/enderman.png' },
+            { type: 'image', key: 'target_villager', src: 'source/mc_hit/target/villager.png' },
+            { type: 'image', key: 'sword_netherite', src: 'source/mc_hit/sword/netherite_sword.png' },
+            { type: 'image', key: 'sword_diamond', src: 'source/mc_hit/sword/diamond_sword.png' },
+            { type: 'image', key: 'sword_iron', src: 'source/mc_hit/sword/iron_sword.png' },
+            { type: 'image', key: 'sword_stone', src: 'source/mc_hit/sword/stone_sword.png' },
+            { type: 'audio', key: 'sfx_creeper_death', src: 'source/mc_hit/sound/creeper_death.ogg' },
+            { type: 'audio', key: 'sfx_creeper_spawn', src: 'source/mc_hit/sound/creeper_spawn.ogg' },
+            { type: 'audio', key: 'sfx_creeper_attack', src: 'source/mc_hit/sound/creeper_attack.ogg' },
+            { type: 'audio', key: 'sfx_enderman_agro', src: 'source/mc_hit/sound/enderman_agro.ogg' },
+            { type: 'audio', key: 'sfx_enderman_death', src: 'source/mc_hit/sound/enderman_death.ogg' },
+            { type: 'audio', key: 'sfx_enderman_spawn', src: 'source/mc_hit/sound/enderman_spawn.ogg' },
+            { type: 'audio', key: 'sfx_enderman_attack', src: 'source/mc_hit/sound/enderman_attack.ogg' },
+            { type: 'audio', key: 'sfx_villager_death', src: 'source/mc_hit/sound/villager_death.ogg' },
+            { type: 'audio', key: 'sfx_villager_live', src: 'source/mc_hit/sound/villager_live.ogg' },
+            { type: 'audio', key: 'sfx_zombie_death', src: 'source/mc_hit/sound/zombie_death.ogg' },
+            { type: 'audio', key: 'sfx_zombie_spawn', src: 'source/mc_hit/sound/zombie_spawn.ogg' },
+            { type: 'audio', key: 'sfx_zombie_attack', src: 'source/mc_hit/sound/zombie_attack.ogg' },
+            { type: 'audio', key: 'bgm', src: 'source/mc_hit/bgm.mp3' },
+        ];
+
+        let assetsLoaded = false;
+
+        async function loadAllAssets() {
+            const promises = assetsToLoad.map(asset => {
+                if (asset.type === 'image') return loadImage(asset.src).then(img => { if (img) imageCache[asset.key] = img; });
+                if (asset.type === 'audio') return loadAudio(asset.src).then(audio => { if (audio) audioCache[asset.key] = audio; });
+            });
+            await Promise.all(promises);
+            bgmAudio = audioCache['bgm'];
+            if (bgmAudio) { bgmAudio.loop = true; bgmAudio.volume = 0.5; }
+            assetsLoaded = true;
+        }
+
+        function getSwordImageKey() {
+            return 'sword_' + CONFIG.FIXED_SWORD_TIER.name;
+        }
+
+        class Target {
+            constructor(type, positionIndex, posX, posY) {
+                this.id = targetIdCounter++;
+                this.type = type;
+                this.positionIndex = positionIndex;
+                this.posX = posX;
+                this.fullyEmergedY = posY;
+                this.currentY = CONFIG.GROUND_LINE_Y + CONFIG.EMERGE_START_OFFSET;
+                this.targetY = posY;
+                this.state = 'emerging';
+                this.lives = this.getMaxLives();
+                this.maxLives = this.getMaxLives();
+                this.spawnTime = performance.now();
+                this.emergeStartTime = performance.now();
+                this.emergeDuration = CONFIG.EMERGE_DURATION;
+                this.retreatDuration = CONFIG.RETREAT_DURATION;
+                this.retreatStartTime = 0;
+                this.lastAttackedTime = 0;
+                this.attackScheduled = false;
+                this.hasBeenAttacked = false;
+                this.teleported = false;
+                this.attackTimerId = null;
+                this.flashTimer = 0;
+                this.flashDuration = 150;
+            }
+
+            getMaxLives() {
+                switch (this.type) {
+                    case 'zombie': return CONFIG.ZOMBIE_LIVES;
+                    case 'creeper': return CONFIG.CREEPER_LIVES;
+                    case 'enderman': return CONFIG.ENDERMAN_LIVES;
+                    case 'villager': return CONFIG.VILLAGER_LIVES;
+                    default: return 3;
+                }
+            }
+
+            getAttackTime() {
+                switch (this.type) {
+                    case 'zombie': return CONFIG.ZOMBIE_ATTACK_TIME;
+                    case 'creeper': return CONFIG.CREEPER_ATTACK_TIME;
+                    case 'enderman': return CONFIG.ENDERMAN_LEAVE_TIME;
+                    case 'villager': return CONFIG.VILLAGER_LEAVE_TIME;
+                    default: return 3000;
+                }
+            }
+
+            getScoreValue() {
+                switch (this.type) {
+                    case 'zombie': return CONFIG.ZOMBIE_SCORE;
+                    case 'creeper': return CONFIG.CREEPER_SCORE;
+                    case 'enderman': return CONFIG.ENDERMAN_SCORE;
+                    case 'villager': return -CONFIG.VILLAGER_PENALTY;
+                    default: return 10;
+                }
+            }
+
+            getAttackDamage() {
+                switch (this.type) {
+                    case 'zombie': return CONFIG.ZOMBIE_ATTACK_DAMAGE;
+                    case 'creeper': return CONFIG.CREEPER_ATTACK_DAMAGE;
+                    case 'enderman': return CONFIG.ENDERMAN_ATTACK_DAMAGE;
+                    default: return 1;
+                }
+            }
+
+            getTargetImageKey() { return 'target_' + this.type; }
+
+            getBoundingBox() {
+                const halfW = CONFIG.TARGET_WIDTH / 2;
+                const halfH = CONFIG.TARGET_HEIGHT / 2;
+                return {
+                    left: this.posX - halfW,
+                    top: this.currentY,
+                    right: this.posX + halfW,
+                    bottom: this.currentY + CONFIG.TARGET_HEIGHT,
+                    centerX: this.posX,
+                    centerY: this.currentY + CONFIG.TARGET_HEIGHT/2,
+                };
+            }
+
+            isFullyEmerged() { return this.currentY <= this.fullyEmergedY; }
+            isVisible() { return this.currentY < CONFIG.GROUND_LINE_Y; }
+
+            takeDamage(amount) {
+                if (this.state === 'dead' || this.state === 'retreating') return;
+
+                if (this.type === 'villager' && this.lives > 0) {
+                    const dmgToPlayer = CONFIG.VILLAGER_ATTACK_DAMAGE_TO_PLAYER || 1;
+                    playerLives -= dmgToPlayer;
+                    if (playerLives < 0) playerLives = 0;
+                }
+
+                this.lives -= amount;
+                this.flashTimer = this.flashDuration;
+                this.lastAttackedTime = performance.now();
+
+                if (this.type === 'enderman' && this.lives > 0) {
+                    this.hasBeenAttacked = true;
+                    playAudio('sfx_enderman_agro', 0.8);
+                    this.teleport();
+                }
+
+                if (this.lives <= 0) this.die();
+            }
+
+            teleport() {
+                const availablePositions = CONFIG.TARGET_POSITIONS.filter(
+                    (_, idx) => idx !== this.positionIndex && !occupiedPositions.has(idx)
+                );
+                if (availablePositions.length > 0) {
+                    occupiedPositions.delete(this.positionIndex);
+                    const newPos = availablePositions[Math.floor(Math.random() * availablePositions.length)];
+                    this.positionIndex = newPos.id;
+                    this.posX = newPos.x;
+                    this.fullyEmergedY = newPos.y;
+                    this.currentY = CONFIG.GROUND_LINE_Y + CONFIG.EMERGE_START_OFFSET;
+                    this.targetY = newPos.y;
+                    this.state = 'emerging';
+                    this.emergeStartTime = performance.now();
+                    this.emergeDuration = CONFIG.EMERGE_DURATION * 0.6;
+                    this.teleported = true;
+                    occupiedPositions.add(this.positionIndex);
+                    playAudio('sfx_enderman_spawn', 0.6);
+                    this.scheduleEndermanAttack();
+                }
+            }
+
+            scheduleEndermanAttack() {
+                if (this.attackTimerId) clearTimeout(this.attackTimerId);
+                this.attackTimerId = setTimeout(() => {
+                    if (this.state !== 'dead' && this.state !== 'retreating' && gameState === GameState.PLAYING) {
+                        playAudio('sfx_enderman_attack', 0.8);
+                        playerLives -= CONFIG.ENDERMAN_ATTACK_DAMAGE;
+                        if (playerLives < 0) playerLives = 0;
+                        this.retreat();
+                        score += CONFIG.ENDERMAN_SCORE;
+                        if (playerLives <= 0) endGame();
+                    }
+                }, CONFIG.ENDERMAN_ATTACK_DELAY);
+            }
+
+            die() {
+                this.state = 'retreating';
+                this.retreatStartTime = performance.now();
+                this.targetY = CONFIG.GROUND_LINE_Y + CONFIG.EMERGE_START_OFFSET;
+                if (this.attackTimerId) clearTimeout(this.attackTimerId);
+                occupiedPositions.delete(this.positionIndex);
+                score += this.getScoreValue();
+                switch (this.type) {
+                    case 'zombie': playAudio('sfx_zombie_death', 0.8); break;
+                    case 'creeper': playAudio('sfx_creeper_death', 0.8); break;
+                    case 'enderman': playAudio('sfx_enderman_death', 0.8); break;
+                    case 'villager': playAudio('sfx_villager_death', 0.8); break;
+                }
+            }
+
+            retreat() {
+                if (this.state === 'dead' || this.state === 'retreating') return;
+                this.state = 'retreating';
+                this.retreatStartTime = performance.now();
+                this.targetY = CONFIG.GROUND_LINE_Y + CONFIG.EMERGE_START_OFFSET;
+                if (this.attackTimerId) clearTimeout(this.attackTimerId);
+                occupiedPositions.delete(this.positionIndex);
+                if (this.type === 'enderman' && !this.hasBeenAttacked && this.lives > 0) score += CONFIG.ENDERMAN_SCORE;
+                if (this.type === 'villager' && this.lives > 0) { /* no score change */ }
+            }
+
+            update(now) {
+                if (this.state === 'emerging') {
+                    const elapsed = now - this.emergeStartTime;
+                    const progress = Math.min(elapsed / this.emergeDuration, 1.0);
+                    const eased = 1 - Math.pow(1 - progress, 3);
+                    const startY = CONFIG.GROUND_LINE_Y + CONFIG.EMERGE_START_OFFSET;
+                    this.currentY = startY + (this.targetY - startY) * eased;
+                    if (progress >= 1.0) { this.currentY = this.targetY; this.state = 'active'; }
+                } else if (this.state === 'retreating') {
+                    const elapsed = now - this.retreatStartTime;
+                    const progress = Math.min(elapsed / this.retreatDuration, 1.0);
+                    const eased = 1 - Math.pow(1 - progress, 2);
+                    const startY = this.currentY;
+                    this.currentY = startY + (this.targetY - startY) * eased;
+                    if (progress >= 1.0) { this.state = 'dead'; this.currentY = this.targetY; }
+                }
+
+                if (this.flashTimer > 0) this.flashTimer -= 16.67;
+
+                if (this.state === 'active' && gameState === GameState.PLAYING) {
+                    const timeSinceSpawn = now - this.spawnTime;
+                    const attackTime = this.getAttackTime();
+                    if (this.type === 'zombie' && timeSinceSpawn >= attackTime && !this.attackScheduled) {
+                        this.attackScheduled = true; this.executeAttack();
+                    } else if (this.type === 'creeper' && timeSinceSpawn >= attackTime && !this.attackScheduled) {
+                        this.attackScheduled = true; this.executeAttack();
+                    } else if (this.type === 'enderman' && !this.hasBeenAttacked && timeSinceSpawn >= attackTime && !this.attackScheduled) {
+                        this.attackScheduled = true; this.retreat();
+                    } else if (this.type === 'villager' && timeSinceSpawn >= attackTime && !this.attackScheduled) {
+                        this.attackScheduled = true; this.retreat();
+                    }
+                }
+            }
+
+            executeAttack() {
+                if (this.state === 'dead' || this.state === 'retreating') return;
+                const damage = this.getAttackDamage();
+                playerLives -= damage;
+                if (playerLives < 0) playerLives = 0;
+                if (this.type === 'zombie') playAudio('sfx_zombie_attack', 0.7);
+                if (this.type === 'creeper') playAudio('sfx_creeper_attack', 0.8);
+                this.retreat();
+                if (playerLives <= 0) endGame();
+            }
+
+            draw(ctx) {
+                if (this.state === 'dead') return;
+                const imgKey = this.getTargetImageKey();
+                const img = imageCache[imgKey];
+                if (!img) return;
+                const drawX = this.posX - CONFIG.TARGET_WIDTH/2;
+                const drawY = this.currentY;
+                const drawW = CONFIG.TARGET_WIDTH;
+                const drawH = CONFIG.TARGET_HEIGHT;
+
+                if (this.flashTimer > 0) {
+                    ctx.save(); ctx.globalAlpha = 0.7;
+                }
+                ctx.drawImage(img, drawX, drawY, drawW, drawH);
+                if (this.flashTimer > 0) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                    ctx.fillRect(drawX, drawY, drawW, drawH);
+                    ctx.restore();
+                }
+
+                if (this.lives > 0 && this.state !== 'retreating') {
+                    this.drawHealthHearts(ctx, drawX, drawY, drawW);
+                }
+            }
+
+            drawHealthHearts(ctx, drawX, drawY, drawW) {
+                const heartImg = imageCache['heart'];
+                if (!heartImg) return;
+                const heartSize = CONFIG.TARGET_HEART_SIZE;
+                const totalWidth = this.maxLives * (heartSize + 2);
+                const startX = drawX + drawW/2 - totalWidth/2;
+                const heartY = drawY - heartSize - 6;
+                for (let i = 0; i < this.maxLives; i++) {
+                    const hx = startX + i * (heartSize + 2);
+                    if (i < this.lives) {
+                        ctx.drawImage(heartImg, hx, heartY, heartSize, heartSize);
+                    } else {
+                        ctx.globalAlpha = 0.35;
+                        ctx.drawImage(heartImg, hx, heartY, heartSize, heartSize);
+                        ctx.globalAlpha = 1.0;
+                    }
+                }
+            }
+        }
+
+        function getAvailablePositions() {
+            const available = [];
+            for (let i = 0; i < CONFIG.TARGET_POSITIONS.length; i++) {
+                if (!occupiedPositions.has(i)) available.push(i);
+            }
+            return available;
+        }
+
+        function spawnTarget() {
+            if (gameState !== GameState.PLAYING) return;
+            if (activeTargets.filter(t => t.state !== 'dead').length >= CONFIG.MAX_ACTIVE_TARGETS) return;
+            const available = getAvailablePositions();
+            if (available.length === 0) return;
+            const posIndex = available[Math.floor(Math.random() * available.length)];
+            const pos = CONFIG.TARGET_POSITIONS[posIndex];
+            const rand = Math.random();
+            let type;
+            if (rand < 0.40) type = 'zombie';
+            else if (rand < 0.70) type = 'creeper';
+            else if (rand < 0.85) type = 'enderman';
+            else type = 'villager';
+            const target = new Target(type, posIndex, pos.x, pos.y);
+            target.spawnTime = performance.now();
+            target.emergeStartTime = performance.now();
+            activeTargets.push(target);
+            occupiedPositions.add(posIndex);
+            switch (type) {
+                case 'zombie': playAudio('sfx_zombie_spawn', 0.6); break;
+                case 'creeper': playAudio('sfx_creeper_spawn', 0.6); break;
+                case 'enderman': playAudio('sfx_enderman_spawn', 0.6); break;
+                case 'villager': playAudio('sfx_villager_live', 0.6); break;
+            }
+            return target;
+        }
+
+        function mapHandToCanvas(normalizedX, normalizedY) {
+            const mirroredX = 1 - normalizedX;
+            const cx = CONFIG.HAND_X_MARGIN_CANVAS + mirroredX * (CONFIG.CANVAS_WIDTH - 2 * CONFIG.HAND_X_MARGIN_CANVAS);
+            const cy = CONFIG.HAND_Y_MIN_CANVAS + ((normalizedY - CONFIG.HAND_Y_MIN_CAM) / (CONFIG.HAND_Y_MAX_CAM - CONFIG.HAND_Y_MIN_CAM)) * (CONFIG.HAND_Y_MAX_CANVAS - CONFIG.HAND_Y_MIN_CANVAS);
+            return { x: Math.max(0, Math.min(CONFIG.CANVAS_WIDTH, cx)), y: Math.max(0, Math.min(CONFIG.CANVAS_HEIGHT, cy)) };
+        }
+
+        function checkAttackCollision(handX, handY, target) {
+            const bb = target.getBoundingBox();
+            const margin = 10;
+            return handX >= bb.left - margin && handX <= bb.right + margin && handY >= bb.top - margin && handY <= bb.bottom + margin;
+        }
+
+        function processAttacks(now) {
+            if (gameState !== GameState.PLAYING) return;
+            const swordDamage = CONFIG.FIXED_SWORD_TIER.damage;
+            for (let h = 0; h < handLandmarksData.length; h++) {
+                const handKey = 'hand_' + h;
+                if (!handAttackCooldowns[handKey]) handAttackCooldowns[handKey] = 0;
+                if (now - handAttackCooldowns[handKey] < CONFIG.ATTACK_COOLDOWN) continue;
+
+                const landmarks = handLandmarksData[h];
+                const centerIndex = CONFIG.HAND_CENTER_LANDMARK;
+                const centerPoint = landmarks.length > centerIndex ? landmarks[centerIndex] : landmarks[0];
+                const handPos = mapHandToCanvas(centerPoint.x, centerPoint.y);
+
+                for (const target of activeTargets) {
+                    if (target.state === 'dead' || target.state === 'retreating') continue;
+                    if (target.state === 'emerging' && !target.isVisible()) continue;
+                    if (checkAttackCollision(handPos.x, handPos.y, target)) {
+                        handAttackCooldowns[handKey] = now;
+                        target.takeDamage(swordDamage);
+                        break;
+                    }
+                }
+            }
+        }
+
+        function initMediaPipe() {
+            return new Promise((resolve, reject) => {
+                try {
+                    handsInstance = new Hands({
+                        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`,
+                    });
+                    handsInstance.setOptions({
+                        maxNumHands: 10,
+                        modelComplexity: 1,
+                        minDetectionConfidence: 0.5,
+                        minTrackingConfidence: 0.4,
+                    });
+                    handsInstance.onResults((results) => {
+                        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                            handLandmarksData = results.multiHandLandmarks;
+                            detectedHandCount = results.multiHandLandmarks.length;
+                        } else {
+                            handLandmarksData = [];
+                            detectedHandCount = 0;
+                        }
+                    });
+                    mediaPipeReady = true;
+                    resolve();
+                } catch (e) { reject(e); }
+            });
+        }
+
+        function startCamera() {
+            return new Promise((resolve, reject) => {
+                if (!mediaPipeReady) return reject(new Error('MediaPipe not ready'));
+                try {
+                    cameraInstance = new Camera(videoFeed, {
+                        onFrame: async () => { if (handsInstance && cameraReady) await handsInstance.send({ image: videoFeed }); },
+                        width: 640,
+                        height: 480,
+                    });
+                    cameraInstance.start().then(() => { cameraReady = true; resolve(); }).catch(reject);
+                } catch (e) { reject(e); }
+            });
+        }
+
+        function stopCamera() {
+            if (cameraInstance) { try { cameraInstance.stop(); } catch(e) {} cameraInstance = null; }
+            cameraReady = false;
+        }
+
+        function resetGame() {
+            score = 0;
+            playerLives = CONFIG.PLAYER_MAX_LIVES;
+            activeTargets = [];
+            occupiedPositions = new Set();
+            handAttackCooldowns = {};
+            targetIdCounter = 0;
+            spawnTimer = 0;
+            lastSpawnTime = 0;
+            handLandmarksData = [];
+            detectedHandCount = 0;
+            countdownValue = 3;
+            gameStartTime = 0;
+            downloadRecording = false;
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop(); // will not download because flag is false
+            }
+            recordedChunks = [];
+        }
+
+        function startCountdown() {
+            resetGame();
+            gameState = GameState.COUNTDOWN;
+            countdownValue = 3;
+            btnStart.style.display = 'none';
+            loadingIndicator.style.display = 'none';
+            countdownText.style.display = 'block';
+            countdownText.textContent = countdownValue;
+            overlay.classList.add('active');
+            if (countdownTimer) clearInterval(countdownTimer);
+            countdownTimer = setInterval(() => {
+                countdownValue--;
+                if (countdownValue <= 0) {
+                    clearInterval(countdownTimer);
+                    countdownTimer = null;
+                    countdownText.textContent = 'GO!';
+                    setTimeout(() => {
+                        countdownText.style.display = 'none';
+                        overlay.classList.remove('active');
+                        startGame();
+                    }, 500);
+                } else {
+                    countdownText.textContent = countdownValue;
+                }
+            }, 1000);
+        }
+
+        function startGameRecording() {
+            if (typeof MediaRecorder === 'undefined') return;
+            recordedChunks = [];
+            recordingStream = canvas.captureStream(CONFIG.RECORDING_FPS || 30);
+            const mimeType = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm';
+            mediaRecorder = new MediaRecorder(recordingStream, { mimeType });
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+            mediaRecorder.onstop = () => {
+                if (!downloadRecording || recordedChunks.length === 0) {
+                    recordedChunks = [];
+                    return;
+                }
+                const blob = new Blob(recordedChunks, { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+                a.download = `minecraft_whack_${Date.now()}.${ext}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                recordedChunks = [];
+            };
+            mediaRecorder.start();
+            downloadRecording = true;
+        }
+
+        function startGame() {
+            gameState = GameState.PLAYING;
+            gameStartTime = performance.now();
+            lastSpawnTime = performance.now();
+            spawnTimer = getDynamicSpawnInterval(0);
+            if (bgmAudio) { bgmAudio.currentTime = 0; bgmAudio.play().catch(e => {}); }
+            setTimeout(() => spawnTarget(), 400);
+            startGameRecording();
+        }
+
+        function endGame() {
+            gameState = GameState.GAMEOVER;
+            if (bgmAudio) { bgmAudio.pause(); bgmAudio.currentTime = 0; }
+            for (const target of activeTargets) { if (target.attackTimerId) clearTimeout(target.attackTimerId); }
+            activeTargets = [];
+            occupiedPositions = new Set();
+            stopCamera();
+            overlay.classList.add('active');
+            btnStart.style.display = 'block';
+            btnStart.textContent = 'Restart';
+            countdownText.style.display = 'none';
+            loadingIndicator.style.display = 'none';
+
+            // Stop recording and trigger download
+            downloadRecording = true;
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+        }
+
+        function getDynamicSpawnInterval(gameDurationMs) {
+            const progress = Math.min(gameDurationMs / CONFIG.DIFFICULTY_RAMP_TIME, 1.0);
+            const currentMin = CONFIG.SPAWN_INTERVAL_MIN_INITIAL - progress * (CONFIG.SPAWN_INTERVAL_MIN_INITIAL - CONFIG.SPAWN_INTERVAL_MIN_FINAL);
+            const currentMax = CONFIG.SPAWN_INTERVAL_MAX_INITIAL - progress * (CONFIG.SPAWN_INTERVAL_MAX_INITIAL - CONFIG.SPAWN_INTERVAL_MAX_FINAL);
+            const minVal = Math.min(currentMin, currentMax);
+            const maxVal = Math.max(currentMin, currentMax);
+            return minVal + Math.random() * (maxVal - minVal);
+        }
+
+        function drawVideoBackground() {
+            if (videoFeed.readyState >= 2) {
+                ctx.save();
+                ctx.translate(CONFIG.CANVAS_WIDTH, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(videoFeed, 0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
+                ctx.restore();
+            }
+        }
+
+        function drawUI() {
+            const heartImg = imageCache['heart'];
+            const heartlessImg = imageCache['heartless'];
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '22px "MinecraftBold", "Courier New", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Score: ' + score, 20, 36);
+
+            if (heartImg && heartlessImg) {
+                const heartSize = CONFIG.PLAYER_HEART_SIZE;
+                const totalWidth = CONFIG.PLAYER_MAX_LIVES * (heartSize + 6);
+                const startX = CONFIG.CANVAS_WIDTH - totalWidth - 20;
+                const heartY = 10;
+                for (let i = 0; i < CONFIG.PLAYER_MAX_LIVES; i++) {
+                    const hx = startX + i * (heartSize + 6);
+                    ctx.drawImage(i < playerLives ? heartImg : heartlessImg, hx, heartY, heartSize, heartSize);
+                }
+            }
+
+            ctx.fillStyle = '#ffd700';
+            ctx.font = '16px "MinecraftBold", "Courier New", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Sword: Netherite (2 dmg)', 20, 60);
+
+            ctx.fillStyle = '#ccc';
+            ctx.fillText('Hands: ' + detectedHandCount, 20, 80);
+        }
+
+        function drawHandsWithSwords() {
+            if (handLandmarksData.length === 0) return;
+            const swordImg = imageCache[getSwordImageKey()];
+            if (!swordImg) return;
+
+            for (let h = 0; h < handLandmarksData.length; h++) {
+                const landmarks = handLandmarksData[h];
+                const centerIndex = CONFIG.HAND_CENTER_LANDMARK;
+                const centerPoint = landmarks.length > centerIndex ? landmarks[centerIndex] : landmarks[0];
+                const handPos = mapHandToCanvas(centerPoint.x, centerPoint.y);
+
+                const sw = CONFIG.SWORD_WIDTH;
+                const sh = CONFIG.SWORD_HEIGHT;
+                const swordX = handPos.x - sw/2;
+                const swordY = handPos.y - sh - 10;
+
+                ctx.save();
+                ctx.shadowColor = 'rgba(180, 80, 255, 0.9)';
+                ctx.shadowBlur = 18;
+                ctx.drawImage(swordImg, swordX, swordY, sw, sh);
+                ctx.restore();
+
+                ctx.fillStyle = 'rgba(255,255,100,0.8)';
+                ctx.beginPath();
+                ctx.arc(handPos.x, handPos.y, 8, 0, Math.PI*2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        function drawGameOverScreen() {
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
+            ctx.fillStyle = '#ff4444';
+            ctx.font = '48px "MinecraftBold", "Courier New", monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('GAME OVER', CONFIG.CANVAS_WIDTH/2, CONFIG.CANVAS_HEIGHT/2 - 30);
+            ctx.fillStyle = '#fff';
+            ctx.font = '28px "MinecraftBold", "Courier New", monospace';
+            ctx.fillText('Score: ' + score, CONFIG.CANVAS_WIDTH/2, CONFIG.CANVAS_HEIGHT/2 + 30);
+        }
+
+        function drawMenuScreen() {
+            ctx.fillStyle = 'rgba(0,0,0,0.55)';
+            ctx.fillRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
+            ctx.fillStyle = '#ffd700';
+            ctx.font = '40px "MinecraftBold", "Courier New", monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('MINECRAFT', CONFIG.CANVAS_WIDTH/2, CONFIG.CANVAS_HEIGHT/2 - 50);
+            ctx.fillText('WHACK-A-MOB', CONFIG.CANVAS_WIDTH/2, CONFIG.CANVAS_HEIGHT/2 - 5);
+            ctx.fillStyle = '#ccc';
+            ctx.font = '16px "MinecraftBold", "Courier New", monospace';
+            ctx.fillText('Use your hand to whack mobs!', CONFIG.CANVAS_WIDTH/2, CONFIG.CANVAS_HEIGHT/2 + 50);
+        }
+
+        function render(timestamp) {
+            ctx.clearRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
+
+            drawVideoBackground();
+
+            if (gameState === GameState.MENU) {
+                drawMenuScreen();
+            } else if (gameState === GameState.COUNTDOWN) {
+                ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                ctx.fillRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
+            } else if (gameState === GameState.PLAYING) {
+                const now = performance.now();
+                const gameDuration = now - gameStartTime;
+
+                for (const target of activeTargets) target.update(now);
+                activeTargets = activeTargets.filter(t => t.state !== 'dead');
+
+                processAttacks(now);
+
+                if (now - lastSpawnTime > spawnTimer) {
+                    spawnTarget();
+                    lastSpawnTime = now;
+                    spawnTimer = getDynamicSpawnInterval(gameDuration);
+                }
+
+                for (const target of activeTargets) target.draw(ctx);
+
+                const groundImg = imageCache['ground_ui'];
+                if (groundImg) {
+                    ctx.drawImage(groundImg, 0, CONFIG.GROUND_UI_Y, CONFIG.CANVAS_WIDTH, CONFIG.GROUND_UI_HEIGHT);
+                }
+
+                drawHandsWithSwords();
+                drawUI();
+
+                if (playerLives <= 0) endGame();
+            } else if (gameState === GameState.GAMEOVER) {
+                for (const target of activeTargets) target.draw(ctx);
+                const groundImg = imageCache['ground_ui'];
+                if (groundImg) ctx.drawImage(groundImg, 0, CONFIG.GROUND_UI_Y, CONFIG.CANVAS_WIDTH, CONFIG.GROUND_UI_HEIGHT);
+                drawUI();
+                drawGameOverScreen();
+            }
+
+            animationFrameId = requestAnimationFrame(render);
+        }
+
+        async function init() {
+            loadingIndicator.style.display = 'block';
+            loadingIndicator.textContent = 'Loading assets...';
+            await loadAllAssets();
+            loadingIndicator.textContent = 'Initializing hand tracker...';
+            await initMediaPipe();
+            loadingIndicator.textContent = 'Ready! Press Start to play.';
+            setTimeout(() => { if (gameState === GameState.MENU) loadingIndicator.style.display = 'none'; }, 1000);
+
+            btnStart.textContent = 'Start Game';
+            btnStart.style.display = 'block';
+            btnStart.onclick = async () => {
+                if (gameState === GameState.PLAYING || gameState === GameState.COUNTDOWN) return;
+                if (gameState === GameState.GAMEOVER) btnStart.textContent = 'Start Game';
+                overlay.classList.add('active');
+                btnStart.style.display = 'none';
+                loadingIndicator.style.display = 'block';
+                loadingIndicator.textContent = 'Starting camera...';
+                try {
+                    await startCamera();
+                    loadingIndicator.style.display = 'none';
+                    startCountdown();
+                } catch (e) {
+                    console.error('Camera error:', e);
+                    loadingIndicator.textContent = 'Camera error! Check permissions.';
+                    btnStart.style.display = 'block';
+                }
+            };
+
+            animationFrameId = requestAnimationFrame(render);
+        }
+
+        init().catch(err => {
+            console.error('Initialization failed:', err);
+            loadingIndicator.textContent = 'Error loading. Please refresh.';
+            loadingIndicator.style.display = 'block';
+        });
+
+        window.addEventListener('beforeunload', () => {
+            stopCamera();
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            if (bgmAudio) { bgmAudio.pause(); bgmAudio = null; }
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                downloadRecording = false;
+                mediaRecorder.stop();
+            }
+        });
+    })();
+</script>
+</body>
+</html>
