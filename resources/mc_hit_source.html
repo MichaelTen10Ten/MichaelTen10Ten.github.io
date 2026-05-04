@@ -504,7 +504,11 @@
                 if (this.attackTimerId) clearTimeout(this.attackTimerId);
                 occupiedPositions.delete(this.positionIndex);
                 if (this.type === 'enderman' && !this.hasBeenAttacked && this.lives > 0) score += CONFIG.ENDERMAN_SCORE;
-                if (this.type === 'villager' && this.lives > 0) { /* no score change */ }
+                if (this.type === 'villager' && this.lives > 0) {
+                    if (playerLives < CONFIG.PLAYER_MAX_LIVES) {
+                        playerLives += 1; // Heals one heart
+                    }
+                }
             }
 
             update(now) {
