@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>單元一：感官小偵探 PPT (進階版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f0fdf4; overflow: hidden; }
+        .slide { display: none; height: 100vh; width: 100vw; padding: 40px; box-sizing: border-box; }
+        .slide.active { display: flex; flex-direction: column; align-items: center; justify-content: center; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .cartoon-border { border: 8px solid #4ade80; border-radius: 40px; background: white; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); overflow-y: auto; max-height: 90vh; }
+        .hidden-box { background: #f3f4f6; color: #f3f4f6; cursor: pointer; transition: all 0.3s; border: 2px dashed #d1d5db; }
+        .hidden-box.revealed { background: #fef08a; color: #854d0e; border: 2px solid #eab308; }
+        .tag { background: #dcfce7; color: #166534; padding: 4px 12px; border-radius: 999px; font-size: 0.8em; margin-right: 5px; }
+        .answer-card { display: none; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <!-- Slide 1: Title -->
+    <div class="slide active" id="slide1">
+        <div class="cartoon-border p-12 text-center max-w-4xl w-full">
+            <div class="text-8xl mb-6">🔍</div>
+            <h1 class="text-6xl font-bold text-emerald-600 mb-4">感官小偵探</h1>
+            <p class="text-3xl text-gray-500">進階篇：從觀察到精準描寫</p>
+            <div class="mt-12 flex justify-center space-x-4">
+                <span class="tag text-xl px-6 py-2">👀 視覺</span>
+                <span class="tag text-xl px-6 py-2">👂 聽覺</span>
+                <span class="tag text-xl px-6 py-2">👃 嗅覺</span>
+                <span class="tag text-xl px-6 py-2">🖐️ 觸覺</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 2: Deep Vocabulary (Visual) -->
+    <div class="slide" id="slide2">
+        <div class="cartoon-border p-10 w-full max-w-5xl">
+            <h2 class="text-4xl font-bold text-emerald-600 mb-6 border-b-4 border-emerald-200 pb-2">👁️ 視覺深度：色彩與光澤</h2>
+            <p class="text-2xl mb-6 text-gray-600">小偵探，除了「紅色」，你還能說出這些「疊字詞」嗎？</p>
+            <div class="grid grid-cols-3 gap-6">
+                <div class="text-center p-4 border-2 border-emerald-50 rounded-2xl">
+                    <div class="text-7xl mb-4">☀️</div>
+                    <p class="text-xl mb-2">太陽的光芒：</p>
+                    <div class="hidden-box p-3 rounded-xl text-2xl font-bold" onclick="this.classList.toggle('revealed')">金燦燦</div>
+                </div>
+                <div class="text-center p-4 border-2 border-emerald-50 rounded-2xl">
+                    <div class="text-7xl mb-4">🍎</div>
+                    <p class="text-xl mb-2">成熟的蘋果：</p>
+                    <div class="hidden-box p-3 rounded-xl text-2xl font-bold" onclick="this.classList.toggle('revealed')">紅通通</div>
+                </div>
+                <div class="text-center p-4 border-2 border-emerald-50 rounded-2xl">
+                    <div class="text-7xl mb-4">💎</div>
+                    <p class="text-xl mb-2">閃爍的鑽石：</p>
+                    <div class="hidden-box p-3 rounded-xl text-2xl font-bold" onclick="this.classList.toggle('revealed')">亮晶晶</div>
+                </div>
+            </div>
+            <div class="mt-8 p-6 bg-emerald-50 rounded-2xl">
+                <p class="text-2xl font-bold text-emerald-700">✍️ 魔法句式：</p>
+                <p class="text-2xl mt-2">天空中掛著一個 <span class="text-orange-500 font-bold">金燦燦</span> 的太陽。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 3: Deep Vocabulary (Audio) -->
+    <div class="slide" id="slide3">
+        <div class="cartoon-border p-10 w-full max-w-5xl">
+            <h2 class="text-4xl font-bold text-blue-500 mb-6 border-b-4 border-blue-200 pb-2">👂 聽覺深度：精準擬聲詞</h2>
+            <p class="text-2xl mb-6 text-gray-600">聽！不同的聲音，要用不同的詞語來形容喔！</p>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between bg-blue-50 p-6 rounded-2xl">
+                    <div class="flex items-center">
+                        <span class="text-6xl mr-6">🌧️</span>
+                        <span class="text-2xl font-bold">下大雨的聲音：</span>
+                    </div>
+                    <div class="hidden-box w-48 p-4 rounded-xl text-2xl font-bold text-center" onclick="this.classList.toggle('revealed')">嘩啦嘩啦</div>
+                </div>
+                <div class="flex items-center justify-between bg-blue-50 p-6 rounded-2xl">
+                    <div class="flex items-center">
+                        <span class="text-6xl mr-6">🍃</span>
+                        <span class="text-2xl font-bold">微風吹動樹葉：</span>
+                    </div>
+                    <div class="hidden-box w-48 p-4 rounded-xl text-2xl font-bold text-center" onclick="this.classList.toggle('revealed')">沙沙沙</div>
+                </div>
+                <div class="flex items-center justify-between bg-blue-50 p-6 rounded-2xl">
+                    <div class="flex items-center">
+                        <span class="text-6xl mr-6">🔔</span>
+                        <span class="text-2xl font-bold">清脆的鈴聲：</span>
+                    </div>
+                    <div class="hidden-box w-48 p-4 rounded-xl text-2xl font-bold text-center" onclick="this.classList.toggle('revealed')">叮呤叮呤</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 4: Reasoning Game -->
+    <div class="slide" id="slide4">
+        <div class="cartoon-border p-10 w-full max-w-5xl">
+            <h2 class="text-4xl font-bold text-purple-500 mb-6 border-b-4 border-purple-200 pb-2">🕵️ 偵探推理：寶盒裡是什麼？</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div class="bg-purple-50 p-6 rounded-3xl border-2 border-purple-100">
+                    <p class="text-2xl font-bold text-purple-800 mb-4">根據感官線索猜一猜：</p>
+                    <ul class="text-xl space-y-3 list-disc list-inside text-purple-900">
+                        <li>👀 看起來：<span class="font-bold text-yellow-600">黃澄澄</span>的。</li>
+                        <li>👃 聞起來：有陣陣<span class="font-bold text-green-600">清香</span>。</li>
+                        <li>👅 嚐起來：味道<span class="font-bold text-pink-600">甜滋滋</span>的。</li>
+                        <li>🖐️ 摸起來：外皮很<span class="font-bold text-blue-600">滑溜</span>。</li>
+                    </ul>
+                    <div class="mt-6 text-center">
+                        <button id="showAnswerBtn" class="bg-purple-500 text-white px-8 py-3 rounded-full text-xl font-bold shadow-lg hover:bg-purple-600 transition-all" onclick="revealAnswer()">查看答案</button>
+                    </div>
+                </div>
+                
+                <!-- Answer Section -->
+                <div id="answerSection" class="answer-card text-center p-6 bg-yellow-50 rounded-3xl border-4 border-yellow-400">
+                    <p class="text-3xl font-bold text-yellow-700 mb-4">🎉 答對了！</p>
+                    <div class="text-9xl mb-4 animate-bounce">🍌</div>
+                    <p class="text-4xl font-black text-yellow-800">香 蕉</p>
+                    <button class="mt-4 text-sm text-yellow-600 underline" onclick="hideAnswer()">隱藏答案</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 5: Multi-Sensory Writing -->
+    <div class="slide" id="slide5">
+        <div class="cartoon-border p-10 w-full max-w-5xl bg-yellow-50">
+            <h2 class="text-4xl font-bold text-orange-700 mb-6">🖋️ 寫作升級：多感官結合</h2>
+            <p class="text-2xl mb-6">試試看，把兩個感官寫進同一個句子裡！</p>
+            <div class="grid grid-cols-1 gap-6">
+                <div class="bg-white p-6 rounded-2xl border-l-8 border-orange-400 shadow-sm">
+                    <p class="text-xl text-gray-500 mb-2">範例（視覺 + 嗅覺）：</p>
+                    <p class="text-3xl leading-relaxed">我看到 <span class="text-red-500 font-bold">紅通通</span> 的花兒，聞到陣陣 <span class="text-orange-500 font-bold">清香</span>。</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border-l-8 border-blue-400 shadow-sm">
+                    <p class="text-xl text-gray-500 mb-2">範例（聽覺 + 觸覺）：</p>
+                    <p class="text-3xl leading-relaxed">聽著 <span class="text-blue-500 font-bold">嘩啦嘩啦</span> 的雨聲，吹著 <span class="text-cyan-500 font-bold">涼颼颼</span> 的風。</p>
+                </div>
+            </div>
+            <div class="mt-6 text-center text-2xl font-bold text-orange-600 animate-pulse">
+                小小偵探，你能挑戰寫出更豐富的句子嗎？
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 6: Summary & Challenge -->
+    <div class="slide" id="slide6">
+        <div class="cartoon-border p-12 text-center max-w-4xl w-full">
+            <h2 class="text-5xl font-bold text-emerald-600 mb-8">🎖️ 偵探總結</h2>
+            <div class="text-left text-2xl space-y-6 max-w-2xl mx-auto">
+                <p>✅ 學會了疊字詞：<span class="font-bold">紅通通、金燦燦</span></p>
+                <p>✅ 學會了擬聲詞：<span class="font-bold">嘩啦嘩啦、沙沙沙</span></p>
+                <p>✅ 挑戰了多感官寫作！</p>
+            </div>
+            <div class="mt-12">
+                <p class="text-3xl font-bold text-gray-700">準備好進行實戰工作紙了嗎？</p>
+                <div class="text-9xl mt-4">📝</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="fixed bottom-8 right-8 flex space-x-4">
+        <button onclick="changeSlide(-1)" class="bg-white border-4 border-emerald-400 p-4 rounded-full text-3xl hover:bg-emerald-100 shadow-lg">⬅️</button>
+        <button onclick="changeSlide(1)" class="bg-white border-4 border-emerald-400 p-4 rounded-full text-3xl hover:bg-emerald-100 shadow-lg">➡️</button>
+    </div>
+
+    <!-- Page Indicator -->
+    <div class="fixed bottom-8 left-8 bg-emerald-500 text-white px-6 py-2 rounded-full font-bold text-xl">
+        第 <span id="pageNumber">1</span> 頁 / 6
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 6;
+
+        function changeSlide(direction) {
+            // Reset answer section when leaving slide 4
+            if (currentSlide === 4) hideAnswer();
+            
+            document.getElementById(`slide${currentSlide}`).classList.remove('active');
+            currentSlide += direction;
+            if (currentSlide > totalSlides) currentSlide = 1;
+            if (currentSlide < 1) currentSlide = totalSlides;
+            document.getElementById(`slide${currentSlide}`).classList.add('active');
+            document.getElementById('pageNumber').innerText = currentSlide;
+        }
+
+        // Logic for Slide 4 Answer Reveal
+        function revealAnswer() {
+            document.getElementById('answerSection').style.display = 'block';
+            document.getElementById('showAnswerBtn').style.display = 'none';
+        }
+
+        function hideAnswer() {
+            document.getElementById('answerSection').style.display = 'none';
+            document.getElementById('showAnswerBtn').style.display = 'inline-block';
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') changeSlide(1);
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+        });
+    </script>
+</body>
+</html>
