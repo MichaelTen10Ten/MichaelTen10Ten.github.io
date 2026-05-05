@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>形容詞地＋動作大挑戰</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root, [data-theme="light"] {
+      --text-xs: clamp(0.8rem, 0.76rem + 0.2vw, 0.9rem);
+      --text-sm: clamp(0.95rem, 0.9rem + 0.25vw, 1rem);
+      --text-base: clamp(1.08rem, 1rem + 0.25vw, 1.18rem);
+      --text-lg: clamp(1.3rem, 1.15rem + 0.8vw, 1.7rem);
+      --text-xl: clamp(1.8rem, 1.3rem + 2vw, 2.8rem);
+      --space-1: .25rem; --space-2: .5rem; --space-3: .75rem; --space-4: 1rem; --space-5: 1.25rem;
+      --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem;
+      --color-bg: #fff9ef;
+      --color-surface: #fffef9;
+      --color-surface-2: #fff5da;
+      --color-border: #e7d8b8;
+      --color-text: #3a2f1f;
+      --color-text-muted: #776a57;
+      --color-primary: #ff8c42;
+      --color-primary-hover: #e57428;
+      --color-secondary: #4aa3a2;
+      --color-success: #4f8a10;
+      --color-warning: #c97b00;
+      --color-error: #c84b5a;
+      --color-card-good: #eaf7e2;
+      --color-card-bad: #fde8ea;
+      --radius-sm: .5rem; --radius-md: .9rem; --radius-lg: 1.25rem; --radius-full: 999px;
+      --shadow-sm: 0 3px 10px rgba(88, 64, 25, .08);
+      --shadow-md: 0 10px 28px rgba(88, 64, 25, .12);
+      --font-body: 'Noto Sans TC', sans-serif;
+      --transition: 180ms cubic-bezier(.16,1,.3,1);
+    }
+
+    [data-theme="dark"] {
+      --color-bg: #211b16;
+      --color-surface: #2a241f;
+      --color-surface-2: #342d27;
+      --color-border: #5a4c3f;
+      --color-text: #f8f0e3;
+      --color-text-muted: #c5b9aa;
+      --color-primary: #ffab66;
+      --color-primary-hover: #ffbe87;
+      --color-secondary: #6cc7c5;
+      --color-success: #90c96b;
+      --color-warning: #f2bc58;
+      --color-error: #ef8f9b;
+      --color-card-good: #2f4325;
+      --color-card-bad: #4d2a30;
+      --shadow-sm: 0 3px 10px rgba(0,0,0,.2);
+      --shadow-md: 0 10px 28px rgba(0,0,0,.3);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      line-height: 1.55;
+      color: var(--color-text);
+      background:
+        radial-gradient(circle at top right, rgba(255, 205, 120, .35), transparent 28%),
+        linear-gradient(180deg, var(--color-bg), color-mix(in srgb, var(--color-bg) 82%, white));
+    }
+    button, select { font: inherit; }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: var(--space-4);
+    }
+    .card {
+      background: var(--color-surface);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+    }
+    .hero {
+      padding: var(--space-6);
+      margin-top: var(--space-4);
+      display: grid;
+      gap: var(--space-4);
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-weight: 800;
+      font-size: var(--text-lg);
+    }
+    .logo-badge {
+      width: 52px; height: 52px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--color-primary), #ffd36c);
+      display: grid; place-items: center;
+      color: white; font-size: 1.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .theme-btn {
+      min-width: 44px; min-height: 44px;
+      border-radius: var(--radius-full);
+      border: 2px solid var(--color-border);
+      background: var(--color-surface-2);
+      color: var(--color-text);
+      cursor: pointer;
+    }
+    h1 {
+      margin: 0;
+      font-size: var(--text-xl);
+      line-height: 1.15;
+    }
+    .intro {
+      color: var(--color-text-muted);
+      max-width: 42ch;
+    }
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+    .pill {
+      padding: .45rem .85rem;
+      border-radius: var(--radius-full);
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      font-size: var(--text-sm);
+      font-weight: 700;
+    }
+    .panel {
+      margin-top: var(--space-5);
+      padding: var(--space-5);
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: var(--space-4);
+      align-items: end;
+    }
+    label { font-weight: 700; display: block; margin-bottom: .45rem; }
+    select {
+      width: 100%;
+      min-height: 48px;
+      border-radius: var(--radius-md);
+      border: 2px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
+      padding: .7rem .85rem;
+    }
+    .btn-row { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+    .btn {
+      min-height: 48px;
+      padding: .8rem 1.15rem;
+      border-radius: var(--radius-full);
+      border: none;
+      cursor: pointer;
+      font-weight: 800;
+      transition: transform var(--transition), background var(--transition), opacity var(--transition);
+    }
+    .btn:active { transform: translateY(1px) scale(.99); }
+    .btn-primary { background: var(--color-primary); color: white; }
+    .btn-primary:hover { background: var(--color-primary-hover); }
+    .btn-secondary { background: var(--color-secondary); color: white; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--color-text);
+      border: 2px solid var(--color-border);
+    }
+    .game-area {
+      margin-top: var(--space-5);
+      display: grid;
+      gap: var(--space-4);
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: var(--space-3);
+    }
+    .stat-box {
+      padding: var(--space-4);
+      border-radius: var(--radius-md);
+      background: var(--color-surface-2);
+      border: 2px solid var(--color-border);
+      text-align: center;
+    }
+    .stat-label { font-size: var(--text-sm); color: var(--color-text-muted); font-weight: 700; }
+    .stat-value { font-size: var(--text-lg); font-weight: 800; }
+    .question-card {
+      padding: var(--space-6);
+      display: grid;
+      gap: var(--space-4);
+    }
+    .level-tag {
+      display: inline-flex;
+      width: fit-content;
+      padding: .45rem .85rem;
+      border-radius: var(--radius-full);
+      font-size: var(--text-sm);
+      font-weight: 800;
+      background: color-mix(in srgb, var(--color-secondary) 18%, var(--color-surface));
+      border: 1px solid color-mix(in srgb, var(--color-secondary) 35%, var(--color-border));
+    }
+    .question-no { font-weight: 800; color: var(--color-text-muted); }
+    .sentence {
+      font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2.3rem);
+      font-weight: 800;
+      letter-spacing: .02em;
+      padding: var(--space-4);
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-2) 90%, white), var(--color-surface));
+      border: 2px dashed var(--color-border);
+      text-align: center;
+    }
+    .hint {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      background: color-mix(in srgb, var(--color-warning) 12%, var(--color-surface));
+      border-radius: var(--radius-md);
+      padding: .7rem .9rem;
+    }
+    .options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: var(--space-3);
+    }
+    .option-btn {
+      min-height: 72px;
+      padding: 1rem;
+      border-radius: var(--radius-md);
+      border: 2px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
+      cursor: pointer;
+      font-size: var(--text-base);
+      font-weight: 800;
+      box-shadow: var(--shadow-sm);
+      transition: transform var(--transition), border-color var(--transition), background var(--transition);
+    }
+    .option-btn:hover { transform: translateY(-2px); border-color: var(--color-primary); }
+    .option-btn.correct { background: var(--color-card-good); border-color: var(--color-success); }
+    .option-btn.wrong { background: var(--color-card-bad); border-color: var(--color-error); }
+    .feedback {
+      min-height: 2.2rem;
+      font-weight: 800;
+      font-size: var(--text-base);
+    }
+    .feedback.good { color: var(--color-success); }
+    .feedback.bad { color: var(--color-error); }
+    .next-row { display: flex; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+    .progress {
+      width: 100%; height: 16px;
+      background: var(--color-surface-2);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--color-primary), #ffd36c);
+      transition: width 250ms ease;
+    }
+    .result {
+      padding: var(--space-6);
+      display: none;
+      gap: var(--space-4);
+      text-align: center;
+    }
+    .result.show { display: grid; }
+    .big-score { font-size: clamp(2rem, 1.4rem + 3vw, 4rem); font-weight: 900; color: var(--color-primary); }
+    .stars { font-size: 2rem; letter-spacing: .2rem; }
+    .review-list {
+      text-align: left;
+      display: grid;
+      gap: var(--space-3);
+    }
+    .review-item {
+      padding: var(--space-4);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface-2);
+    }
+    .footer-note {
+      margin: var(--space-5) 0 var(--space-8);
+      color: var(--color-text-muted);
+      font-size: var(--text-sm);
+      text-align: center;
+    }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+    @media (max-width: 640px) {
+      .hero, .panel, .question-card, .result { padding: var(--space-4); }
+      .sentence { font-size: 1.7rem; }
+      .next-row .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main" class="sr-only">跳到內容</a>
+  <div class="wrap">
+    <section class="hero card">
+      <div class="topbar">
+        <div class="logo" aria-label="形容詞地加動作遊戲標誌">
+          <div class="logo-badge">地</div>
+          <div>形容詞地＋動作大挑戰</div>
+        </div>
+        <button class="theme-btn" data-theme-toggle aria-label="切換深淺色模式">🌙</button>
+      </div>
+      <div>
+        <h1>幫小朋友學會「怎樣地做動作」</h1>
+        <p class="intro">這個遊戲專為香港小一學生設計，題目由淺入深，先學常見的形容詞地＋動作，再挑戰較長句子。普通版和進階版各有超過10題，適合能力稍遜學生逐步練習。</p>
+      </div>
+      <div class="pill-row">
+        <span class="pill">普通版 12 題</span>
+        <span class="pill">進階版 12 題</span>
+        <span class="pill">即時回饋</span>
+        <span class="pill">錯題重溫</span>
+      </div>
+    </section>
+
+    <main id="main">
+      <section class="panel card" aria-label="遊戲設定">
+        <div class="controls">
+          <div>
+            <label for="modeSelect">選擇版本</label>
+            <select id="modeSelect">
+              <option value="basic">普通版：較常見、較容易</option>
+              <option value="advanced">進階版：句子較長、需細心分辨</option>
+            </select>
+          </div>
+          <div>
+            <label for="shuffleSelect">題目次序</label>
+            <select id="shuffleSelect">
+              <option value="yes">隨機出題</option>
+              <option value="no">依次出題</option>
+            </select>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="startBtn">開始遊戲</button>
+            <button class="btn btn-secondary" id="readBtn">朗讀題目</button>
+            <button class="btn btn-ghost" id="restartBtn">重新開始</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="game-area" aria-live="polite">
+        <div class="stats">
+          <div class="stat-box"><div class="stat-label">版本</div><div class="stat-value" id="modeLabel">未開始</div></div>
+          <div class="stat-box"><div class="stat-label">現在題目</div><div class="stat-value" id="questionCount">0 / 0</div></div>
+          <div class="stat-box"><div class="stat-label">分數</div><div class="stat-value" id="scoreCount">0</div></div>
+          <div class="stat-box"><div class="stat-label">連續答對</div><div class="stat-value" id="streakCount">0</div></div>
+        </div>
+
+        <div class="progress" aria-label="進度條"><div class="progress-bar" id="progressBar"></div></div>
+
+        <section class="question-card card" id="questionCard">
+          <div class="level-tag" id="levelTag">請先開始遊戲</div>
+          <div class="question-no" id="questionNo">按「開始遊戲」後便會出題。</div>
+          <div class="sentence" id="sentenceBox">小朋友準備好了嗎？</div>
+          <div class="hint" id="hintBox">提示：請選出最合適的「形容詞地＋動作」詞語。</div>
+          <div class="options" id="optionsBox"></div>
+          <div class="feedback" id="feedbackBox"></div>
+          <div class="next-row">
+            <button class="btn btn-primary" id="nextBtn" disabled>下一題</button>
+          </div>
+        </section>
+
+        <section class="result card" id="resultCard">
+          <div class="level-tag">完成了！</div>
+          <div class="big-score" id="finalScore">0 / 0</div>
+          <div class="stars" id="stars">⭐</div>
+          <div id="resultText"></div>
+          <div class="review-list" id="reviewList"></div>
+          <div class="btn-row" style="justify-content:center;">
+            <button class="btn btn-primary" id="playAgainBtn">再玩一次</button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <p class="footer-note">教學建議：可先玩普通版，再帶學生朗讀句子，最後挑戰進階版。</p>
+  </div>
+
+  <script>
+    const basicQuestions = [
+      { sentence: '妹妹＿＿＿＿唱歌。', hint: '想想唱歌時的樣子。', answer: '開心地', options: ['開心地', '安靜地', '慢慢地', '傷心地'] },
+      { sentence: '弟弟＿＿＿＿跑步。', hint: '跑步通常會怎樣？', answer: '快快地', options: ['快快地', '輕輕地', '低低地', '圓圓地'] },
+      { sentence: '我＿＿＿＿看書。', hint: '在圖書館看書應怎樣？', answer: '安靜地', options: ['安靜地', '大聲地', '急忙地', '用力地'] },
+      { sentence: '小狗＿＿＿＿走過來。', hint: '小狗的腳步很輕。', answer: '慢慢地', options: ['慢慢地', '兇狠地', '高高地', '亂亂地'] },
+      { sentence: '姐姐＿＿＿＿回答老師的問題。', hint: '回答時要有信心。', answer: '大聲地', options: ['大聲地', '矮矮地', '香香地', '長長地'] },
+      { sentence: '哥哥＿＿＿＿搬椅子。', hint: '搬椅子時不要太粗魯。', answer: '輕輕地', options: ['輕輕地', '快快地', '藍藍地', '甜甜地'] },
+      { sentence: '小明＿＿＿＿排隊。', hint: '排隊時不應衝前。', answer: '乖乖地', options: ['乖乖地', '急急地', '跳跳地', '高高地'] },
+      { sentence: '同學們＿＿＿＿聽故事。', hint: '聽故事時很專心。', answer: '專心地', options: ['專心地', '胡亂地', '低低地', '冷冷地'] },
+      { sentence: '小朋友＿＿＿＿收拾玩具。', hint: '做事不拖拉。', answer: '很快地', options: ['很快地', '很慢地', '很圓地', '很白地'] },
+      { sentence: '媽媽＿＿＿＿關上房門。', hint: '晚上不要太大聲。', answer: '輕輕地', options: ['輕輕地', '用力地', '傷心地', '長長地'] },
+      { sentence: '弟弟＿＿＿＿吃早餐。', hint: '肚子很餓時會怎樣吃？', answer: '大口地', options: ['大口地', '安靜地', '高高地', '香香地'] },
+      { sentence: '我＿＿＿＿寫字。', hint: '寫字時要集中精神。', answer: '認真地', options: ['認真地', '隨便地', '圓圓地', '軟軟地'] }
+    ];
+
+    const advancedQuestions = [
+      { sentence: '小美在台上＿＿＿＿唱出生日歌。', hint: '在台上表演要有自信。', answer: '大方地', options: ['大方地', '胡亂地', '灰灰地', '短短地'] },
+      { sentence: '哥哥看見婆婆拿着重袋，便＿＿＿＿走過去幫忙。', hint: '這個動作帶出關心別人。', answer: '連忙地', options: ['連忙地', '慢吞吞地', '苦苦地', '尖尖地'] },
+      { sentence: '上課時，學生們＿＿＿＿舉手回答。', hint: '形容學生守規矩。', answer: '有禮貌地', options: ['有禮貌地', '亂七八糟地', '大大片地', '酸酸地'] },
+      { sentence: '小志做完功課後，＿＿＿＿把文具放回筆袋。', hint: '做事整齊，有條理。', answer: '整齊地', options: ['整齊地', '急躁地', '重重地', '直直地'] },
+      { sentence: '妹妹害怕小貓，便＿＿＿＿躲到媽媽身後。', hint: '這個詞語表現心情。', answer: '緊張地', options: ['緊張地', '熱熱地', '扁扁地', '高聲地'] },
+      { sentence: '老師稱讚我後，我＿＿＿＿點頭微笑。', hint: '得到稱讚時會有甚麼感受？', answer: '開心地', options: ['開心地', '粗心地', '遠遠地', '黑黑地'] },
+      { sentence: '小朋友看見地上有垃圾，＿＿＿＿把它拾起來。', hint: '這是一種主動做好事的表現。', answer: '主動地', options: ['主動地', '緩慢地', '彎彎地', '白白地'] },
+      { sentence: '爸爸怕吵醒弟弟，＿＿＿＿關掉電視。', hint: '不想發出太大聲音。', answer: '靜靜地', options: ['靜靜地', '猛烈地', '酸甜地', '長久地'] },
+      { sentence: '比賽開始後，運動員＿＿＿＿向前衝。', hint: '比賽時很有力量。', answer: '奮力地', options: ['奮力地', '冰冷地', '細細地', '方方地'] },
+      { sentence: '姐姐怕打破玻璃杯，＿＿＿＿把它放到桌上。', hint: '要小心，不可粗魯。', answer: '小心地', options: ['小心地', '大意地', '高低地', '香甜地'] },
+      { sentence: '我做錯題目後，＿＿＿＿再看一次題目。', hint: '表示用心和專注。', answer: '仔細地', options: ['仔細地', '隨意地', '青青地', '早早地'] },
+      { sentence: '大家看見精彩表演，＿＿＿＿拍手歡呼。', hint: '看到精彩節目時會很興奮。', answer: '熱烈地', options: ['熱烈地', '沉重地', '矮小地', '薄薄地'] }
+    ];
+
+    const modeSelect = document.getElementById('modeSelect');
+    const shuffleSelect = document.getElementById('shuffleSelect');
+    const startBtn = document.getElementById('startBtn');
+    const readBtn = document.getElementById('readBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    const modeLabel = document.getElementById('modeLabel');
+    const questionCount = document.getElementById('questionCount');
+    const scoreCount = document.getElementById('scoreCount');
+    const streakCount = document.getElementById('streakCount');
+    const levelTag = document.getElementById('levelTag');
+    const questionNo = document.getElementById('questionNo');
+    const sentenceBox = document.getElementById('sentenceBox');
+    const hintBox = document.getElementById('hintBox');
+    const optionsBox = document.getElementById('optionsBox');
+    const feedbackBox = document.getElementById('feedbackBox');
+    const progressBar = document.getElementById('progressBar');
+    const resultCard = document.getElementById('resultCard');
+    const questionCard = document.getElementById('questionCard');
+    const finalScore = document.getElementById('finalScore');
+    const stars = document.getElementById('stars');
+    const resultText = document.getElementById('resultText');
+    const reviewList = document.getElementById('reviewList');
+
+    let gameQuestions = [];
+    let currentIndex = 0;
+    let score = 0;
+    let streak = 0;
+    let answered = false;
+    let wrongItems = [];
+
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function getQuestionSet() {
+      const selected = modeSelect.value === 'basic' ? basicQuestions : advancedQuestions;
+      return shuffleSelect.value === 'yes' ? shuffleArray(selected) : [...selected];
+    }
+
+    function startGame() {
+      gameQuestions = getQuestionSet();
+      currentIndex = 0;
+      score = 0;
+      streak = 0;
+      wrongItems = [];
+      answered = false;
+      resultCard.classList.remove('show');
+      questionCard.style.display = 'grid';
+      updateStats();
+      renderQuestion();
+    }
+
+    function updateStats() {
+      const total = gameQuestions.length || 0;
+      modeLabel.textContent = modeSelect.value === 'basic' ? '普通版' : '進階版';
+      questionCount.textContent = total ? `${Math.min(currentIndex + 1, total)} / ${total}` : '0 / 0';
+      scoreCount.textContent = score;
+      streakCount.textContent = streak;
+      progressBar.style.width = total ? `${(currentIndex / total) * 100}%` : '0%';
+    }
+
+    function renderQuestion() {
+      const q = gameQuestions[currentIndex];
+      if (!q) return showResult();
+      answered = false;
+      nextBtn.disabled = true;
+      feedbackBox.textContent = '';
+      feedbackBox.className = 'feedback';
+      levelTag.textContent = modeSelect.value === 'basic' ? '普通版' : '進階版';
+      questionNo.textContent = `第 ${currentIndex + 1} 題，共 ${gameQuestions.length} 題`;
+      sentenceBox.textContent = q.sentence;
+      hintBox.textContent = `提示：${q.hint}`;
+      optionsBox.innerHTML = '';
+      const opts = shuffleSelect.value === 'yes' ? shuffleArray(q.options) : q.options;
+      opts.forEach(option => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.textContent = option;
+        btn.setAttribute('type', 'button');
+        btn.addEventListener('click', () => chooseAnswer(option, btn));
+        optionsBox.appendChild(btn);
+      });
+      updateStats();
+      progressBar.style.width = `${(currentIndex / gameQuestions.length) * 100}%`;
+    }
+
+    function chooseAnswer(option, btn) {
+      if (answered) return;
+      answered = true;
+      const q = gameQuestions[currentIndex];
+      const buttons = [...document.querySelectorAll('.option-btn')];
+      buttons.forEach(b => b.disabled = true);
+      if (option === q.answer) {
+        score += 1;
+        streak += 1;
+        btn.classList.add('correct');
+        feedbackBox.textContent = '答對了！真叻！';
+        feedbackBox.classList.add('good');
+      } else {
+        streak = 0;
+        btn.classList.add('wrong');
+        const correctBtn = buttons.find(b => b.textContent === q.answer);
+        if (correctBtn) correctBtn.classList.add('correct');
+        feedbackBox.textContent = `再試下記住：正確答案是「${q.answer}」`;
+        feedbackBox.classList.add('bad');
+        wrongItems.push({ sentence: q.sentence, answer: q.answer });
+      }
+      nextBtn.disabled = false;
+      scoreCount.textContent = score;
+      streakCount.textContent = streak;
+    }
+
+    function nextQuestion() {
+      if (!answered) return;
+      currentIndex += 1;
+      if (currentIndex >= gameQuestions.length) {
+        showResult();
+      } else {
+        renderQuestion();
+      }
+    }
+
+    function getStars(ratio) {
+      if (ratio === 1) return '⭐⭐⭐⭐⭐';
+      if (ratio >= 0.8) return '⭐⭐⭐⭐';
+      if (ratio >= 0.6) return '⭐⭐⭐';
+      if (ratio >= 0.4) return '⭐⭐';
+      return '⭐';
+    }
+
+    function showResult() {
+      questionCard.style.display = 'none';
+      resultCard.classList.add('show');
+      const total = gameQuestions.length;
+      const ratio = total ? score / total : 0;
+      finalScore.textContent = `${score} / ${total}`;
+      stars.textContent = getStars(ratio);
+      progressBar.style.width = '100%';
+      questionCount.textContent = `${total} / ${total}`;
+      let text = '繼續努力，你已經開始掌握「形容詞地＋動作」了。';
+      if (ratio === 1) text = '太棒了！你全部答對，完全掌握了！';
+      else if (ratio >= 0.8) text = '做得很好！你很接近全對了！';
+      else if (ratio >= 0.6) text = '不錯啊！再讀多幾次句子會更熟。';
+      resultText.textContent = text;
+      reviewList.innerHTML = '';
+      if (wrongItems.length) {
+        wrongItems.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'review-item';
+          div.textContent = `重溫：${item.sentence} → ${item.answer}`;
+          reviewList.appendChild(div);
+        });
+      } else {
+        const div = document.createElement('div');
+        div.className = 'review-item';
+        div.textContent = '沒有錯題，太好了！';
+        reviewList.appendChild(div);
+      }
+    }
+
+    function readCurrentQuestion() {
+      const text = sentenceBox.textContent + '。' + hintBox.textContent;
+      if (!('speechSynthesis' in window)) {
+        feedbackBox.textContent = '這個瀏覽器未必支援朗讀功能。';
+        feedbackBox.className = 'feedback bad';
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'zh-HK';
+      utter.rate = 0.9;
+      utter.pitch = 1;
+      window.speechSynthesis.speak(utter);
+    }
+
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', startGame);
+    nextBtn.addEventListener('click', nextQuestion);
+    playAgainBtn.addEventListener('click', startGame);
+    readBtn.addEventListener('click', readCurrentQuestion);
+
+    (function () {
+      const btn = document.querySelector('[data-theme-toggle]');
+      const root = document.documentElement;
+      let theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      root.setAttribute('data-theme', theme);
+      btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+      btn.addEventListener('click', () => {
+        theme = theme === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', theme);
+        btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+      });
+    })();
+  </script>
+</body>
+</html>
