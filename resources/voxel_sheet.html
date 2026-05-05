@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>立体音乐工坊 - 智能镜头跟随 | 完整CSV导入</title>
+    <title>立体音乐工坊 - 深度防Z-fighting | 智能镜头跟随</title>
     <style>
         body {
             margin: 0;
@@ -226,7 +226,7 @@
             <button id="addRowBottom" class="add-row-btn">+ 新增一行 (添加音符)</button>
         </div>
         <div style="font-size:10px; text-align:center; margin-top:6px; color:#8f94b5;">
-            ✨ 镜头整体跟随播放位置 | 导入CSV自动识别BPM/基准音/全局微调 | 延音+6种乐器
+            ✨ 音高越高的方块越靠后（微调Z轴）解决重叠闪烁 | 镜头整体跟随 | 延音+6种乐器
         </div>
     </div>
 </div>
@@ -245,7 +245,7 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
-    // --- 场景初始化 ---
+    // --- 场景初始化，移除地板网格 ---
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0a1a);
@@ -277,7 +277,7 @@
     controls.zoomSpeed = 1.0;
     controls.target.set(4, 2, -2);
     
-    // 光照增强立体感
+    // 光照
     const ambient = new THREE.AmbientLight(0x404060);
     scene.add(ambient);
     const mainLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -290,14 +290,9 @@
     const backLight = new THREE.PointLight(0xffaa66, 0.3);
     backLight.position.set(-2, 3, -5);
     scene.add(backLight);
-    const gridHelper = new THREE.GridHelper(28, 20, 0x88aaff, 0x335588);
-    gridHelper.position.y = -0.2;
-    gridHelper.material.transparent = true;
-    gridHelper.material.opacity = 0.25;
-    scene.add(gridHelper);
     
-    // 星空背景粒子
-    for(let i=0;i<500;i++) {
+    // 星星背景（替代地板网格，美观且无z-fighting问题）
+    for(let i=0;i<600;i++) {
         const starGeo = new THREE.BufferGeometry();
         starGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([(Math.random()-0.5)*200, (Math.random()-0.5)*80, (Math.random()-0.5)*100 - 50]),3));
         const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({color:0xffffff, size:0.07}));
@@ -342,8 +337,10 @@
     const VEL_DEPTH_FACTOR = 1.1;
     const START_X_OFFSET = 0.5;
     const CUBE_OPACITY = 0.7;
+    // 为解决Z-fighting，根据音高微调Z位置：音高越高（正值越大），方块越向后（负Z方向移动）
+    const PITCH_Z_OFFSET_FACTOR = -0.035;  // 每个半音偏移 -0.035 单位 (向后)
     
-    // 乐器库 (新增 vibraphone, flute, strings)
+    // 乐器库
     const instrumentsMap = {
         piano:   { type: 'triangle', filterFreq: null, desc: '🎹 钢琴' },
         guitar:  { type: 'sawtooth', filterFreq: 1600, desc: '🎸 吉他' },
@@ -366,6 +363,7 @@
         cube.add(wireframe);
     }
     
+    // 重建3D场景：每个立方体Z位置增加基于音高的偏移
     function rebuildScene() {
         while(noteGroup.children.length) noteGroup.remove(noteGroup.children[0]);
         noteMeshes = [];
@@ -382,7 +380,10 @@
             const spacingX = 1.05;
             const posX = START_X_OFFSET + start * spacingX + width/2;
             const posY = height / 2;
-            const posZ = - (depth / 2) - 0.2;
+            // 基础Z位置（向后为负），加上因音高导致的额外偏移（音高越高越向后）
+            const baseZ = - (depth / 2) - 0.2;
+            const pitchZOffset = pitch * PITCH_Z_OFFSET_FACTOR;
+            const posZ = baseZ + pitchZOffset;
             
             const geometry = new THREE.BoxGeometry(width, height, depth);
             const color = getRandomColor(idx * 7 + start * 3);
@@ -394,10 +395,10 @@
             cube.castShadow = true;
             cube.receiveShadow = false;
             cube.position.set(posX, posY, posZ);
-            cube.userData = { noteIndex: idx };
+            cube.userData = { noteIndex: idx, pitchOffset: pitchZOffset };
             addEdgesToCube(cube);
             noteGroup.add(cube);
-            noteMeshes.push({ mesh: cube, noteIdx: idx, start, duration });
+            noteMeshes.push({ mesh: cube, noteIdx: idx, start, duration, posZ });
         });
     }
     
@@ -474,7 +475,7 @@
         renderTable(); rebuildScene(); if(isPlaying) stopPlayback();
     }
     
-    // 导出CSV (保留元数据)
+    // 导出CSV
     function exportToCSV() {
         const bpm = bpmInput.value;
         const ref = refNoteSelect.value;
@@ -486,7 +487,7 @@
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "music_sheet.csv"; a.click(); URL.revokeObjectURL(a.href);
     }
     
-    // 导入CSV (增强: 解析注释行中的 BPM, BaseNote, GlobalTranspose)
+    // 导入CSV (支持解析BPM/BaseNote/GlobalTranspose)
     function importCSV(file) {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -498,7 +499,6 @@
             for(let line of lines) {
                 const trimmed = line.trim();
                 if(trimmed.startsWith("#")) {
-                    // 解析元数据:  # BPM=80	BaseNote=C5	GlobalTranspose=2   (支持空格或制表符)
                     const bpmMatch = trimmed.match(/BPM=(\d+)/i);
                     if(bpmMatch) bpmVal = parseInt(bpmMatch[1]);
                     const baseMatch = trimmed.match(/BaseNote=([C][3-5])/i);
@@ -521,10 +521,7 @@
                 }
             }
             
-            // 应用解析到的全局参数
-            if(bpmVal !== null && bpmVal >= 40 && bpmVal <= 240) {
-                bpmInput.value = bpmVal;
-            }
+            if(bpmVal !== null && bpmVal >= 40 && bpmVal <= 240) bpmInput.value = bpmVal;
             if(baseNoteVal !== null && noteFreqMap[baseNoteVal]) {
                 refNoteSelect.value = baseNoteVal;
                 currentBaseFreq = noteFreqMap[baseNoteVal];
@@ -540,7 +537,6 @@
                 renderTable();
                 rebuildScene();
                 if(isPlaying) stopPlayback();
-                // 同步界面上的基准音和微调数值
                 updateBaseFreqAndTranspose();
             } else {
                 alert("CSV中未发现有效音符数据，保留原有乐谱");
@@ -569,10 +565,8 @@
         osc.type = inst.type;
         osc.frequency.value = freq;
         
-        // 颤音琴特殊: LFO
-        let modulator = null;
         if(instrumentType === 'vibraphone') {
-            modulator = audioCtx.createOscillator();
+            const modulator = audioCtx.createOscillator();
             const modGain = audioCtx.createGain();
             modulator.frequency.value = 6;
             modGain.gain.value = 3;
@@ -596,7 +590,6 @@
         osc.stop(now + releaseTime + 0.1);
     }
     
-    // 播放调度核心
     function startPlayback() {
         if(isPlaying) stopPlayback();
         if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -619,14 +612,13 @@
         if(animationId) cancelAnimationFrame(animationId);
         scheduledTimeouts.clear();
         
-        // 高亮动画 + 更新时间轴位置 (用于镜头跟随)
+        // 高亮动画 + 更新时间轴位置
         function animatePlayback() {
             if(!isPlaying) return;
             const now = audioCtx.currentTime;
             const elapsed = now - timelineStartTime;
             const currentGrid = elapsed / secPerBeat;
             
-            // 更新当前播放头X坐标 (用于镜头)
             let targetX = START_X_OFFSET;
             if(currentNotesData.length) {
                 let activeNote = null;
@@ -646,9 +638,9 @@
                     targetX = START_X_OFFSET + last.start * 1.05 + w/2 + 1.2;
                 }
             }
-            currentPlayheadX = currentPlayheadX * 0.85 + targetX * 0.15;  // 平滑跟随
+            currentPlayheadX = currentPlayheadX * 0.85 + targetX * 0.15;
             
-            // 高亮音符和表格行
+            // 高亮
             const rowsSet = new Set();
             noteMeshes.forEach(item => {
                 const note = currentNotesData[item.noteIdx];
@@ -717,20 +709,16 @@
         globalTransposeInput.value = currentGlobalTranspose;
     }
     
-    // ---- 全局动画：实现镜头整体跟随（不只是旋转）----
+    // 镜头整体跟随（位置+目标点）
     function updateCameraFollow() {
         if(!isPlaying || !camFollowEnabled) return;
-        // 目标相机位置: 位于播放头右侧后方，视角看向播放头
         const targetPos = new THREE.Vector3(currentPlayheadX + 5.5, 5.2, 9.5);
         const lookAtPos = new THREE.Vector3(currentPlayheadX, 2.2, -1.5);
-        // 平滑移动相机位置
         camera.position.lerp(targetPos, 0.08);
-        // 更新controls的目标点以保证交互连续性
         controls.target.lerp(lookAtPos, 0.08);
-        controls.update(); // 强制同步
+        controls.update();
     }
     
-    // 主渲染循环
     function animate() {
         requestAnimationFrame(animate);
         updateCameraFollow();
@@ -746,7 +734,6 @@
     
     // 初始化数据和事件
     function init() {
-        // 示例乐谱 (包含新乐器)
         currentNotesData = [
             { start:0, pitch:0, duration:1, velocity:78, instrument:'piano' },
             { start:1.5, pitch:2, duration:1.2, velocity:70, instrument:'guitar' },
