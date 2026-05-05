@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>立体音乐工坊 - 深度防Z-fighting | 智能镜头跟随</title>
+    <title>立体音乐工坊 - 自定义主色 · 自动配色 · 锁定镜头</title>
     <style>
         body {
             margin: 0;
@@ -71,10 +71,7 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
         
-        button:hover {
-            background: #4e54b0;
-            transform: scale(1.02);
-        }
+        button:hover { background: #4e54b0; transform: scale(1.02); }
         
         .param-group {
             display: flex;
@@ -85,12 +82,9 @@
             border-radius: 30px;
         }
         
-        .param-group label {
-            font-size: 11px;
-            font-weight: 500;
-        }
+        .param-group label { font-size: 11px; font-weight: 500; }
         
-        select, input[type="number"] {
+        select, input[type="number"], input[type="color"] {
             background: #0f0f1a;
             border: 1px solid #5a5f8a;
             color: white;
@@ -100,14 +94,17 @@
             cursor: pointer;
         }
         
+        input[type="color"] {
+            width: 32px;
+            height: 28px;
+            padding: 2px;
+        }
+        
         .toggle-btn {
             background: #3a3f60;
             padding: 5px 12px;
         }
-        .toggle-btn.active {
-            background: #5a6eca;
-            box-shadow: 0 0 4px cyan;
-        }
+        .toggle-btn.active { background: #5a6eca; box-shadow: 0 0 4px cyan; }
         
         .table-section {
             flex: 1.2;
@@ -133,14 +130,7 @@
             text-align: center;
             vertical-align: middle;
         }
-        
-        .excel-table th {
-            background: #2d3146;
-            font-weight: bold;
-            position: sticky;
-            top: 0;
-        }
-        
+        .excel-table th { background: #2d3146; font-weight: bold; position: sticky; top: 0; }
         .excel-table input, .excel-table select {
             width: 75px;
             background: #1a1c2a;
@@ -151,11 +141,7 @@
             text-align: center;
             font-size: 10px;
         }
-        
-        .excel-table select {
-            width: 85px;
-        }
-        
+        .excel-table select { width: 85px; }
         .action-btn {
             background: #3c4060;
             border: none;
@@ -167,7 +153,6 @@
             cursor: pointer;
             margin: 0 2px;
         }
-        
         .copy-btn { background: #2a6b5e; }
         .delete-btn { background: #6a3e45; }
         .add-row-btn { background: #4c527c; width: auto; padding: 4px 14px; margin-top: 8px; }
@@ -192,6 +177,14 @@
                 <input type="file" id="importFile" accept=".csv" style="display:none">
             </div>
             <div class="param-group">
+                <span>🎨 主色调:</span>
+                <input type="color" id="baseColorPicker" value="#5a6eca">
+            </div>
+            <div class="param-group">
+                <span>🎚️ 性能模式:</span>
+                <button id="performanceToggle" class="toggle-btn">⚡ 普通模式</button>
+            </div>
+            <div class="param-group">
                 <span>🎵 基准音:</span>
                 <select id="refNoteSelect">
                     <option value="C3">C3</option><option value="C4" selected>C4</option><option value="C5">C5</option>
@@ -200,7 +193,6 @@
             <div class="param-group">
                 <span>🎚️ 全局微调:</span>
                 <input type="number" id="globalTranspose" value="0" step="1" min="-12" max="12" style="width:65px">
-                <span style="font-size:10px;">半音</span>
             </div>
             <div class="param-group">
                 <span>🎚️ BPM:</span>
@@ -226,7 +218,7 @@
             <button id="addRowBottom" class="add-row-btn">+ 新增一行 (添加音符)</button>
         </div>
         <div style="font-size:10px; text-align:center; margin-top:6px; color:#8f94b5;">
-            ✨ 音高越高的方块越靠后（微调Z轴）解决重叠闪烁 | 镜头整体跟随 | 延音+6种乐器
+            🎨 主色自定义 | 镜头自动跟随（不可手动旋转） | 防Z-fighting优化
         </div>
     </div>
 </div>
@@ -245,7 +237,7 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
-    // --- 场景初始化，移除地板网格 ---
+    // --- 初始化场景 ---
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0a1a);
@@ -269,13 +261,11 @@
     labelRenderer.domElement.style.pointerEvents = 'none';
     container.appendChild(labelRenderer.domElement);
     
+    // 禁用用户交互的 OrbitControls (但保留内部target更新权限用于镜头跟随)
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.autoRotate = false;
-    controls.enableZoom = true;
-    controls.zoomSpeed = 1.0;
-    controls.target.set(4, 2, -2);
+    controls.enabled = false;          // 用户无法拖动/旋转
+    controls.enableZoom = false;       // 禁止缩放
+    controls.enablePan = false;
     
     // 光照
     const ambient = new THREE.AmbientLight(0x404060);
@@ -291,7 +281,7 @@
     backLight.position.set(-2, 3, -5);
     scene.add(backLight);
     
-    // 星星背景（替代地板网格，美观且无z-fighting问题）
+    // 星星背景
     for(let i=0;i<600;i++) {
         const starGeo = new THREE.BufferGeometry();
         starGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([(Math.random()-0.5)*200, (Math.random()-0.5)*80, (Math.random()-0.5)*100 - 50]),3));
@@ -299,10 +289,52 @@
         scene.add(stars);
     }
     
+    // ---- 自动配色 (基于主色) ----
+    let baseColorHex = "#5a6eca";   // 默认
+    function getColorFromBase(idx, pitch, velocity, startTime) {
+        // 将十六进制转为 HSL
+        let r = parseInt(baseColorHex.slice(1,3), 16) / 255;
+        let g = parseInt(baseColorHex.slice(3,5), 16) / 255;
+        let b = parseInt(baseColorHex.slice(5,7), 16) / 255;
+        const colorObj = new THREE.Color(r, g, b);
+        const hsl = { h: 0, s: 0, l: 0 };
+        colorObj.getHSL(hsl);
+        
+        // 根据音高偏移 (或索引) 产生色相偏移，范围 -20° ~ +20°，使相邻音符有区分且保持和谐
+        const hueShift = (pitch * 2.5) + (idx * 1.2);
+        let newHue = hsl.h + (hueShift / 360);
+        newHue = newHue - Math.floor(newHue);
+        
+        // 饱和度和亮度微调: 力度越高饱和度略高，亮度略高
+        const sat = Math.min(0.85, Math.max(0.55, hsl.s + (velocity / 100) * 0.2));
+        const light = Math.min(0.75, Math.max(0.45, hsl.l + (velocity / 100) * 0.15));
+        
+        return new THREE.Color().setHSL(newHue, sat, light);
+    }
+    
+    // ---- 性能模式 (仅控制阴影和光照) ----
+    let lowPerformanceMode = false;
+    function applyPerformanceMode() {
+        if(lowPerformanceMode) {
+            mainLight.castShadow = false;
+            mainLight.intensity = 0.7;
+            fillLight.intensity = 0.3;
+            backLight.intensity = 0.2;
+            renderer.shadowMap.enabled = false;
+        } else {
+            mainLight.castShadow = true;
+            mainLight.intensity = 1;
+            fillLight.intensity = 0.5;
+            backLight.intensity = 0.3;
+            renderer.shadowMap.enabled = true;
+        }
+        rebuildScene();
+    }
+    
     let noteGroup = new THREE.Group();
     scene.add(noteGroup);
-    let currentNotesData = [];      // {start, pitch, duration, velocity, instrument}
-    let noteMeshes = [];            // {mesh, noteIdx, start, duration}
+    let currentNotesData = [];
+    let noteMeshes = [];
     
     // 音频全局
     let audioCtx = null;
@@ -312,7 +344,7 @@
     let timelineStartTime = 0;
     let sustainEnabled = false;
     let camFollowEnabled = true;
-    let currentPlayheadX = 4.0;      // 当前播放位置X坐标(用于镜头跟随)
+    let currentPlayheadX = 4.0;
     
     // DOM 元素
     const bpmInput = document.getElementById('bpmInput');
@@ -327,8 +359,10 @@
     const playStatusSpan = document.getElementById('playStatus');
     const sustainToggleBtn = document.getElementById('sustainToggle');
     const camFollowToggleBtn = document.getElementById('camFollowToggle');
+    const performanceToggleBtn = document.getElementById('performanceToggle');
+    const baseColorPicker = document.getElementById('baseColorPicker');
     
-    // 常量映射
+    // 常量
     const noteFreqMap = { C3:130.81, C4:261.63, C5:523.25 };
     let currentBaseFreq = 261.63;
     let currentGlobalTranspose = 0;
@@ -337,10 +371,7 @@
     const VEL_DEPTH_FACTOR = 1.1;
     const START_X_OFFSET = 0.5;
     const CUBE_OPACITY = 0.7;
-    // 为解决Z-fighting，根据音高微调Z位置：音高越高（正值越大），方块越向后（负Z方向移动）
-    const PITCH_Z_OFFSET_FACTOR = -0.035;  // 每个半音偏移 -0.035 单位 (向后)
     
-    // 乐器库
     const instrumentsMap = {
         piano:   { type: 'triangle', filterFreq: null, desc: '🎹 钢琴' },
         guitar:  { type: 'sawtooth', filterFreq: 1600, desc: '🎸 吉他' },
@@ -350,20 +381,22 @@
         strings: { type: 'sawtooth', filterFreq: 800, desc: '🎻 弦乐' }
     };
     
-    function getRandomColor(seed) {
-        const hue = (seed * 131) % 360;
-        return new THREE.Color(`hsl(${hue}, 70%, 60%)`);
-    }
-    
-    // 为立方体添加边框解决视觉重叠
     function addEdgesToCube(cube) {
         const edgesGeo = new THREE.EdgesGeometry(cube.geometry);
-        const edgesMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 1 });
+        const edgesMat = new THREE.LineBasicMaterial({ color: 0xffffff });
         const wireframe = new THREE.LineSegments(edgesGeo, edgesMat);
         cube.add(wireframe);
     }
     
-    // 重建3D场景：每个立方体Z位置增加基于音高的偏移
+    // 防Z-fighting Z轴计算
+    function computeFinalZ(depth, pitch, idx, velocity) {
+        const baseZ = - (depth / 2) - 0.2;
+        const pitchOffset = pitch * -0.025;
+        const depthFactor = (1.3 - depth) * 0.18;
+        const randomOffset = (Math.sin(idx * 12.9898) * 43758.5453 % 1) * 0.03 - 0.015;
+        return baseZ + pitchOffset + depthFactor + randomOffset;
+    }
+    
     function rebuildScene() {
         while(noteGroup.children.length) noteGroup.remove(noteGroup.children[0]);
         noteMeshes = [];
@@ -380,91 +413,64 @@
             const spacingX = 1.05;
             const posX = START_X_OFFSET + start * spacingX + width/2;
             const posY = height / 2;
-            // 基础Z位置（向后为负），加上因音高导致的额外偏移（音高越高越向后）
-            const baseZ = - (depth / 2) - 0.2;
-            const pitchZOffset = pitch * PITCH_Z_OFFSET_FACTOR;
-            const posZ = baseZ + pitchZOffset;
+            const posZ = computeFinalZ(depth, pitch, idx, velocity);
             
             const geometry = new THREE.BoxGeometry(width, height, depth);
-            const color = getRandomColor(idx * 7 + start * 3);
+            const color = getColorFromBase(idx, pitch, note.velocity, start);
             const material = new THREE.MeshStandardMaterial({
                 color: color, roughness: 0.35, metalness: 0.1,
                 transparent: true, opacity: CUBE_OPACITY
             });
             const cube = new THREE.Mesh(geometry, material);
-            cube.castShadow = true;
+            if(!lowPerformanceMode) cube.castShadow = true;
             cube.receiveShadow = false;
             cube.position.set(posX, posY, posZ);
-            cube.userData = { noteIndex: idx, pitchOffset: pitchZOffset };
+            cube.userData = { noteIndex: idx };
             addEdgesToCube(cube);
             noteGroup.add(cube);
-            noteMeshes.push({ mesh: cube, noteIdx: idx, start, duration, posZ });
+            noteMeshes.push({ mesh: cube, noteIdx: idx, start, duration, posX, posY, posZ });
         });
     }
     
+    // 表格渲染 (不变)
     function renderTable() {
         tableBody.innerHTML = '';
-        if(currentNotesData.length === 0) {
-            currentNotesData.push({ start: 0, pitch: 0, duration: 1, velocity: 70, instrument: 'piano' });
-        }
+        if(currentNotesData.length === 0) currentNotesData.push({ start: 0, pitch: 0, duration: 1, velocity: 70, instrument: 'piano' });
         const instrumentsList = Object.keys(instrumentsMap);
         currentNotesData.forEach((note, idx) => {
             const tr = document.createElement('tr');
-            // 开始时间
             const tdStart = document.createElement('td');
-            const startInput = document.createElement('input');
-            startInput.type = 'number'; startInput.value = note.start; startInput.step = 0.5;
+            const startInput = document.createElement('input'); startInput.type = 'number'; startInput.value = note.start; startInput.step = 0.5;
             startInput.addEventListener('change', (e) => { note.start = parseFloat(e.target.value) || 0; rebuildScene(); if(isPlaying) stopPlayback(); });
             tdStart.appendChild(startInput);
-            // 音高偏移
             const tdPitch = document.createElement('td');
-            const pitchInput = document.createElement('input');
-            pitchInput.type = 'number'; pitchInput.value = note.pitch; pitchInput.step = 1;
+            const pitchInput = document.createElement('input'); pitchInput.type = 'number'; pitchInput.value = note.pitch; pitchInput.step = 1;
             pitchInput.addEventListener('change', (e) => { note.pitch = parseInt(e.target.value) || 0; rebuildScene(); if(isPlaying) stopPlayback(); });
             tdPitch.appendChild(pitchInput);
-            // 音长
             const tdDur = document.createElement('td');
-            const durInput = document.createElement('input');
-            durInput.type = 'number'; durInput.value = note.duration; durInput.step = 0.5; durInput.min = 0.25;
+            const durInput = document.createElement('input'); durInput.type = 'number'; durInput.value = note.duration; durInput.step = 0.5; durInput.min = 0.25;
             durInput.addEventListener('change', (e) => { note.duration = parseFloat(e.target.value) || 0.5; rebuildScene(); if(isPlaying) stopPlayback(); });
             tdDur.appendChild(durInput);
-            // 力道
             const tdVel = document.createElement('td');
-            const velInput = document.createElement('input');
-            velInput.type = 'number'; velInput.value = note.velocity; velInput.min = 0; velInput.max = 100; velInput.step = 5;
+            const velInput = document.createElement('input'); velInput.type = 'number'; velInput.value = note.velocity; velInput.min = 0; velInput.max = 100; velInput.step = 5;
             velInput.addEventListener('change', (e) => { note.velocity = parseInt(e.target.value) || 70; rebuildScene(); if(isPlaying) stopPlayback(); });
             tdVel.appendChild(velInput);
-            // 音色下拉
             const tdInst = document.createElement('td');
             const instSelect = document.createElement('select');
             instrumentsList.forEach(inst => {
-                const opt = document.createElement('option');
-                opt.value = inst;
-                opt.textContent = instrumentsMap[inst].desc;
+                const opt = document.createElement('option'); opt.value = inst; opt.textContent = instrumentsMap[inst].desc;
                 if (note.instrument === inst) opt.selected = true;
                 instSelect.appendChild(opt);
             });
             instSelect.addEventListener('change', (e) => { note.instrument = e.target.value; if(isPlaying) stopPlayback(); });
             tdInst.appendChild(instSelect);
-            // 操作
             const tdAction = document.createElement('td');
-            const copyBtn = document.createElement('button');
-            copyBtn.textContent = '📋'; copyBtn.className = 'action-btn copy-btn';
-            copyBtn.addEventListener('click', () => {
-                const cloned = JSON.parse(JSON.stringify(note));
-                currentNotesData.splice(idx+1, 0, cloned);
-                renderTable(); rebuildScene(); if(isPlaying) stopPlayback();
-            });
-            const delBtn = document.createElement('button');
-            delBtn.textContent = '✕'; delBtn.className = 'action-btn delete-btn';
-            delBtn.addEventListener('click', () => {
-                if(currentNotesData.length <= 1) return;
-                currentNotesData.splice(idx,1);
-                renderTable(); rebuildScene(); if(isPlaying) stopPlayback();
-            });
+            const copyBtn = document.createElement('button'); copyBtn.textContent = '📋'; copyBtn.className = 'action-btn copy-btn';
+            copyBtn.addEventListener('click', () => { const cloned = JSON.parse(JSON.stringify(note)); currentNotesData.splice(idx+1,0,cloned); renderTable(); rebuildScene(); if(isPlaying) stopPlayback(); });
+            const delBtn = document.createElement('button'); delBtn.textContent = '✕'; delBtn.className = 'action-btn delete-btn';
+            delBtn.addEventListener('click', () => { if(currentNotesData.length<=1) return; currentNotesData.splice(idx,1); renderTable(); rebuildScene(); if(isPlaying) stopPlayback(); });
             tdAction.appendChild(copyBtn); tdAction.appendChild(delBtn);
-            tr.appendChild(tdStart); tr.appendChild(tdPitch); tr.appendChild(tdDur);
-            tr.appendChild(tdVel); tr.appendChild(tdInst); tr.appendChild(tdAction);
+            tr.appendChild(tdStart); tr.appendChild(tdPitch); tr.appendChild(tdDur); tr.appendChild(tdVel); tr.appendChild(tdInst); tr.appendChild(tdAction);
             tableBody.appendChild(tr);
         });
     }
@@ -475,11 +481,8 @@
         renderTable(); rebuildScene(); if(isPlaying) stopPlayback();
     }
     
-    // 导出CSV
     function exportToCSV() {
-        const bpm = bpmInput.value;
-        const ref = refNoteSelect.value;
-        const trans = currentGlobalTranspose;
+        const bpm = bpmInput.value, ref = refNoteSelect.value, trans = currentGlobalTranspose;
         let rows = [`# BPM=${bpm}\tBaseNote=${ref}\tGlobalTranspose=${trans}`];
         rows.push(["start","pitch","duration","velocity","instrument"].join(","));
         currentNotesData.forEach(n => rows.push([n.start, n.pitch, n.duration, n.velocity, n.instrument].join(",")));
@@ -487,15 +490,13 @@
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "music_sheet.csv"; a.click(); URL.revokeObjectURL(a.href);
     }
     
-    // 导入CSV (支持解析BPM/BaseNote/GlobalTranspose)
     function importCSV(file) {
         const reader = new FileReader();
         reader.onload = (e) => {
             const text = e.target.result;
             const lines = text.split(/\r?\n/);
-            let bpmVal = null, baseNoteVal = null, transposeVal = null;
+            let bpmVal=null, baseNoteVal=null, transposeVal=null;
             const newNotes = [];
-            
             for(let line of lines) {
                 const trimmed = line.trim();
                 if(trimmed.startsWith("#")) {
@@ -509,44 +510,21 @@
                 }
                 if(trimmed === "" || trimmed.toLowerCase().includes("start")) continue;
                 const parts = trimmed.split(",");
-                if(parts.length >= 4 && !isNaN(parseFloat(parts[0]))) {
+                if(parts.length>=4 && !isNaN(parseFloat(parts[0]))) {
                     let inst = (parts.length>=5 && instrumentsMap[parts[4]]) ? parts[4] : 'piano';
-                    newNotes.push({
-                        start: parseFloat(parts[0]),
-                        pitch: parseInt(parts[1]),
-                        duration: parseFloat(parts[2]),
-                        velocity: Math.min(100, Math.max(0, parseInt(parts[3]))),
-                        instrument: inst
-                    });
+                    newNotes.push({ start: parseFloat(parts[0]), pitch: parseInt(parts[1]), duration: parseFloat(parts[2]), velocity: Math.min(100,Math.max(0,parseInt(parts[3]))), instrument: inst });
                 }
             }
-            
-            if(bpmVal !== null && bpmVal >= 40 && bpmVal <= 240) bpmInput.value = bpmVal;
-            if(baseNoteVal !== null && noteFreqMap[baseNoteVal]) {
-                refNoteSelect.value = baseNoteVal;
-                currentBaseFreq = noteFreqMap[baseNoteVal];
-            }
-            if(transposeVal !== null && !isNaN(transposeVal)) {
-                let clamped = Math.min(12, Math.max(-12, transposeVal));
-                globalTransposeInput.value = clamped;
-                currentGlobalTranspose = clamped;
-            }
-            
-            if(newNotes.length) {
-                currentNotesData = newNotes;
-                renderTable();
-                rebuildScene();
-                if(isPlaying) stopPlayback();
-                updateBaseFreqAndTranspose();
-            } else {
-                alert("CSV中未发现有效音符数据，保留原有乐谱");
-            }
+            if(bpmVal !== null && bpmVal>=40 && bpmVal<=240) bpmInput.value = bpmVal;
+            if(baseNoteVal && noteFreqMap[baseNoteVal]) { refNoteSelect.value = baseNoteVal; currentBaseFreq = noteFreqMap[baseNoteVal]; }
+            if(transposeVal !== null && !isNaN(transposeVal)) { let clamped = Math.min(12,Math.max(-12,transposeVal)); globalTransposeInput.value = clamped; currentGlobalTranspose = clamped; }
+            if(newNotes.length) { currentNotesData = newNotes; renderTable(); rebuildScene(); if(isPlaying) stopPlayback(); updateBaseFreqAndTranspose(); }
+            else alert("无效CSV");
         };
         reader.readAsText(file);
     }
     
-    // 高级音色播放 (支持颤音琴LFO和延音)
-    function playAdvancedSound(baseFreq, notePitch, globalTrans, velocityPercent, durationSec, instrumentType, sustainActive) {
+    function playSound(baseFreq, notePitch, globalTrans, velocityPercent, durationSec, instrumentType, sustainActive) {
         if(!audioCtx) return;
         const totalSemitone = globalTrans + notePitch;
         const freq = baseFreq * Math.pow(2, totalSemitone/12);
@@ -556,35 +534,21 @@
         const gain = audioCtx.createGain();
         gain.gain.setValueAtTime(0, now);
         gain.gain.linearRampToValueAtTime(vel * 0.45, now + 0.01);
-        
         let releaseTime = durationSec + 0.08;
         if(sustainActive) releaseTime = durationSec + 1.2;
         gain.gain.exponentialRampToValueAtTime(0.0001, now + releaseTime);
-        
         const inst = instrumentsMap[instrumentType] || instrumentsMap.piano;
         osc.type = inst.type;
         osc.frequency.value = freq;
-        
         if(instrumentType === 'vibraphone') {
             const modulator = audioCtx.createOscillator();
             const modGain = audioCtx.createGain();
-            modulator.frequency.value = 6;
-            modGain.gain.value = 3;
-            modulator.connect(modGain);
-            modGain.connect(osc.frequency);
-            modulator.start();
-            modulator.stop(now + durationSec + 0.5);
+            modulator.frequency.value = 6; modGain.gain.value = 3;
+            modulator.connect(modGain); modGain.connect(osc.frequency);
+            modulator.start(); modulator.stop(now + durationSec + 0.5);
         }
-        
-        if(inst.filterFreq) {
-            const filter = audioCtx.createBiquadFilter();
-            filter.type = "lowpass";
-            filter.frequency.value = inst.filterFreq;
-            osc.connect(filter);
-            filter.connect(gain);
-        } else {
-            osc.connect(gain);
-        }
+        if(inst.filterFreq) { const filter = audioCtx.createBiquadFilter(); filter.type = "lowpass"; filter.frequency.value = inst.filterFreq; osc.connect(filter); filter.connect(gain); }
+        else osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start();
         osc.stop(now + releaseTime + 0.1);
@@ -607,40 +571,26 @@
         const globalTrans = currentGlobalTranspose;
         const sustain = sustainEnabled;
         timelineStartTime = audioCtx.currentTime;
-        
         const notesSorted = [...currentNotesData].sort((a,b)=>a.start - b.start);
         if(animationId) cancelAnimationFrame(animationId);
         scheduledTimeouts.clear();
         
-        // 高亮动画 + 更新时间轴位置
         function animatePlayback() {
             if(!isPlaying) return;
             const now = audioCtx.currentTime;
             const elapsed = now - timelineStartTime;
             const currentGrid = elapsed / secPerBeat;
-            
             let targetX = START_X_OFFSET;
             if(currentNotesData.length) {
                 let activeNote = null;
                 for(let n of currentNotesData) {
-                    if(currentGrid >= n.start && currentGrid <= n.start + n.duration) {
-                        activeNote = n; break;
-                    } else if(currentGrid < n.start) {
-                        activeNote = n; break;
-                    }
+                    if(currentGrid >= n.start && currentGrid <= n.start + n.duration) { activeNote = n; break; }
+                    else if(currentGrid < n.start) { activeNote = n; break; }
                 }
-                if(activeNote) {
-                    const w = activeNote.duration * DUR_WIDTH_FACTOR;
-                    targetX = START_X_OFFSET + activeNote.start * 1.05 + w/2;
-                } else {
-                    const last = currentNotesData[currentNotesData.length-1];
-                    const w = last.duration * DUR_WIDTH_FACTOR;
-                    targetX = START_X_OFFSET + last.start * 1.05 + w/2 + 1.2;
-                }
+                if(activeNote) { const w = activeNote.duration * DUR_WIDTH_FACTOR; targetX = START_X_OFFSET + activeNote.start * 1.05 + w/2; }
+                else { const last = currentNotesData[currentNotesData.length-1]; const w = last.duration * DUR_WIDTH_FACTOR; targetX = START_X_OFFSET + last.start * 1.05 + w/2 + 1.2; }
             }
             currentPlayheadX = currentPlayheadX * 0.85 + targetX * 0.15;
-            
-            // 高亮
             const rowsSet = new Set();
             noteMeshes.forEach(item => {
                 const note = currentNotesData[item.noteIdx];
@@ -648,32 +598,16 @@
                 const s = note.start, e = s + note.duration;
                 if(currentGrid >= s && currentGrid <= e) {
                     rowsSet.add(item.noteIdx);
-                    if(item.mesh.material.emissiveIntensity < 0.6) {
-                        item.mesh.material.emissive = new THREE.Color(0xffaa66);
-                        item.mesh.material.emissiveIntensity = 0.7;
-                    }
-                } else {
-                    if(item.mesh.material.emissiveIntensity > 0.05) {
-                        item.mesh.material.emissive = new THREE.Color(0x000000);
-                        item.mesh.material.emissiveIntensity = 0;
-                    }
-                }
+                    if(item.mesh.material.emissiveIntensity < 0.6) { item.mesh.material.emissive = new THREE.Color(0xffaa66); item.mesh.material.emissiveIntensity = 0.7; }
+                } else { if(item.mesh.material.emissiveIntensity > 0.05) { item.mesh.material.emissive = new THREE.Color(0x000000); item.mesh.material.emissiveIntensity = 0; } }
             });
-            document.querySelectorAll('#tableBody tr').forEach((row,idx)=>{
-                if(rowsSet.has(idx)) row.classList.add('highlight-row');
-                else row.classList.remove('highlight-row');
-            });
-            
+            document.querySelectorAll('#tableBody tr').forEach((row,idx)=>{ if(rowsSet.has(idx)) row.classList.add('highlight-row'); else row.classList.remove('highlight-row'); });
             const maxEnd = Math.max(...currentNotesData.map(n=>n.start+n.duration),0);
-            if(currentGrid > maxEnd + 1.0 && currentNotesData.length) {
-                stopPlayback(); playStatusSpan.innerHTML = '■ 结束';
-                return;
-            }
+            if(currentGrid > maxEnd + 1.0 && currentNotesData.length) { stopPlayback(); playStatusSpan.innerHTML = '■ 结束'; return; }
             animationId = requestAnimationFrame(animatePlayback);
         }
         animationId = requestAnimationFrame(animatePlayback);
         
-        // 调度音符
         for(let note of notesSorted) {
             const startSec = note.start * secPerBeat;
             const durSec = note.duration * secPerBeat;
@@ -681,11 +615,11 @@
             const delay = (triggerTime - audioCtx.currentTime) * 1000;
             if(delay > 2) {
                 const tid = setTimeout(() => {
-                    if(isPlaying) playAdvancedSound(baseFreq, note.pitch, globalTrans, note.velocity, durSec, note.instrument, sustain);
+                    if(isPlaying) playSound(baseFreq, note.pitch, globalTrans, note.velocity, durSec, note.instrument, sustain);
                 }, delay);
                 scheduledTimeouts.add(tid);
             } else if(triggerTime + durSec > audioCtx.currentTime) {
-                playAdvancedSound(baseFreq, note.pitch, globalTrans, note.velocity, durSec, note.instrument, sustain);
+                playSound(baseFreq, note.pitch, globalTrans, note.velocity, durSec, note.instrument, sustain);
             }
         }
     }
@@ -700,23 +634,21 @@
         document.querySelectorAll('#tableBody tr').forEach(r=>r.classList.remove('highlight-row'));
         playStatusSpan.innerHTML = '● 停止';
     }
-    
     function restartPlayback() { stopPlayback(); if(audioCtx) audioCtx.close(); audioCtx = null; startPlayback(); }
-    
     function updateBaseFreqAndTranspose() {
         currentBaseFreq = noteFreqMap[refNoteSelect.value] || 261.63;
         currentGlobalTranspose = Math.min(12, Math.max(-12, parseInt(globalTransposeInput.value) || 0));
         globalTransposeInput.value = currentGlobalTranspose;
     }
     
-    // 镜头整体跟随（位置+目标点）
+    // 镜头跟随（仅移动相机位置和controls.target，用户不可控）
     function updateCameraFollow() {
         if(!isPlaying || !camFollowEnabled) return;
         const targetPos = new THREE.Vector3(currentPlayheadX + 5.5, 5.2, 9.5);
         const lookAtPos = new THREE.Vector3(currentPlayheadX, 2.2, -1.5);
         camera.position.lerp(targetPos, 0.08);
         controls.target.lerp(lookAtPos, 0.08);
-        controls.update();
+        // 注意：controls.enabled = false，但target仍可手动更新，相机也会跟随
     }
     
     function animate() {
@@ -725,14 +657,8 @@
         renderer.render(scene, camera);
         labelRenderer.render(scene, camera);
     }
+    function handleResize() { const w = container.clientWidth, h = container.clientHeight; camera.aspect = w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h); labelRenderer.setSize(w,h); }
     
-    function handleResize() {
-        const w = container.clientWidth, h = container.clientHeight;
-        camera.aspect = w/h; camera.updateProjectionMatrix();
-        renderer.setSize(w,h); labelRenderer.setSize(w,h);
-    }
-    
-    // 初始化数据和事件
     function init() {
         currentNotesData = [
             { start:0, pitch:0, duration:1, velocity:78, instrument:'piano' },
@@ -754,7 +680,13 @@
         globalTransposeInput.onchange = () => { updateBaseFreqAndTranspose(); if(isPlaying) restartPlayback(); };
         sustainToggleBtn.onclick = () => { sustainEnabled = !sustainEnabled; sustainToggleBtn.textContent = sustainEnabled ? "🎵 延音 ON" : "🔘 延音 OFF"; sustainToggleBtn.classList.toggle('active', sustainEnabled); };
         camFollowToggleBtn.onclick = () => { camFollowEnabled = !camFollowEnabled; camFollowToggleBtn.textContent = camFollowEnabled ? "🎥 镜头跟随 ON" : "📷 镜头跟随 OFF"; camFollowToggleBtn.classList.toggle('active', camFollowEnabled); };
+        performanceToggleBtn.onclick = () => { lowPerformanceMode = !lowPerformanceMode; performanceToggleBtn.textContent = lowPerformanceMode ? "⚡ 低性能模式" : "⚡ 普通模式"; performanceToggleBtn.classList.toggle('active', lowPerformanceMode); applyPerformanceMode(); };
+        baseColorPicker.addEventListener('input', (e) => {
+            baseColorHex = e.target.value;
+            rebuildScene();   // 重新生成所有方块颜色
+        });
         updateBaseFreqAndTranspose();
+        applyPerformanceMode();
     }
     
     window.addEventListener('resize', handleResize);
