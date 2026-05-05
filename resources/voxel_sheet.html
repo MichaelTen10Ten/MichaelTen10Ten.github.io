@@ -575,7 +575,7 @@
         const bpm = parseInt(bpmInput.value);
         const refNote = refNoteSelect.value;
         const transpose = currentGlobalTranspose;
-        let csvRows = [["# 立体音乐工坊导出的乐谱", `BPM=${bpm},BaseNote=${refNote},GlobalTranspose=${transpose}`]];
+        let csvRows = [[`# 立体音乐工坊导出的乐谱,BPM=${bpm},BaseNote=${refNote},GlobalTranspose=${transpose}`]];
         csvRows.push(["start_time(grid)", "pitch_offset(semitone)", "duration(grid)", "velocity(%)", "instrument"]);
         currentNotesData.forEach(n => {
             csvRows.push([n.start, n.pitch, n.duration, n.velocity, n.instrument || 'piano']);
