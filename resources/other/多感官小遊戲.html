@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>感官小偵探：多感官大挑戰</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f0fdf4; }
+        .choice-btn { transition: all 0.2s; border: 3px solid #d1fae5; }
+        .choice-btn:hover { transform: scale(1.02); border-color: #10b981; }
+        .choice-btn:active { transform: scale(0.98); }
+        .shake { animation: shake 0.5s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        .success-pop { animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="game-card" class="bg-white rounded-[40px] shadow-2xl border-8 border-emerald-400 w-full max-w-2xl p-8 relative overflow-hidden">
+        
+        <!-- 頂部資訊 -->
+        <div class="flex justify-between items-center mb-6">
+            <div class="bg-emerald-100 px-4 py-2 rounded-full font-bold text-emerald-700">
+                題目：<span id="current-index">1</span> / 8
+            </div>
+            <div class="text-3xl font-bold text-yellow-500" id="score-display">🌟 0</div>
+        </div>
+
+        <!-- 朗讀與題目區 -->
+        <div class="text-center mb-8">
+            <button onclick="speakText()" class="mb-4 bg-yellow-400 hover:bg-yellow-500 p-4 rounded-full shadow-lg transition-colors">
+                <span class="text-3xl">🔊 點我朗讀題目</span>
+            </button>
+            <h2 id="question-text" class="text-3xl font-black text-gray-800 leading-snug">正在載入題目...</h2>
+            <div id="hint-emoji" class="text-8xl my-6">🔍</div>
+        </div>
+
+        <!-- 選項區 -->
+        <div id="options-container" class="grid grid-cols-2 gap-4">
+            <!-- 由 JavaScript 隨機生成 -->
+        </div>
+
+        <!-- 回饋訊息 -->
+        <div id="feedback" class="absolute inset-0 flex items-center justify-center pointer-events-none hidden">
+            <div class="bg-white/90 w-full h-full flex flex-col items-center justify-center">
+                <div id="feedback-icon" class="text-9xl mb-4">⭐</div>
+                <p id="feedback-text" class="text-4xl font-bold"></p>
+            </div>
+        </div>
+
+        <!-- 結束畫面 -->
+        <div id="end-screen" class="hidden text-center py-10">
+            <h1 class="text-5xl font-black text-emerald-600 mb-6">🎉 完成探險！</h1>
+            <p class="text-3xl mb-8">你的得分是：<span id="final-score" class="text-yellow-500 font-black">0</span></p>
+            <button onclick="location.reload()" class="bg-emerald-500 text-white px-12 py-4 rounded-full text-2xl font-bold shadow-xl hover:bg-emerald-600">重新挑戰</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            { q: "我看見一個（ ）的紅蘋果。", a: "紅通通", options: ["紅通通", "綠油油", "金燦燦", "亮晶晶"], emoji: "🍎", type: "視覺" },
+            { q: "下大雨了，外面傳來（ ）的流水聲。", a: "嘩啦嘩啦", options: ["嘩啦嘩啦", "叮呤叮呤", "沙沙沙", "嘰嘰喳喳"], emoji: "🌧️", type: "聽覺" },
+            { q: "媽媽在廚房煮飯，傳來（ ）的香味。", a: "香噴噴", options: ["香噴噴", "甜滋滋", "酸溜溜", "臭烘烘"], emoji: "🍳", type: "嗅覺" },
+            { q: "這件毛衣摸起來（ ）的，真舒服。", a: "軟綿綿", options: ["軟綿綿", "硬邦邦", "滑溜溜", "刺手"], emoji: "🧶", type: "觸覺" },
+            { q: "太陽像一個（ ）的大火球。", a: "金燦燦", options: ["金燦燦", "黑漆漆", "白茫茫", "綠油油"], emoji: "☀️", type: "視覺" },
+            { q: "我咬了一口檸檬，覺得（ ）的。", a: "酸溜溜", options: ["酸溜溜", "甜滋滋", "鹹津津", "苦哈哈"], emoji: "🍋", type: "味覺" },
+            { q: "小鳥在樹上（ ）地唱歌。", a: "嘰嘰喳喳", options: ["嘰嘰喳喳", "呼呼呼", "轟隆隆", "啪嗒啪嗒"], emoji: "🐦", type: "聽覺" },
+            { q: "冰淇淋吃起來（ ）的，我很喜歡。", a: "甜滋滋", options: ["甜滋滋", "辣乎乎", "鹹滋滋", "淡而無味"], emoji: "🍦", type: "味覺" }
+        ];
+
+        let currentIndex = 0;
+        let score = 0;
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function speakText() {
+            const q = questions[currentIndex];
+            const text = `${q.q}。選項有：1：${q.options[0]}。2：${q.options[1]}。3：${q.options[2]}。4：${q.options[3]}`;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-HK'; // 設定為廣東話
+            utterance.rate = 0.8; // 稍微放慢語速
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function loadQuestion() {
+            const q = questions[currentIndex];
+            document.getElementById('current-index').innerText = currentIndex + 1;
+            document.getElementById('question-text').innerText = q.q;
+            document.getElementById('hint-emoji').innerText = q.emoji;
+            
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            
+            const shuffledOptions = shuffle([...q.options]);
+            shuffledOptions.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "choice-btn bg-white p-6 rounded-3xl text-2xl font-bold text-gray-700 shadow-md";
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(opt, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected, btn) {
+            const correct = questions[currentIndex].a;
+            const feedbackDiv = document.getElementById('feedback');
+            const feedbackIcon = document.getElementById('feedback-icon');
+            const feedbackText = document.getElementById('feedback-text');
+
+            if (selected === correct) {
+                score += 10;
+                document.getElementById('score-display').innerText = `🌟 ${score}`;
+                feedbackIcon.innerText = "⭐";
+                feedbackText.innerText = "太棒了！";
+                feedbackText.className = "text-4xl font-bold text-emerald-600";
+            } else {
+                btn.classList.add('shake', 'bg-red-100');
+                feedbackIcon.innerText = "💡";
+                feedbackText.innerText = "再試試看！";
+                feedbackText.className = "text-4xl font-bold text-orange-500";
+            }
+
+            feedbackDiv.classList.remove('hidden');
+            feedbackDiv.classList.add('success-pop');
+
+            setTimeout(() => {
+                feedbackDiv.classList.add('hidden');
+                if (selected === correct) {
+                    currentIndex++;
+                    if (currentIndex < questions.length) {
+                        loadQuestion();
+                    } else {
+                        showEndScreen();
+                    }
+                }
+            }, 1200);
+        }
+
+        function showEndScreen() {
+            document.getElementById('question-text').classList.add('hidden');
+            document.getElementById('hint-emoji').classList.add('hidden');
+            document.getElementById('options-container').classList.add('hidden');
+            document.getElementById('end-screen').classList.remove('hidden');
+            document.getElementById('final-score').innerText = score;
+        }
+
+        loadQuestion();
+    </script>
+</body>
+</html>
