@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>网络决斗者 - 四AI混战 | 自适应参数 动态重生</title>
+    <title>网络决斗者·进化之战 | 遗传算法+雷达图+动态平衡</title>
     <style>
         * {
             box-sizing: border-box;
@@ -23,6 +23,7 @@
             background: radial-gradient(circle at 20% 30%, #0a0f0f, #000000);
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             font-family: 'Courier New', 'Fira Code', monospace;
@@ -30,12 +31,39 @@
             overflow-x: auto;
         }
 
-        /* 4人战场网格 */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            width: 100%;
+            max-width: 1500px;
+            margin-bottom: 12px;
+            background: #051010bb;
+            padding: 6px 20px;
+            border-radius: 40px;
+            backdrop-filter: blur(4px);
+        }
+        .win-message {
+            font-size: 14px;
+            font-weight: bold;
+            color: #ffff00;
+            text-shadow: 0 0 4px #ff00aa;
+        }
+        .reset-btn {
+            background: #00cccc;
+            border: none;
+            font-family: monospace;
+            font-weight: bold;
+            padding: 4px 16px;
+            border-radius: 40px;
+            cursor: pointer;
+        }
+
         .quad-battle {
             display: grid;
             grid-template-columns: repeat(2, minmax(360px, 1fr));
             gap: 18px;
-            max-width: 1600px;
+            max-width: 1650px;
             width: 100%;
             justify-items: center;
             align-items: start;
@@ -45,13 +73,13 @@
             display: flex;
             gap: 8px;
             padding: 12px 10px;
-            border: 1px solid rgba(0, 255, 255, 0.35);
+            border: 1px solid rgba(0, 255, 255, 0.45);
             background: var(--panel-bg);
             backdrop-filter: blur(1px);
             position: relative;
-            border-radius: 12px;
-            box-shadow: 0 0 12px rgba(0, 255, 255, 0.2);
-            transition: all 0.2s;
+            border-radius: 14px;
+            box-shadow: 0 0 14px rgba(0, 255, 255, 0.2);
+            transition: 0.2s;
             width: 100%;
         }
 
@@ -64,27 +92,26 @@
         .side-hud {
             display: flex;
             flex-direction: column;
-            width: 70px;
-            gap: 8px;
+            width: 72px;
+            gap: 6px;
         }
 
         .stat {
             border-left: 2px solid var(--neon-pink);
             padding-left: 6px;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .stat label {
             font-size: 7px;
             color: var(--neon-pink);
             letter-spacing: 1px;
-            text-transform: uppercase;
         }
 
         .stat span {
             display: block;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 11px;
             color: #f0f0f0;
             text-shadow: 0 0 2px cyan;
         }
@@ -93,12 +120,11 @@
             font-size: 7px;
             color: var(--neon-main);
             opacity: 0.8;
-            margin-bottom: 2px;
             font-weight: bold;
         }
 
         .multiplier-tag {
-            font-size: 9px;
+            font-size: 8px;
             color: #aaffaa;
             background: #0a2a1a;
             display: inline-block;
@@ -107,6 +133,48 @@
             text-align: center;
             font-weight: bold;
             margin-top: 4px;
+        }
+
+        .temp-boost {
+            font-size: 7px;
+            color: #ffaa66;
+            background: #331a00;
+            border-radius: 12px;
+            padding: 2px;
+            margin-top: 3px;
+            text-align: center;
+        }
+
+        .params-panel {
+            background: #051010cc;
+            border-radius: 8px;
+            padding: 4px 5px;
+            margin-top: 6px;
+            font-size: 7px;
+            font-family: monospace;
+            color: #bbf0f0;
+            border-left: 2px solid var(--neon-main);
+            line-height: 1.35;
+            letter-spacing: 0.3px;
+            word-break: break-word;
+            backdrop-filter: blur(2px);
+            cursor: help;
+            position: relative;
+        }
+        .params-panel span {
+            color: #ffff99;
+            font-weight: bold;
+        }
+        .radar-tooltip {
+            position: fixed;
+            background: #020a0ae6;
+            border: 1px solid cyan;
+            border-radius: 12px;
+            padding: 6px;
+            z-index: 1000;
+            backdrop-filter: blur(12px);
+            pointer-events: none;
+            box-shadow: 0 0 12px #00ffaa;
         }
 
         .bot-name {
@@ -146,67 +214,164 @@
             transition: height 0.12s linear;
         }
 
-        .hold-canvas, .next-canvas {
-            background: #000000aa;
-            border-radius: 6px;
-        }
-
-        .side-hud .preview-label + canvas {
-            background: #030303;
-            border: 1px solid #226666;
-        }
-
-        /* 连闪特效 */
         @keyframes threatFlash {
             0% { border-color: #ff00cc; box-shadow: 0 0 0 #ff00ff; }
-            100% { border-color: rgba(0,255,255,0.35); }
+            100% { border-color: rgba(0,255,255,0.45); }
         }
         .game-wrapper.threat {
             animation: threatFlash 0.25s ease-out 2;
         }
-
-        @media (max-width: 850px) {
-            .quad-battle { gap: 12px; }
-            .side-hud { width: 60px; }
-            .bot-name { font-size: 8px; padding: 1px 8px; }
-        }
     </style>
 </head>
 <body>
+<div class="top-bar">
+    <div class="win-message" id="globalMessage">⚔️ 进化之战 · 首局开始 ⚔️</div>
+    <button class="reset-btn" id="manualResetBtn">⟳ 强制新世代</button>
+</div>
 <div class="quad-battle" id="battleGrid"></div>
 
 <script>
-    // ---------- 颜色库 ----------
+    // ========== 全局常量 ==========
     const COLORS = [null, '#ff3366', '#00ffaa', '#33ccff', '#ffaa33', '#ff44ff', '#ffff44', '#aa66ff', '#777777'];
-
-    // 随机昵称库
-    const NAMES = ["幽灵", "裂变", "突触", "伏特", "异构", "矩阵", "暗码", "零日", "脉冲", "湮灭", "渡鸦", "以太"];
-
-    // ---------- 粒子特效 ----------
-    class Particle {
-        constructor(x, y, color) {
-            this.x = x;
-            this.y = y;
-            this.color = color;
-            this.vx = (Math.random() - 0.5) * 0.9;
-            this.vy = (Math.random() - 0.5) * 0.9 - 0.2;
-            this.life = 1.0;
+    const NAMES = ["幽灵", "裂变", "突触", "伏特", "异构", "矩阵", "暗码", "零日", "脉冲", "湮灭", "渡鸦", "以太", "铁砧", "螺旋"];
+    const WIN_SENT_LINES = 80;       // 一局结束条件：任意AI发送行数达到此值
+    const TEMP_BOOST_DURATION = 15000; // 临时增益持续时间15秒
+    const TEMP_BOOST_FACTOR = 0.65;    // 增益后的重力间隔乘数 (加速)
+    
+    // 全局比赛状态
+    let tournamentActive = true;
+    let currentWinner = null;
+    let globalAnimationId = null;
+    
+    // 辅助函数: 雷达图绘制 (浮层)
+    function showRadarTooltip(event, aiInstance, allAIs) {
+        // 计算所有AI当前参数均值 (用于对比)
+        if (!allAIs || allAIs.length === 0) return;
+        const avg = {
+            holeWeight: 0, bumpinessWeight: 0, tetrisBonus: 0, holdAggression: 0, gravity: 0
+        };
+        for (let a of allAIs) {
+            avg.holeWeight += a.aiParams.holeWeight;
+            avg.bumpinessWeight += a.aiParams.bumpinessWeight;
+            avg.tetrisBonus += a.aiParams.tetrisBonus;
+            avg.holdAggression += a.aiParams.holdAggression;
+            avg.gravity += a.gravityInterval;
         }
-        update() {
-            this.x += this.vx;
-            this.y += this.vy;
-            this.life -= 0.045;
+        avg.holeWeight /= allAIs.length;
+        avg.bumpinessWeight /= allAIs.length;
+        avg.tetrisBonus /= allAIs.length;
+        avg.holdAggression /= allAIs.length;
+        avg.gravity /= allAIs.length;
+        
+        const p = aiInstance.aiParams;
+        const selfVals = {
+            hole: -p.holeWeight,       // 空洞惩罚绝对值越大越好(负数绝对值大)
+            bump: -p.bumpinessWeight,
+            tetris: p.tetrisBonus,
+            hold: p.holdAggression,
+            speed: 200 - p.gravityInterval  // 越快分数越高
+        };
+        const avgVals = {
+            hole: -avg.holeWeight,
+            bump: -avg.bumpinessWeight,
+            tetris: avg.tetrisBonus,
+            hold: avg.holdAggression,
+            speed: 200 - avg.gravity
+        };
+        // 归一化范围估计
+        const maxVals = { hole: 45, bump: 3.0, tetris: 1200, hold: 1.5, speed: 150 };
+        // 创建canvas绘制雷达图
+        const canvas = document.createElement('canvas');
+        canvas.width = 140;
+        canvas.height = 140;
+        const ctx = canvas.getContext('2d');
+        const centerX = 70, centerY = 70, radius = 55;
+        const labels = ['洞惩罚', '凸度', '四行奖', 'Hold激', '速度'];
+        const keys = ['hole', 'bump', 'tetris', 'hold', 'speed'];
+        
+        ctx.fillStyle = '#000000cc';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#0ff';
+        ctx.fillStyle = '#0ff';
+        ctx.font = "8px monospace";
+        // 绘制五边形网格
+        for (let i = 0; i <= 4; i++) {
+            let r = radius * (i / 4);
+            ctx.beginPath();
+            for (let j = 0; j < 5; j++) {
+                let angle = (j * 72 - 90) * Math.PI / 180;
+                let x = centerX + r * Math.cos(angle);
+                let y = centerY + r * Math.sin(angle);
+                if (j === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.strokeStyle = '#336666';
+            ctx.stroke();
         }
+        // 绘制平均值 (灰色)
+        ctx.beginPath();
+        for (let j = 0; j < 5; j++) {
+            let norm = (avgVals[keys[j]] / maxVals[keys[j]]);
+            norm = Math.min(1.0, Math.max(0.1, norm));
+            let r = radius * norm;
+            let angle = (j * 72 - 90) * Math.PI / 180;
+            let x = centerX + r * Math.cos(angle);
+            let y = centerY + r * Math.sin(angle);
+            if (j === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(150,150,150,0.3)';
+        ctx.fill();
+        ctx.strokeStyle = '#aaaaaa';
+        ctx.stroke();
+        // 绘制自身 (青色)
+        ctx.beginPath();
+        for (let j = 0; j < 5; j++) {
+            let norm = (selfVals[keys[j]] / maxVals[keys[j]]);
+            norm = Math.min(1.0, Math.max(0.1, norm));
+            let r = radius * norm;
+            let angle = (j * 72 - 90) * Math.PI / 180;
+            let x = centerX + r * Math.cos(angle);
+            let y = centerY + r * Math.sin(angle);
+            if (j === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(0,255,255,0.25)';
+        ctx.fill();
+        ctx.strokeStyle = '#00ffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        // 标注文字
+        for (let j = 0; j < 5; j++) {
+            let angle = (j * 72 - 90) * Math.PI / 180;
+            let x = centerX + (radius + 8) * Math.cos(angle);
+            let y = centerY + (radius + 5) * Math.sin(angle);
+            ctx.fillStyle = '#ccffcc';
+            ctx.fillText(labels[j], x-10, y);
+        }
+        
+        const tooltip = document.createElement('div');
+        tooltip.className = 'radar-tooltip';
+        tooltip.appendChild(canvas);
+        tooltip.style.left = (event.clientX + 15) + 'px';
+        tooltip.style.top = (event.clientY - 80) + 'px';
+        document.body.appendChild(tooltip);
+        
+        const removeHandler = () => { if(tooltip) tooltip.remove(); };
+        aiInstance.paramsDiv.removeEventListener('mouseleave', removeHandler);
+        aiInstance.paramsDiv.addEventListener('mouseleave', removeHandler, { once: true });
+        setTimeout(() => { if(tooltip) tooltip.remove(); }, 4000);
     }
-
-    // ========== 四强化AI个体: 可变参数与个性 ==========
+    
+    // ========== 增强AI类 (支持临时增益/遗传/死亡平衡) ==========
     class TetrisAI {
-        constructor(containerId, index) {
+        constructor(containerId, index, presetParams = null) {
             this.idx = index;
             this.container = document.getElementById(containerId);
             if (!this.container) throw new Error(`container ${containerId} missing`);
-
-            // 绑定DOM元素
             this.canvas = this.container.querySelector('.play-canvas');
             this.nextCanvas = this.container.querySelector('.next-canvas');
             this.holdCanvas = this.container.querySelector('.hold-canvas');
@@ -215,8 +380,18 @@
             this.blocksSpan = this.container.querySelector('.blocks-val');
             this.speedSpan = this.container.querySelector('.speed-val');
             this.nameDiv = this.container.querySelector('.bot-name');
-
-            // 游戏核心参数
+            this.paramsDiv = this.container.querySelector('.params-panel');
+            this.tempBoostSpan = null;
+            if (!this.paramsDiv.querySelector('.temp-boost')) {
+                let boostSpan = document.createElement('div');
+                boostSpan.className = 'temp-boost';
+                boostSpan.innerText = '';
+                this.paramsDiv.appendChild(boostSpan);
+                this.tempBoostSpan = boostSpan;
+            } else {
+                this.tempBoostSpan = this.paramsDiv.querySelector('.temp-boost');
+            }
+            
             this.gridHeight = 30;
             this.gridWidth = 10;
             this.arena = [];
@@ -232,250 +407,151 @@
             this.comboCount = -1;
             this.lastWasTetris = false;
             this.effectTimeout = null;
-
-            // 动态速度节奏 (初始值)
+            
+            // 动态速度参数
+            this.baseGravityInterval = 155;     // 基础值（遗传决定）
             this.gravityInterval = 155;
-            this.moveInterval = 50;
             this.lastGravityTime = 0;
             this.lastMoveTime = 0;
-
-            // ---------- AI个性参数 (每次重置时微调) ----------
+            // 临时增益结束时间戳
+            this.tempBoostExpire = 0;
+            
+            // AI个性参数
             this.aiParams = {
-                holeWeight: -24.0,      // 惩罚空洞 -20~-35
+                holeWeight: -24.0,
                 bumpinessWeight: -1.4,
                 transitionWeight: -2.8,
                 aggregateHeightWeight: -0.55,
                 maxHeightWeight: -1.2,
-                tetrisBonus: 780,       // 四行奖励
-                smallClearPenalty: -45, // 小消除惩罚系数
-                holdAggression: 0.75,   // 使用hold的倾向阈值 (差值超过此比例)
-                lookaheadDepth: 1,      // 前瞻深度 (0或1)
-                riskFactor: 1.0         // 冒险因子(影响紧急消除偏好)
+                tetrisBonus: 780,
+                smallClearPenalty: -45,
+                holdAggression: 0.75,
+                lookaheadDepth: 1,
+                riskFactor: 1.0
             };
-            // 随机微调参数范围 (每次重生)
-            this.randomizePersonality();
-
-            // 名称生成
+            if (presetParams) {
+                Object.assign(this.aiParams, presetParams);
+                if (presetParams.baseGravity) this.baseGravityInterval = presetParams.baseGravity;
+                else this.baseGravityInterval = 155;
+            } else {
+                this.randomizePersonality();   // 全新随机
+            }
+            this.gravityInterval = this.baseGravityInterval;
             this.name = this.generateName();
             this.updateNameUI();
-
-            // 画板尺寸适配
-            this.blockSize = 0;
             this.resizeCanvas();
             window.addEventListener('resize', () => this.resizeCanvas());
-
-            // 初始化游戏状态
-            this.reset(true);
-        }
-
-        generateName() {
-            let prefix = NAMES[Math.floor(Math.random() * NAMES.length)];
-            let suffix = Math.floor(100 + Math.random() * 900);
-            return `${prefix}-${suffix}`;
-        }
-
-        randomizePersonality() {
-            // 每次重置时微调权重，产生不同风格的AI
-            this.aiParams.holeWeight = - (18 + Math.random() * 22);      // -18 ~ -40
-            this.aiParams.bumpinessWeight = - (0.8 + Math.random() * 1.6);
-            this.aiParams.transitionWeight = - (2.0 + Math.random() * 2.5);
-            this.aiParams.aggregateHeightWeight = - (0.35 + Math.random() * 0.6);
-            this.aiParams.maxHeightWeight = - (0.8 + Math.random() * 1.2);
-            this.aiParams.tetrisBonus = 700 + Math.random() * 250;
-            this.aiParams.smallClearPenalty = -30 - Math.random() * 35;
-            this.aiParams.holdAggression = 0.55 + Math.random() * 0.6;   // 0.55~1.15 更激进或保守
-            this.aiParams.lookaheadDepth = Math.random() > 0.65 ? 1 : 0;   // 65%概率启用前瞻
-            this.aiParams.riskFactor = 0.7 + Math.random() * 0.8;
-
-            // 细微重力偏差 (初始速度略微不同)
-            let speedMod = 0.85 + Math.random() * 0.45;
-            this.gravityInterval = Math.floor(155 * speedMod);
-            this.gravityInterval = Math.min(220, Math.max(85, this.gravityInterval));
+            this.resetGameState(false);  // 初始棋盘重置但不改个性
+            this.updateParamsDisplay();
             this.updateSpeedUI();
         }
-
-        updateNameUI() {
-            if (this.nameDiv) this.nameDiv.innerText = this.name;
+        
+        generateName() { return `${NAMES[Math.floor(Math.random() * NAMES.length)]}-${Math.floor(100 + Math.random() * 900)}`; }
+        
+        randomizePersonality() {
+            this.aiParams.holeWeight = -(18 + Math.random() * 24);
+            this.aiParams.bumpinessWeight = -(0.7 + Math.random() * 1.9);
+            this.aiParams.transitionWeight = -(1.8 + Math.random() * 3.0);
+            this.aiParams.aggregateHeightWeight = -(0.3 + Math.random() * 0.7);
+            this.aiParams.maxHeightWeight = -(0.7 + Math.random() * 1.4);
+            this.aiParams.tetrisBonus = 650 + Math.random() * 420;
+            this.aiParams.smallClearPenalty = -(25 + Math.random() * 45);
+            this.aiParams.holdAggression = 0.55 + Math.random() * 0.7;
+            this.aiParams.lookaheadDepth = Math.random() > 0.6 ? 1 : 0;
+            this.aiParams.riskFactor = 0.65 + Math.random() * 0.9;
+            let speedMod = 0.82 + Math.random() * 0.56;
+            this.baseGravityInterval = Math.floor(155 * speedMod);
+            this.baseGravityInterval = Math.min(215, Math.max(70, this.baseGravityInterval));
+            this.gravityInterval = this.baseGravityInterval;
+            this.tempBoostExpire = 0;
         }
-
+        
+        // 设置遗传参数 (新世代)
+        setGeneticParams(newParams, newBaseGravity) {
+            this.aiParams = newParams;
+            this.baseGravityInterval = newBaseGravity;
+            this.gravityInterval = this.baseGravityInterval;
+            this.tempBoostExpire = 0;
+            this.updateParamsDisplay();
+            this.updateSpeedUI();
+        }
+        
+        updateParamsDisplay() {
+            if (!this.paramsDiv) return;
+            const p = this.aiParams;
+            this.paramsDiv.innerHTML = `
+                <span>🧠特化权重</span><br>
+                洞:${p.holeWeight.toFixed(1)} | 凸:${p.bumpinessWeight.toFixed(1)}<br>
+                四行奖:${p.tetrisBonus.toFixed(0)} | Hold激:${p.holdAggression.toFixed(2)}<br>
+                前瞻:${p.lookaheadDepth === 1 ? '✔深度' : '✘浅层'} | 基速:${this.baseGravityInterval}ms
+                <div class="temp-boost"></div>
+            `;
+            this.tempBoostSpan = this.paramsDiv.querySelector('.temp-boost');
+            this.updateTempBoostUI();
+            // 雷达图悬浮
+            this.paramsDiv.style.cursor = 'help';
+            this.paramsDiv.onmouseenter = (e) => {
+                if (window.allAIs && tournamentActive) showRadarTooltip(e, this, window.allAIs);
+            };
+        }
+        
+        updateTempBoostUI() {
+            if (!this.tempBoostSpan) return;
+            if (this.tempBoostExpire > Date.now()) {
+                let remain = Math.ceil((this.tempBoostExpire - Date.now()) / 1000);
+                this.tempBoostSpan.innerText = `⚡加速 ${remain}s`;
+                this.tempBoostSpan.style.color = '#ffaa66';
+            } else {
+                this.tempBoostSpan.innerText = '';
+            }
+        }
+        
+        updateNameUI() { if (this.nameDiv) this.nameDiv.innerText = this.name; }
+        
         resizeCanvas() {
-            // 根据 container 宽度计算最优块大小 (保持视野)
             const maxWidth = this.container.clientWidth - 150;
             const maxHeight = window.innerHeight * 0.4;
             let wSize = Math.floor(maxWidth / this.gridWidth);
             let hSize = Math.floor(maxHeight / this.gridHeight);
             this.blockSize = Math.min(wSize, hSize, 28);
             if (this.blockSize < 12) this.blockSize = 14;
-            // 主画布
             this.canvas.width = this.gridWidth * this.blockSize;
             this.canvas.height = this.gridHeight * this.blockSize;
             this.ctx = this.canvas.getContext('2d');
             this.ctx.scale(this.blockSize, this.blockSize);
-            // 侧边预览画布 (hold + next)
             const sideSize = this.blockSize * 0.65;
             this.holdCanvas.width = 4 * sideSize;
             this.holdCanvas.height = 4 * sideSize;
             this.holdCtx = this.holdCanvas.getContext('2d');
             this.holdCtx.scale(sideSize, sideSize);
-
             this.nextCanvas.width = 4 * sideSize;
             this.nextCanvas.height = 10 * sideSize;
             this.nextCtx = this.nextCanvas.getContext('2d');
             this.nextCtx.scale(sideSize, sideSize);
         }
-
-        // 7-BAG系统
-        generateBag() {
-            let pieces = ['I', 'L', 'J', 'O', 'Z', 'S', 'T'];
-            for (let i = pieces.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
-            }
-            return pieces;
-        }
-        getNextFromBag() {
-            if (this.bag.length === 0) this.bag = this.generateBag();
-            return this.bag.pop();
-        }
-
-        createPiece(type) {
-            const shapes = {
-                'I': [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]],
-                'L': [[0,2,0],[0,2,0],[0,2,2]],
-                'J': [[0,3,0],[0,3,0],[3,3,0]],
-                'O': [[4,4],[4,4]],
-                'Z': [[5,5,0],[0,5,5],[0,0,0]],
-                'S': [[0,6,6],[6,6,0],[0,0,0]],
-                'T': [[0,7,0],[7,7,7],[0,0,0]]
-            };
-            return shapes[type].map(row => row.map(v => v));
-        }
-
-        rotate(matrix) {
-            for (let y = 0; y < matrix.length; ++y)
-                for (let x = 0; x < y; ++x)
-                    [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
-            matrix.forEach(row => row.reverse());
-        }
-
-        collide(arena, piece) {
-            const m = piece.matrix, o = piece.pos;
-            for (let y = 0; y < m.length; ++y)
-                for (let x = 0; x < m[y].length; ++x)
-                    if (m[y][x] !== 0 && (arena[y+o.y] && arena[y+o.y][x+o.x]) !== 0) return true;
-            return false;
-        }
-
-        // 启发式评估 (使用个性化权重)
-        evaluateHeuristics(board) {
-            let holes = 0;
-            let lines = 0;
-            let heights = new Array(10).fill(0);
-            let transitions = 0;
-            // 计算高度 & 空洞
-            for (let x = 0; x < 10; x++) {
-                let colBlock = false;
-                for (let y = 0; y < this.gridHeight; y++) {
-                    if (board[y][x] !== 0) {
-                        if (!colBlock) {
-                            heights[x] = this.gridHeight - y;
-                            colBlock = true;
-                        }
-                    } else if (colBlock) holes++;
-                }
-            }
-            // 满行计数
-            for (let y = 0; y < this.gridHeight; y++) {
-                if (board[y].every(c => c !== 0)) lines++;
-            }
-            // bumpiness
-            let bumpiness = 0;
-            for (let x = 0; x < 9; x++) bumpiness += Math.abs(heights[x] - heights[x+1]);
-            // vertical transitions
-            for (let x = 0; x < 10; x++)
-                for (let y = 0; y < this.gridHeight-1; y++)
-                    if ( (board[y][x] === 0) !== (board[y+1][x] === 0) ) transitions++;
-
-            let lineReward = 0;
-            let maxH = Math.max(...heights);
-            if (lines === 4) lineReward = this.aiParams.tetrisBonus;
-            else if (lines > 0) {
-                if (maxH > this.gridHeight * 0.7) lineReward = lines * 85;
-                else lineReward = lines * this.aiParams.smallClearPenalty;
-            }
-            // 紧急惩罚 (太高危险)
-            let dangerPenalty = (maxH > 24) ? -150 : 0;
-            const score = lineReward + dangerPenalty +
-                (heights.reduce((a,b)=>a+b,0) * this.aiParams.aggregateHeightWeight) +
-                (holes * this.aiParams.holeWeight) +
-                (bumpiness * this.aiParams.bumpinessWeight) +
-                (transitions * this.aiParams.transitionWeight) +
-                (maxH * this.aiParams.maxHeightWeight);
-            return { score, holes };
-        }
-
-        getBestMove(matrix, isLookahead = false) {
-            let best = { score: -Infinity, x: 0, rotation: 0 };
-            const original = matrix.map(row => [...row]);
-            for (let r = 0; r < 4; r++) {
-                for (let x = -3; x < 10; x++) {
-                    let testP = { pos: { x, y: 0 }, matrix: matrix.map(row => [...row]) };
-                    if (this.collide(this.arena, testP)) continue;
-                    while (!this.collide(this.arena, testP)) testP.pos.y++;
-                    testP.pos.y--;
-                    const testArena = this.arena.map(row => [...row]);
-                    testP.matrix.forEach((row, py) => {
-                        row.forEach((v, px) => {
-                            if (v !== 0 && testArena[py+testP.pos.y]) testArena[py+testP.pos.y][px+testP.pos.x] = v;
-                        });
-                    });
-                    let curScore = this.evaluateHeuristics(testArena).score;
-                    // 前瞻逻辑 (如果有下一个方块且启用前瞻)
-                    if (!isLookahead && this.aiParams.lookaheadDepth === 1 && this.nextPieces.length > 0) {
-                        const nextMat = this.nextPieces[0];
-                        const tempArena = this.arena;
-                        this.arena = testArena;
-                        const future = this.getBestMove(nextMat, true);
-                        this.arena = tempArena;
-                        curScore += future.score * 0.65;
-                    }
-                    if (curScore > best.score) best = { score: curScore, x, rotation: r };
-                }
-                this.rotate(matrix);
-            }
-            matrix.length = 0;
-            original.forEach(row => matrix.push([...row]));
-            return best;
-        }
-
-        reset(fullReset = false) {
+        
+        // 重置棋盘状态 (保留个性参数)
+        resetGameState(keepPersonality = true) {
             this.arena = Array.from({ length: this.gridHeight }, () => new Array(10).fill(0));
             this.pendingGarbage = 0;
-            this.sentLines = 0;
-            this.blocksPlaced = 0;
+            if (!keepPersonality) {
+                this.sentLines = 0;
+                this.blocksPlaced = 0;
+            }
             this.particles = [];
             this.comboCount = -1;
             this.lastWasTetris = false;
             this.holdPiece = null;
             this.canHold = true;
-            if (fullReset) {
-                // 重生时随机调整个性参数，实现“换了新AI”微调
-                this.randomizePersonality();
-                this.name = this.generateName();
-                this.updateNameUI();
-                this.gravityInterval = Math.max(55, this.gravityInterval);
-            }
             this.bag = [];
             while (this.nextPieces.length < 5) this.nextPieces.push(this.createPiece(this.getNextFromBag()));
             this.player.matrix = this.nextPieces.shift();
             this.player.pos = { x: 5 - Math.floor(this.player.matrix[0].length / 2), y: 0 };
             if (this.collide(this.arena, this.player)) {
-                // 死亡重置: 通知其他AI升级（外部调用）
-                this.broadcastDeathUpgrade();
-                this.reset(true);
-                return;
+                // 极端情况：重生时立即碰撞（棋盘太高？清空）
+                this.arena = Array.from({ length: this.gridHeight }, () => new Array(10).fill(0));
+                this.player.pos = { x: 5 - Math.floor(this.player.matrix[0].length / 2), y: 0 };
             }
-            // 智能Hold决策 (使用AI个性化阈值)
             let curBest = this.getBestMove(this.player.matrix);
             if (this.canHold) {
                 let altScore = -Infinity;
@@ -491,305 +567,150 @@
             this.updateStatsUI();
             this.updateGarbageUI();
         }
-
-        handleHold() {
-            if (!this.canHold) return;
-            const current = this.player.matrix;
-            if (!this.holdPiece) {
-                this.holdPiece = current;
-                this.player.matrix = this.nextPieces.shift();
+        
+        // 死亡处理：自身速度重置 + 给其他AI临时增益
+        dieAndPenalty() {
+            // 清除临时增益，重置回基础速度
+            this.tempBoostExpire = 0;
+            this.gravityInterval = this.baseGravityInterval;
+            this.updateSpeedUI();
+            this.updateTempBoostUI();
+            // 棋盘重置
+            this.resetGameState(true);
+        }
+        
+        // 临时增益 (其他AI在队友死亡时获得)
+        applyTempBoost() {
+            this.tempBoostExpire = Date.now() + TEMP_BOOST_DURATION;
+            this.updateGravityFromBoost();
+            this.updateTempBoostUI();
+        }
+        
+        updateGravityFromBoost() {
+            if (this.tempBoostExpire > Date.now()) {
+                this.gravityInterval = Math.max(35, this.baseGravityInterval * TEMP_BOOST_FACTOR);
             } else {
-                [this.player.matrix, this.holdPiece] = [this.holdPiece, current];
+                this.gravityInterval = this.baseGravityInterval;
             }
-            this.player.pos = { x: 5 - Math.floor(this.player.matrix[0].length / 2), y: 0 };
-            this.canHold = false;
-        }
-
-        broadcastDeathUpgrade() {
-            if (window.allAIs) {
-                window.allAIs.forEach(ai => {
-                    if (ai !== this) ai.upgrade();
-                });
-            }
-        }
-
-        upgrade() {
-            this.gravityInterval = Math.max(35, this.gravityInterval * 0.88);
             this.updateSpeedUI();
         }
-
+        
         updateSpeedUI() {
             let pct = Math.min(240, Math.floor((160 / this.gravityInterval) * 100));
             if (this.speedSpan) this.speedSpan.innerText = `${pct}%`;
         }
-
+        
         updateStatsUI() {
             if (this.sentSpan) this.sentSpan.innerText = this.sentLines;
             if (this.blocksSpan) this.blocksSpan.innerText = this.blocksPlaced;
         }
-
+        
         updateGarbageUI() {
             let pct = Math.min((this.pendingGarbage / this.gridHeight) * 100, 100);
             if (this.garbageBar) this.garbageBar.style.height = `${pct}%`;
         }
-
-        receiveGarbage(count) {
-            if (count > 0) {
-                this.pendingGarbage += count;
-                this.updateGarbageUI();
-                // 视觉警告闪框
-                if (this.container) this.container.classList.add('threat');
-                setTimeout(() => { if(this.container) this.container.classList.remove('threat'); }, 200);
-            }
+        
+        receiveGarbage(count) { if (count>0) { this.pendingGarbage += count; this.updateGarbageUI(); this.container.classList.add('threat'); setTimeout(()=>this.container.classList.remove('threat'),200); } }
+        
+        // 方块生成 / 碰撞等逻辑复用原有 (代码略简但保持完整)
+        generateBag() { let p=['I','L','J','O','Z','S','T']; for(let i=p.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[p[i],p[j]]=[p[j],p[i]];} return p; }
+        getNextFromBag() { if(this.bag.length===0) this.bag=this.generateBag(); return this.bag.pop(); }
+        createPiece(type) {
+            const s={'I':[[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]],'L':[[0,2,0],[0,2,0],[0,2,2]],'J':[[0,3,0],[0,3,0],[3,3,0]],'O':[[4,4],[4,4]],'Z':[[5,5,0],[0,5,5],[0,0,0]],'S':[[0,6,6],[6,6,0],[0,0,0]],'T':[[0,7,0],[7,7,7],[0,0,0]]};
+            return s[type].map(r=>r.map(v=>v));
         }
-
-        // 垃圾行进入场地 (无消除时)
-        enterPendingGarbage() {
-            if (this.pendingGarbage <= 0) return;
-            let lines = Math.min(this.pendingGarbage, 12);
-            for (let i = 0; i < lines; i++) {
-                let row = new Array(10).fill(8);
-                row[Math.floor(Math.random() * 10)] = 0;
-                this.arena.shift();
-                this.arena.push(row);
-            }
-            this.pendingGarbage = 0;
-            this.updateGarbageUI();
-            this.applyShake(lines);
-        }
-
-        applyShake(severity) {
-            let intensity = Math.min(6, severity);
-            this.canvas.style.transform = `translate(${(Math.random()-0.5)*intensity}px, ${(Math.random()-0.5)*intensity}px)`;
-            setTimeout(() => { this.canvas.style.transform = ''; }, 100);
-        }
-
-        executeMoveAI() {
-            if (!this.targetMove) return;
-            let target = this.targetMove;
-            // 旋转
-            if (target.rotation > 0) {
-                const prev = this.player.matrix.map(row => [...row]);
-                this.rotate(this.player.matrix);
-                if (this.collide(this.arena, this.player)) this.player.matrix = prev;
-                else target.rotation--;
-            }
-            // 水平移动
-            if (this.player.pos.x < target.x) { this.player.pos.x++; if (this.collide(this.arena, this.player)) this.player.pos.x--; }
-            else if (this.player.pos.x > target.x) { this.player.pos.x--; if (this.collide(this.arena, this.player)) this.player.pos.x++; }
-            // 速降 (对齐后快速下落)
-            if (this.player.pos.x === target.x && target.rotation === 0) {
-                this.player.pos.y++;
-                if (this.collide(this.arena, this.player)) this.player.pos.y--;
-            }
-        }
-
-        lockPiece() {
-            this.blocksPlaced++;
-            this.updateStatsUI();
-
-            this.player.matrix.forEach((row, y) => {
-                row.forEach((v, x) => {
-                    if (v !== 0) this.arena[y+this.player.pos.y][x+this.player.pos.x] = v;
-                });
-            });
-
-            let cleared = 0;
-            for (let y = this.arena.length-1; y >= 0; y--) {
-                if (this.arena[y].every(c => c !== 0)) {
-                    for (let x = 0; x < 10; x++) {
-                        let col = COLORS[this.arena[y][x]] || '#ffffff';
-                        for (let i=0;i<5;i++) this.particles.push(new Particle(x+0.5, y+0.5, col));
-                    }
-                    this.arena.splice(y,1);
-                    this.arena.unshift(new Array(10).fill(0));
-                    cleared++;
-                    y++;
-                }
-            }
-
-            if (cleared > 0) {
-                this.applyShake(cleared);
-                // 垃圾抵消机制
-                let cancelPower = (cleared === 4) ? 4 : cleared - 1;
-                if (this.pendingGarbage > 0) {
-                    let cancel = Math.min(this.pendingGarbage, cancelPower);
-                    this.pendingGarbage -= cancel;
-                    cancelPower -= cancel;
-                    this.updateGarbageUI();
-                }
-                if (cancelPower > 0) this.handleCombatSend(cleared);
-                else this.comboCount = -1;
-            } else {
-                this.comboCount = -1;
-                // 没有消除则垃圾入场
-                this.enterPendingGarbage();
-            }
-            this.playerReset();
-        }
-
-        handleCombatSend(cleared) {
-            this.comboCount++;
-            let base = (cleared === 4) ? 4 : cleared - 1;
-            let comboBonus = (this.comboCount > 0) ? Math.ceil(this.comboCount / 2) : 0;
-            let b2b = (cleared === 4 && this.lastWasTetris) ? 1 : 0;
-            this.lastWasTetris = (cleared === 4);
-            let totalSend = base + comboBonus + b2b;
-            if (totalSend > 0 && window.allAIs) {
-                this.sentLines += totalSend;
-                this.updateStatsUI();
-                // 向其他所有AI发送垃圾行
-                window.allAIs.forEach(other => {
-                    if (other !== this) other.receiveGarbage(totalSend);
-                });
-                this.showComboEffect(this.comboCount, totalSend);
-            }
-        }
-
-        showComboEffect(combo, sent) {
-            if (!this.nameDiv) return;
-            const original = this.name;
-            this.nameDiv.style.background = combo > 1 ? "#ff44ff" : "#55ffff";
-            this.nameDiv.innerText = `⚡+${sent}⚡`;
-            if (this.effectTimeout) clearTimeout(this.effectTimeout);
-            this.effectTimeout = setTimeout(() => {
-                this.nameDiv.innerText = original;
-                this.nameDiv.style.background = "var(--neon-main)";
-            }, 550);
-        }
-
-        playerReset() {
-            while (this.nextPieces.length < 5) this.nextPieces.push(this.createPiece(this.getNextFromBag()));
-            this.player.matrix = this.nextPieces.shift();
-            this.player.pos = { x: 5 - Math.floor(this.player.matrix[0].length / 2), y: 0 };
-            if (this.collide(this.arena, this.player)) {
-                this.broadcastDeathUpgrade();
-                this.reset(true);
-                return;
-            }
-            let best = this.getBestMove(this.player.matrix);
-            if (this.canHold) {
-                let otherScore = this.holdPiece ? this.getBestMove(this.holdPiece).score : (this.nextPieces[0] ? this.getBestMove(this.nextPieces[0]).score : -Infinity);
-                if (otherScore > best.score * this.aiParams.holdAggression) this.handleHold();
-                best = this.getBestMove(this.player.matrix);
-            }
-            this.targetMove = best;
-            this.canHold = true;
-        }
-
-        draw() {
-            if (!this.ctx) return;
-            this.ctx.fillStyle = '#030303';
-            this.ctx.fillRect(0, 0, 10, this.gridHeight);
-            this.drawMatrix(this.ctx, this.arena, { x: 0, y: 0 });
-            this.drawMatrix(this.ctx, this.player.matrix, this.player.pos, true);
-            // 预览图
-            this.nextCtx.fillStyle = '#000';
-            this.nextCtx.fillRect(0, 0, 4, 10);
-            this.nextPieces.forEach((m, i) => this.drawMatrix(this.nextCtx, m, { x: 0.5, y: i * 3 + 0.5 }));
-            if (this.holdPiece) {
-                this.holdCtx.fillStyle = '#000';
-                this.holdCtx.fillRect(0, 0, 4, 4);
-                this.drawMatrix(this.holdCtx, this.holdPiece, { x: 0.5, y: 0.5 });
-            } else {
-                this.holdCtx.fillStyle = '#111';
-                this.holdCtx.fillRect(0, 0, 4, 4);
-            }
-            // 粒子
-            for (let i=0; i<this.particles.length; i++) {
-                let p = this.particles[i];
-                p.update();
-                if (p.life <= 0) { this.particles.splice(i,1); i--; }
-                else {
-                    this.ctx.save();
-                    this.ctx.globalAlpha = p.life;
-                    this.ctx.fillStyle = p.color;
-                    this.ctx.fillRect(p.x, p.y, 0.18, 0.18);
-                    this.ctx.restore();
-                }
-            }
-        }
-
-        drawMatrix(ctx, matrix, offset, glow=false) {
-            matrix.forEach((row, y) => {
-                row.forEach((val, x) => {
-                    if (val !== 0) {
-                        ctx.fillStyle = COLORS[val] || '#aaa';
-                        if (glow) { ctx.shadowBlur = 3; ctx.shadowColor = COLORS[val]; }
-                        ctx.fillRect(x + offset.x + 0.04, y + offset.y + 0.04, 0.92, 0.92);
-                        ctx.shadowBlur = 0;
-                    }
-                });
-            });
-        }
-
-        tick(now) {
-            if (!this.player.matrix) return;
-            if (now - this.lastMoveTime > this.gravityInterval * 0.45) {
-                this.executeMoveAI();
-                this.lastMoveTime = now;
-            }
-            if (now - this.lastGravityTime > this.gravityInterval) {
-                this.player.pos.y++;
-                if (this.collide(this.arena, this.player)) {
-                    this.player.pos.y--;
-                    this.lockPiece();
-                }
-                this.lastGravityTime = now;
-            }
-        }
+        rotate(m){ for(let y=0;y<m.length;++y) for(let x=0;x<y;++x)[m[x][y],m[y][x]]=[m[y][x],m[x][y]]; m.forEach(r=>r.reverse()); }
+        collide(arena,piece){ const m=piece.matrix,o=piece.pos; for(let y=0;y<m.length;++y) for(let x=0;x<m[y].length;++x) if(m[y][x]!==0 && (arena[y+o.y]&&arena[y+o.y][x+o.x])!==0) return true; return false; }
+        evaluateHeuristics(board){ let holes=0,lines=0,heights=new Array(10).fill(0),transitions=0; for(let x=0;x<10;x++){ let col=false; for(let y=0;y<this.gridHeight;y++){ if(board[y][x]!==0){if(!col){heights[x]=this.gridHeight-y;col=true;}} else if(col) holes++; } } for(let y=0;y<this.gridHeight;y++) if(board[y].every(c=>c!==0)) lines++; let bump=0; for(let x=0;x<9;x++) bump+=Math.abs(heights[x]-heights[x+1]); for(let x=0;x<10;x++) for(let y=0;y<this.gridHeight-1;y++) if((board[y][x]===0)!==(board[y+1][x]===0)) transitions++; let lineReward=0,maxH=Math.max(...heights); if(lines===4) lineReward=this.aiParams.tetrisBonus; else if(lines>0) lineReward= maxH>this.gridHeight*0.7?lines*85:lines*this.aiParams.smallClearPenalty; let danger=(maxH>24)?-150:0; const score=lineReward+danger+(heights.reduce((a,b)=>a+b,0)*this.aiParams.aggregateHeightWeight)+(holes*this.aiParams.holeWeight)+(bump*this.aiParams.bumpinessWeight)+(transitions*this.aiParams.transitionWeight)+(maxH*this.aiParams.maxHeightWeight); return {score,holes}; }
+        getBestMove(matrix,isLookahead=false){ let best={score:-Infinity,x:0,rotation:0}; const original=matrix.map(r=>[...r]); for(let r=0;r<4;r++){ for(let x=-3;x<10;x++){ let testP={pos:{x,y:0},matrix:matrix.map(r=>[...r])}; if(this.collide(this.arena,testP)) continue; while(!this.collide(this.arena,testP)) testP.pos.y++; testP.pos.y--; const testArena=this.arena.map(r=>[...r]); testP.matrix.forEach((row,py)=>row.forEach((v,px)=>{if(v!==0 && testArena[py+testP.pos.y]) testArena[py+testP.pos.y][px+testP.pos.x]=v;})); let curScore=this.evaluateHeuristics(testArena).score; if(!isLookahead && this.aiParams.lookaheadDepth===1 && this.nextPieces.length>0){ const nextMat=this.nextPieces[0]; const tmp=this.arena; this.arena=testArena; const future=this.getBestMove(nextMat,true); this.arena=tmp; curScore+=future.score*0.62; } if(curScore>best.score) best={score:curScore,x,rotation:r}; } this.rotate(matrix); } matrix.length=0; original.forEach(r=>matrix.push([...r])); return best; }
+        handleHold(){ if(!this.canHold) return; const cur=this.player.matrix; if(!this.holdPiece){ this.holdPiece=cur; this.player.matrix=this.nextPieces.shift(); }else{ [this.player.matrix,this.holdPiece]=[this.holdPiece,cur]; } this.player.pos={x:5-Math.floor(this.player.matrix[0].length/2),y:0}; this.canHold=false; }
+        executeMoveAI(){ if(!this.targetMove) return; let t=this.targetMove; if(t.rotation>0){ const prev=this.player.matrix.map(r=>[...r]); this.rotate(this.player.matrix); if(this.collide(this.arena,this.player)) this.player.matrix=prev; else t.rotation--; } if(this.player.pos.x<t.x){ this.player.pos.x++; if(this.collide(this.arena,this.player)) this.player.pos.x--; } else if(this.player.pos.x>t.x){ this.player.pos.x--; if(this.collide(this.arena,this.player)) this.player.pos.x++; } if(this.player.pos.x===t.x && t.rotation===0){ this.player.pos.y++; if(this.collide(this.arena,this.player)) this.player.pos.y--; } }
+        lockPiece(){ this.blocksPlaced++; this.updateStatsUI(); this.player.matrix.forEach((row,y)=>row.forEach((v,x)=>{if(v!==0) this.arena[y+this.player.pos.y][x+this.player.pos.x]=v;})); let cleared=0; for(let y=this.arena.length-1;y>=0;y--){ if(this.arena[y].every(c=>c!==0)){ for(let x=0;x<10;x++){ let col=COLORS[this.arena[y][x]]||'#fff'; for(let i=0;i<5;i++) this.particles.push(new Particle(x+0.5,y+0.5,col)); } this.arena.splice(y,1); this.arena.unshift(new Array(10).fill(0)); cleared++; y++; } } if(cleared>0){ this.applyShake(cleared); let cancelPower=(cleared===4)?4:cleared-1; if(this.pendingGarbage>0){ let cancel=Math.min(this.pendingGarbage,cancelPower); this.pendingGarbage-=cancel; cancelPower-=cancel; this.updateGarbageUI(); } if(cancelPower>0) this.handleCombatSend(cleared); else this.comboCount=-1; }else{ this.comboCount=-1; this.enterPendingGarbage(); } this.playerReset(); }
+        handleCombatSend(cleared){ this.comboCount++; let base=(cleared===4)?4:cleared-1; let comboBonus=(this.comboCount>0)?Math.ceil(this.comboCount/2):0; let b2b=(cleared===4 && this.lastWasTetris)?1:0; this.lastWasTetris=(cleared===4); let totalSend=base+comboBonus+b2b; if(totalSend>0 && window.allAIs){ this.sentLines+=totalSend; this.updateStatsUI(); window.allAIs.forEach(other=>{ if(other!==this) other.receiveGarbage(totalSend); }); this.showComboEffect(this.comboCount,totalSend); if(this.sentLines>=WIN_SENT_LINES && tournamentActive) declareWinner(this); } }
+        showComboEffect(combo,sent){ if(!this.nameDiv) return; const orig=this.name; this.nameDiv.style.background=combo>1?"#ff44ff":"#55ffff"; this.nameDiv.innerText=`⚡+${sent}⚡`; if(this.effectTimeout) clearTimeout(this.effectTimeout); this.effectTimeout=setTimeout(()=>{this.nameDiv.innerText=orig; this.nameDiv.style.background="var(--neon-main)";},550); }
+        playerReset(){ while(this.nextPieces.length<5) this.nextPieces.push(this.createPiece(this.getNextFromBag())); this.player.matrix=this.nextPieces.shift(); this.player.pos={x:5-Math.floor(this.player.matrix[0].length/2),y:0}; if(this.collide(this.arena,this.player)){ this.dieAndPenalty(); return; } let best=this.getBestMove(this.player.matrix); if(this.canHold){ let other=this.holdPiece?this.getBestMove(this.holdPiece).score:(this.nextPieces[0]?this.getBestMove(this.nextPieces[0]).score:-Infinity); if(other>best.score*this.aiParams.holdAggression) this.handleHold(); best=this.getBestMove(this.player.matrix); } this.targetMove=best; this.canHold=true; }
+        enterPendingGarbage(){ if(this.pendingGarbage<=0) return; let lines=Math.min(this.pendingGarbage,12); for(let i=0;i<lines;i++){ let row=new Array(10).fill(8); row[Math.floor(Math.random()*10)]=0; this.arena.shift(); this.arena.push(row); } this.pendingGarbage=0; this.updateGarbageUI(); this.applyShake(lines); }
+        applyShake(sev){ let inten=Math.min(6,sev); this.canvas.style.transform=`translate(${(Math.random()-0.5)*inten}px,${(Math.random()-0.5)*inten}px)`; setTimeout(()=>this.canvas.style.transform='',100); }
+        draw(){ if(!this.ctx) return; this.ctx.fillStyle='#030303'; this.ctx.fillRect(0,0,10,this.gridHeight); this.drawMatrix(this.ctx,this.arena,{x:0,y:0}); this.drawMatrix(this.ctx,this.player.matrix,this.player.pos,true); this.nextCtx.fillStyle='#000'; this.nextCtx.fillRect(0,0,4,10); this.nextPieces.forEach((m,i)=>this.drawMatrix(this.nextCtx,m,{x:0.5,y:i*3+0.5})); if(this.holdPiece){ this.holdCtx.fillStyle='#000'; this.holdCtx.fillRect(0,0,4,4); this.drawMatrix(this.holdCtx,this.holdPiece,{x:0.5,y:0.5}); }else{ this.holdCtx.fillStyle='#111'; this.holdCtx.fillRect(0,0,4,4); } for(let i=0;i<this.particles.length;i++){ let p=this.particles[i]; p.update(); if(p.life<=0) { this.particles.splice(i,1); i--; } else{ this.ctx.save(); this.ctx.globalAlpha=p.life; this.ctx.fillStyle=p.color; this.ctx.fillRect(p.x,p.y,0.18,0.18); this.ctx.restore(); } } }
+        drawMatrix(ctx,matrix,offset,glow=false){ matrix.forEach((row,y)=>row.forEach((val,x)=>{ if(val!==0){ ctx.fillStyle=COLORS[val]||'#aaa'; if(glow){ctx.shadowBlur=3;ctx.shadowColor=COLORS[val];} ctx.fillRect(x+offset.x+0.04,y+offset.y+0.04,0.92,0.92); ctx.shadowBlur=0; } })); }
+        tick(now){ if(!tournamentActive) return; if(this.tempBoostExpire>0 && this.tempBoostExpire<=now) { this.tempBoostExpire=0; this.updateGravityFromBoost(); this.updateTempBoostUI(); } if(now-this.lastMoveTime>this.gravityInterval*0.45){ this.executeMoveAI(); this.lastMoveTime=now; } if(now-this.lastGravityTime>this.gravityInterval){ this.player.pos.y++; if(this.collide(this.arena,this.player)){ this.player.pos.y--; this.lockPiece(); } this.lastGravityTime=now; } }
     }
-
-    // ---------- 构建4人战场UI ----------
+    class Particle { constructor(x,y,c){ this.x=x;this.y=y;this.color=c; this.vx=(Math.random()-0.5)*0.9; this.vy=(Math.random()-0.5)*0.9-0.2; this.life=1.0; } update(){ this.x+=this.vx; this.y+=this.vy; this.life-=0.045; } }
+    
+    // 全局胜者声明 + 遗传算法新世代
+    async function declareWinner(winnerAI) {
+        if(!tournamentActive) return;
+        tournamentActive = false;
+        currentWinner = winnerAI;
+        document.getElementById('globalMessage').innerHTML = `🏆 胜者: ${winnerAI.name} (发送${winnerAI.sentLines}行) 🧬 遗传进化中...`;
+        // 遗传算法：胜者参数轻微变异 + 其余交叉
+        const winnerParams = { ...winnerAI.aiParams };
+        const winnerBaseGravity = winnerAI.baseGravityInterval;
+        const newAIParams = [];
+        for(let i=0; i<window.allAIs.length; i++) {
+            let newP = { ...winnerParams };
+            // 变异幅度 ±15%
+            newP.holeWeight *= (0.85 + Math.random()*0.3);
+            newP.bumpinessWeight *= (0.85 + Math.random()*0.3);
+            newP.tetrisBonus *= (0.85 + Math.random()*0.3);
+            newP.holdAggression *= (0.85 + Math.random()*0.3);
+            newP.lookaheadDepth = Math.random()>0.7 ? 1 : 0;
+            let newBaseGrav = winnerBaseGravity * (0.8 + Math.random()*0.5);
+            newBaseGrav = Math.min(210, Math.max(65, newBaseGrav));
+            newAIParams.push({ params: newP, baseGravity: newBaseGrav });
+        }
+        setTimeout(() => {
+            for(let i=0; i<window.allAIs.length; i++) {
+                window.allAIs[i].setGeneticParams(newAIParams[i].params, newAIParams[i].baseGravity);
+                window.allAIs[i].sentLines = 0;
+                window.allAIs[i].blocksPlaced = 0;
+                window.allAIs[i].resetGameState(false);
+                window.allAIs[i].updateStatsUI();
+                window.allAIs[i].updateGravityFromBoost();
+            }
+            tournamentActive = true;
+            currentWinner = null;
+            document.getElementById('globalMessage').innerHTML = `✨ 新世代开启 · 参数已进化 ✨`;
+            setTimeout(()=>{document.getElementById('globalMessage').innerHTML = `⚔️ 进化之战 · 激斗中 ⚔️`;}, 2500);
+        }, 500);
+    }
+    
     function buildBattlefield() {
         const grid = document.getElementById('battleGrid');
         grid.innerHTML = '';
-        const players = ['p1', 'p2', 'p3', 'p4'];
-        for (let pid of players) {
+        for(let i=1;i<=4;i++) {
             const wrapper = document.createElement('div');
             wrapper.className = 'game-wrapper';
-            wrapper.id = `wrapper-${pid}`;
+            wrapper.id = `wrapper-p${i}`;
             wrapper.innerHTML = `
-                <div class="side-hud">
-                    <div class="preview-label">HOLD</div>
-                    <canvas class="hold-canvas" width="40" height="40"></canvas>
-                    <div class="stat"><label>SENT</label><span class="sent-val">0</span></div>
-                    <div class="stat"><label>BLOCKS</label><span class="blocks-val">0</span></div>
-                    <div class="multiplier-tag speed-val">SPD: 100%</div>
-                </div>
-                <div class="garbage-container">
-                    <div class="garbage-bar"></div>
-                </div>
-                <canvas class="play-canvas" width="200" height="600"></canvas>
-                <div class="side-hud">
-                    <div class="preview-label">NEXT</div>
-                    <canvas class="next-canvas" width="40" height="120"></canvas>
-                </div>
-                <div class="bot-name">INIT</div>
-            `;
+                <div class="side-hud"><div class="preview-label">HOLD</div><canvas class="hold-canvas"></canvas>
+                <div class="stat"><label>SENT</label><span class="sent-val">0</span></div>
+                <div class="stat"><label>BLOCKS</label><span class="blocks-val">0</span></div>
+                <div class="multiplier-tag speed-val">SPD:100%</div>
+                <div class="params-panel">加载参数中...</div></div>
+                <div class="garbage-container"><div class="garbage-bar"></div></div>
+                <canvas class="play-canvas"></canvas>
+                <div class="side-hud"><div class="preview-label">NEXT</div><canvas class="next-canvas"></canvas></div>
+                <div class="bot-name">PROTOCOL</div>`;
             grid.appendChild(wrapper);
         }
     }
-
     buildBattlefield();
-    // 实例化四个AI
     const ais = [];
-    const wrappers = ['wrapper-p1', 'wrapper-p2', 'wrapper-p3', 'wrapper-p4'];
-    wrappers.forEach((id, idx) => {
-        const ai = new TetrisAI(id, idx);
-        ais.push(ai);
-    });
+    for(let i=1;i<=4;i++) ais.push(new TetrisAI(`wrapper-p${i}`, i-1, null));
     window.allAIs = ais;
-
-    let lastTimestamp = 0;
-    function animationLoop(time) {
-        for (let ai of ais) {
-            ai.tick(time);
-            ai.draw();
-        }
-        requestAnimationFrame(animationLoop);
-    }
+    // 死亡平衡: 重写广播，死亡时其他AI获得临时增益，自身重置速度
+    window.allAIs.forEach(ai => {
+        const origDie = ai.dieAndPenalty.bind(ai);
+        ai.dieAndPenalty = function() { 
+            // 原死亡逻辑: 重置自己速度+棋盘，并给其他AI临时增益
+            for(let other of window.allAIs) if(other !== this) other.applyTempBoost();
+            origDie();
+        };
+    });
+    function animationLoop(time) { for(let ai of ais) { ai.tick(time); ai.draw(); } requestAnimationFrame(animationLoop); }
     requestAnimationFrame(animationLoop);
+    document.getElementById('manualResetBtn').onclick = () => { if(window.allAIs.length) declareWinner(window.allAIs.reduce((a,b)=>a.sentLines>b.sentLines?a:b)); };
 </script>
 </body>
 </html>
