@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>✨ 幻码魔方 · 终极定制工坊</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(circle at 10% 30%, #eef2f7, #d0dee9);
+            font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif;
+            padding: 28px 20px;
+        }
+
+        .master-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 250, 0.96);
+            border-radius: 56px;
+            padding: 28px 32px;
+            box-shadow: 0 30px 45px rgba(0,0,0,0.15);
+            backdrop-filter: blur(2px);
+        }
+
+        h1 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #1f3f57, #2e7a9e);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .sub {
+            color: #476f89;
+            margin-bottom: 28px;
+            border-left: 5px solid #7eaec9;
+            padding-left: 16px;
+            font-weight: 450;
+        }
+
+        /* 四栏网格布局 */
+        .grid-4col {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .card-panel {
+            flex: 1;
+            min-width: 250px;
+            background: #fffef9;
+            border-radius: 32px;
+            padding: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            border: 1px solid #eef2ea;
+        }
+        .opt-group {
+            margin-bottom: 24px;
+        }
+        .opt-title {
+            font-weight: 700;
+            color: #1d4d67;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            border-left: 3px solid #7eaec9;
+            padding-left: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .input-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .input-row label {
+            width: 100px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #2b5a78;
+        }
+        input, select {
+            background: white;
+            border: 1.5px solid #dce5ec;
+            border-radius: 60px;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            flex: 1;
+            outline: none;
+        }
+        input[type="color"] {
+            width: 48px;
+            height: 40px;
+            padding: 3px;
+        }
+        input[type="range"] {
+            flex: 1.5;
+        }
+        .range-value {
+            background: #eef2f5;
+            padding: 2px 10px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+        }
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .toggle-switch {
+            width: 46px;
+            height: 24px;
+            background: #cbdae5;
+            border-radius: 40px;
+            position: relative;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .toggle-switch.active {
+            background: #3e7b9e;
+        }
+        .toggle-switch span {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 3px;
+            transition: 0.2s;
+        }
+        .toggle-switch.active span {
+            left: 23px;
+        }
+        .preview-area {
+            margin-top: 30px;
+            background: #fefaf2;
+            border-radius: 48px;
+            padding: 24px;
+            text-align: center;
+            transition: background 0.2s;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 32px;
+            background: white;
+            box-shadow: 0 20px 30px rgba(0,0,0,0.12);
+            max-width: 100%;
+            height: auto;
+        }
+        .custom-text {
+            margin-top: 20px;
+            font-size: 1rem;
+            background: #eef3f9;
+            padding: 8px 24px;
+            border-radius: 60px;
+            display: inline-block;
+        }
+        .custom-text.hide { display: none; }
+        .button-bar {
+            margin-top: 20px;
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+        .btn {
+            background: #eef3f8;
+            border: none;
+            padding: 10px 28px;
+            border-radius: 44px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #c9deeb;
+        }
+        .btn-primary {
+            background: #2c6280;
+            color: white;
+            border: none;
+            box-shadow: 0 6px 16px #2c628070;
+        }
+        .btn-primary:hover, .btn:hover {
+            transform: translateY(-2px);
+        }
+        footer {
+            text-align: center;
+            margin-top: 28px;
+            font-size: 0.7rem;
+            color: #88a3b6;
+        }
+        @media (max-width: 1000px) {
+            .grid-4col { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="master-container">
+    <h1>🌀 幻码魔方 · 终极定制</h1>
+    <div class="sub">纠错｜形状｜渐变｜背景纹理｜定位角｜水印｜装饰噪点｜无限可能</div>
+
+    <div class="grid-4col">
+        <!-- 面板1: 核心数据 & 纠错版本 -->
+        <div class="card-panel">
+            <div class="opt-group">
+                <div class="opt-title">📌 内容核心</div>
+                <div class="input-row"><label>二维码内容</label><input type="text" id="qrContent" value="https://qrcode.art/lab/ultimate"></div>
+                <div class="input-row"><label>自定义文字</label><input type="text" id="customText" placeholder="留空隐藏"></div>
+            </div>
+            <div class="opt-group">
+                <div class="opt-title">⚙️ 编码引擎</div>
+                <div class="input-row"><label>纠错级别</label><select id="errorCorrection"><option value="L">L (7%)</option><option value="M" selected>M (15%)</option><option value="Q">Q (25%)</option><option value="H">H (30%)</option></select></div>
+                <div class="input-row"><label>版本模式</label><select id="versionMode"><option value="auto" selected>自动最佳</option><option value="manual">手动版本</option></select></div>
+                <div class="input-row" id="manualVersionRow" style="display:none;"><label>版本(1~12)</label><input type="number" id="manualVersion" min="1" max="12" value="6"></div>
+            </div>
+        </div>
+
+        <!-- 面板2: 颜色 & 形状 & 渐变 -->
+        <div class="card-panel">
+            <div class="opt-group">
+                <div class="opt-title">🎨 色彩与形态</div>
+                <div class="input-row"><label>前景主色</label><input type="color" id="foreColor" value="#1F2A3E"></div>
+                <div class="input-row"><label>渐变色2</label><input type="color" id="foreGradColor" value="#6C4E9E"></div>
+                <div class="toggle-group"><span class="toggle-label">🌈 启用渐变</span><div id="gradientToggle" class="toggle-switch"><span></span></div></div>
+                <div class="input-row"><label>背景颜色</label><input type="color" id="bgColor" value="#FEFCF5"></div>
+                <div class="input-row"><label>暗块形状</label><select id="blockShape"><option value="square">■ 方形</option><option value="circle">● 圆形</option><option value="diamond">🔶 菱形</option><option value="star">✨ 星形</option><option value="cross">✚ 十字纹</option></select></div>
+                <div class="input-row"><label>圆角系数</label><input type="range" id="cornerRadius" min="0" max="50" value="12"><span class="range-value" id="radiusValue">12%</span></div>
+                <div class="input-row"><label>模块缩放</label><input type="range" id="blockScale" min="0.6" max="1" step="0.01" value="0.85"><span class="range-value" id="scaleValue">85%</span></div>
+            </div>
+        </div>
+
+        <!-- 面板3: 特效、定位、水印 -->
+        <div class="card-panel">
+            <div class="opt-group">
+                <div class="opt-title">✨ 特效 & 装饰</div>
+                <div class="toggle-group"><span class="toggle-label">🌟 边缘光晕</span><div id="glowToggle" class="toggle-switch"><span></span></div></div>
+                <div class="toggle-group"><span class="toggle-label">🎯 强化定位角</span><div id="positionDecorToggle" class="toggle-switch"><span></span></div></div>
+                <div class="input-row"><label>定位点样式</label><select id="finderStyle"><option value="classic">经典方形</option><option value="round">圆角边框</option><option value="double">双环增强</option></select></div>
+                <div class="input-row"><label>背景纹理</label><select id="bgTexture"><option value="none">无</option><option value="dots">波点纹理</option><option value="grid">细网格</option><option value="noise">微噪点</option></select></div>
+                <div class="input-row"><label>装饰噪点强度</label><input type="range" id="noiseIntensity" min="0" max="30" value="8"><span class="range-value" id="noiseValue">8%</span></div>
+            </div>
+            <div class="opt-group">
+                <div class="opt-title">🖌️ 水印 / 图腾</div>
+                <div class="input-row"><label>中央图腾</label><select id="centerIcon"><option value="none">无</option><option value="emoji">😀 Emoji</option><option value="text">文字</option></select></div>
+                <div class="input-row" id="centerEmojiRow"><label>Emoji</label><input type="text" id="centerEmoji" value="🌀" maxlength="2"></div>
+                <div class="input-row" id="centerTextRow" style="display:none;"><label>文字</label><input type="text" id="centerText" value="QR" maxlength="4"></div>
+                <div class="input-row"><label>额外水印文字</label><input type="text" id="watermarkText" placeholder="水印内容" maxlength="12"></div>
+                <div class="input-row"><label>水印位置</label><select id="watermarkPos"><option value="tl">左上角</option><option value="br" selected>右下角</option><option value="center">中心小标</option></select></div>
+            </div>
+        </div>
+
+        <!-- 面板4: 画布 & 导出 -->
+        <div class="card-panel">
+            <div class="opt-group">
+                <div class="opt-title">📐 画布 & 留白</div>
+                <div class="input-row"><label>画布大小(px)</label><select id="canvasSize"><option value="400">400x400</option><option value="480" selected>480x480</option><option value="600">600x600</option><option value="800">800x800</option></select></div>
+                <div class="input-row"><label>边缘留白(模块)</label><input type="number" id="marginModules" min="2" max="8" value="4"></div>
+            </div>
+            <div class="opt-group">
+                <div class="opt-title">📀 操作</div>
+                <div class="button-bar" style="margin-top: 8px;">
+                    <button class="btn btn-primary" id="generateBtn">⚡ 生成</button>
+                    <button class="btn" id="downloadBtn">💾 下载PNG</button>
+                </div>
+                <div style="font-size:0.7rem; color:#4a6f88; margin-top:12px;">✨ 所有选项实时重绘，尽情实验</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="preview-area" id="previewCard">
+        <canvas id="qrCanvas" width="480" height="480" style="width:100%; max-width:480px; aspect-ratio:1/1"></canvas>
+        <div id="customTextDisplay" class="custom-text">✨ 艺术二维码</div>
+    </div>
+    <footer>终极定制：纹理、水印、自定义定位角、十字星形、噪点氛围</footer>
+</div>
+
+<script>
+    (function(){
+        // ---------- DOM 元素 ----------
+        const qrContentInput = document.getElementById('qrContent');
+        const customTextInput = document.getElementById('customText');
+        const errorCorrectionSelect = document.getElementById('errorCorrection');
+        const versionModeSelect = document.getElementById('versionMode');
+        const manualVersionRow = document.getElementById('manualVersionRow');
+        const manualVersionInput = document.getElementById('manualVersion');
+        const foreColorPicker = document.getElementById('foreColor');
+        const foreGradColorPicker = document.getElementById('foreGradColor');
+        const bgColorPicker = document.getElementById('bgColor');
+        const gradientToggleDiv = document.getElementById('gradientToggle');
+        const blockShapeSelect = document.getElementById('blockShape');
+        const cornerRadiusRange = document.getElementById('cornerRadius');
+        const radiusSpan = document.getElementById('radiusValue');
+        const blockScaleRange = document.getElementById('blockScale');
+        const scaleSpan = document.getElementById('scaleValue');
+        const glowToggleDiv = document.getElementById('glowToggle');
+        const positionDecorToggleDiv = document.getElementById('positionDecorToggle');
+        const finderStyleSelect = document.getElementById('finderStyle');
+        const bgTextureSelect = document.getElementById('bgTexture');
+        const noiseIntensityRange = document.getElementById('noiseIntensity');
+        const noiseValueSpan = document.getElementById('noiseValue');
+        const centerIconSelect = document.getElementById('centerIcon');
+        const centerEmojiRow = document.getElementById('centerEmojiRow');
+        const centerEmojiInput = document.getElementById('centerEmoji');
+        const centerTextRow = document.getElementById('centerTextRow');
+        const centerTextInput = document.getElementById('centerText');
+        const watermarkTextInput = document.getElementById('watermarkText');
+        const watermarkPosSelect = document.getElementById('watermarkPos');
+        const canvasSizeSelect = document.getElementById('canvasSize');
+        const marginModulesInput = document.getElementById('marginModules');
+        const generateBtn = document.getElementById('generateBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const qrCanvas = document.getElementById('qrCanvas');
+        const customTextSpan = document.getElementById('customTextDisplay');
+        const previewCard = document.getElementById('previewCard');
+
+        // 全局状态
+        let currentQR = null;
+        let params = {
+            foreColor: "#1F2A3E", foreGradColor: "#6C4E9E", useGradient: false, bgColor: "#FEFCF5",
+            blockShape: "square", cornerRadius: 12, blockScale: 0.85, glow: false, positionDecor: false,
+            finderStyle: "classic", bgTexture: "none", noiseIntensity: 8,
+            centerType: "none", centerEmoji: "🌀", centerText: "QR",
+            watermarkText: "", watermarkPos: "br",
+            canvasSize: 480, marginModules: 4,
+            errorCorrection: "M", versionManual: false, manualVersionNum: 6
+        };
+
+        function syncUItoParams() {
+            params.foreColor = foreColorPicker.value;
+            params.foreGradColor = foreGradColorPicker.value;
+            params.useGradient = gradientToggleDiv.classList.contains('active');
+            params.bgColor = bgColorPicker.value;
+            params.blockShape = blockShapeSelect.value;
+            params.cornerRadius = parseInt(cornerRadiusRange.value);
+            params.blockScale = parseFloat(blockScaleRange.value);
+            params.glow = glowToggleDiv.classList.contains('active');
+            params.positionDecor = positionDecorToggleDiv.classList.contains('active');
+            params.finderStyle = finderStyleSelect.value;
+            params.bgTexture = bgTextureSelect.value;
+            params.noiseIntensity = parseInt(noiseIntensityRange.value);
+            params.centerType = centerIconSelect.value;
+            params.centerEmoji = centerEmojiInput.value;
+            params.centerText = centerTextInput.value;
+            params.watermarkText = watermarkTextInput.value;
+            params.watermarkPos = watermarkPosSelect.value;
+            params.canvasSize = parseInt(canvasSizeSelect.value);
+            params.marginModules = parseInt(marginModulesInput.value);
+            params.errorCorrection = errorCorrectionSelect.value;
+            params.versionManual = (versionModeSelect.value === 'manual');
+            params.manualVersionNum = parseInt(manualVersionInput.value);
+            radiusSpan.innerText = params.cornerRadius + "%";
+            scaleSpan.innerText = Math.round(params.blockScale * 100) + "%";
+            noiseValueSpan.innerText = params.noiseIntensity + "%";
+            previewCard.style.backgroundColor = params.bgColor;
+        }
+
+        function toggleVersionRow() { manualVersionRow.style.display = (versionModeSelect.value === 'manual') ? 'flex' : 'none'; }
+        versionModeSelect.addEventListener('change', toggleVersionRow);
+        function toggleCenterRows() {
+            const type = centerIconSelect.value;
+            centerEmojiRow.style.display = (type === 'emoji') ? 'flex' : 'none';
+            centerTextRow.style.display = (type === 'text') ? 'flex' : 'none';
+        }
+        centerIconSelect.addEventListener('change', toggleCenterRows);
+
+        // 生成QR矩阵
+        function generateQRMatrixWithOptions(text) {
+            if (!text.trim()) text = "✨ 无限创意 ✨";
+            const ecLevel = params.errorCorrection;
+            if (params.versionManual) {
+                let v = Math.min(12, Math.max(1, params.manualVersionNum));
+                try { const qr = qrcode(v, ecLevel); qr.addData(text); qr.make(); return qr; } catch(e) { console.warn("fallback auto"); }
+            }
+            for (let v = 1; v <= 12; v++) {
+                const qr = qrcode(v, ecLevel);
+                qr.addData(text);
+                try { qr.make(); return qr; } catch(e) { continue; }
+            }
+            const fallback = qrcode(6, 'M');
+            fallback.addData(text.substring(0, 180));
+            fallback.make();
+            return fallback;
+        }
+
+        // 绘制圆角矩形辅助
+        function roundedRect(ctx, x, y, w, h, r, fill, isStroke = false) {
+            let rad = Math.min(r, w/2, h/2);
+            ctx.beginPath();
+            ctx.moveTo(x+rad, y); ctx.lineTo(x+w-rad, y); ctx.quadraticCurveTo(x+w, y, x+w, y+rad);
+            ctx.lineTo(x+w, y+h-rad); ctx.quadraticCurveTo(x+w, y+h, x+w-rad, y+h);
+            ctx.lineTo(x+rad, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-rad);
+            ctx.lineTo(x, y+rad); ctx.quadraticCurveTo(x, y, x+rad, y);
+            ctx.closePath();
+            if (isStroke) ctx.stroke(); else if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+        }
+
+        // 绘制单个模块（形状支持十字纹等）
+        function drawModule(ctx, x, y, w, h, shape, radiusPercent, fillColor, glowFlag) {
+            if (w <=0 || h<=0) return;
+            const radius = Math.min(w, h) * (radiusPercent / 100);
+            if (shape === 'square') { roundedRect(ctx, x, y, w, h, radius, fillColor); }
+            else if (shape === 'circle') {
+                const r = Math.min(w, h) * 0.4;
+                ctx.beginPath(); ctx.arc(x+w/2, y+h/2, r, 0, 2*Math.PI); ctx.fillStyle = fillColor; ctx.fill();
+                if (glowFlag) { ctx.beginPath(); ctx.arc(x+w/2, y+h/2, r+1, 0, 2*Math.PI); ctx.strokeStyle = "#FFE5B4"; ctx.lineWidth=1; ctx.stroke(); }
+            } 
+            else if (shape === 'diamond') {
+                ctx.beginPath(); ctx.moveTo(x+w/2, y); ctx.lineTo(x+w, y+h/2); ctx.lineTo(x+w/2, y+h); ctx.lineTo(x, y+h/2); ctx.closePath(); ctx.fillStyle = fillColor; ctx.fill();
+                if (glowFlag) ctx.stroke();
+            } 
+            else if (shape === 'star') {
+                let cx = x+w/2, cy = y+h/2, outer = Math.min(w,h)*0.45, inner = outer*0.45;
+                let points = 5, step = Math.PI/points, rot = Math.PI/2*3;
+                ctx.beginPath();
+                for (let i=0;i<points;i++) {
+                    let px = cx + Math.cos(rot + i*step*2)*outer, py = cy + Math.sin(rot + i*step*2)*outer; ctx.lineTo(px,py);
+                    px = cx + Math.cos(rot + (i*step*2+step))*inner; py = cy + Math.sin(rot + (i*step*2+step))*inner; ctx.lineTo(px,py);
+                }
+                ctx.closePath(); ctx.fillStyle = fillColor; ctx.fill();
+                if (glowFlag) ctx.stroke();
+            }
+            else if (shape === 'cross') {
+                let barW = w*0.25, barH = h*0.25;
+                ctx.fillStyle = fillColor;
+                ctx.fillRect(x + w/2 - barW/2, y, barW, h);
+                ctx.fillRect(x, y + h/2 - barH/2, w, barH);
+                if (glowFlag) { ctx.strokeStyle = "#FFE0A0"; ctx.lineWidth=1; ctx.strokeRect(x+1,y+1,w-2,h-2); }
+            }
+            if (glowFlag && (shape === 'square' || shape === 'diamond')) {
+                ctx.save(); ctx.strokeStyle = "#FFECB3"; ctx.lineWidth = 1; roundedRect(ctx, x+1, y+1, w-2, h-2, Math.max(2, radius*0.6), null, true); ctx.restore();
+            }
+        }
+
+        // 获取填充色（渐变或纯色）
+        function getFill(ctx, x, y, w, h) {
+            if (params.useGradient) {
+                const grad = ctx.createLinearGradient(x, y, x+w, y+h);
+                grad.addColorStop(0, params.foreColor);
+                grad.addColorStop(1, params.foreGradColor);
+                return grad;
+            } else return params.foreColor;
+        }
+
+        // 背景纹理绘制
+        function applyBackgroundTexture(ctx, w, h) {
+            const tex = params.bgTexture;
+            if (tex === 'none') return;
+            ctx.globalCompositeOperation = 'source-over';
+            if (tex === 'dots') {
+                ctx.fillStyle = "#c0cecf";
+                for (let i = 0; i < 300; i++) {
+                    ctx.beginPath(); ctx.arc(Math.random()*w, Math.random()*h, 1.2, 0, 2*Math.PI); ctx.fill();
+                }
+            } else if (tex === 'grid') {
+                ctx.beginPath(); ctx.strokeStyle = "#d1ddd5"; ctx.lineWidth = 0.8;
+                for (let i = 0; i < w; i+= 20) { ctx.moveTo(i,0); ctx.lineTo(i,h); ctx.stroke(); ctx.moveTo(0,i); ctx.lineTo(w,i); ctx.stroke(); }
+            } else if (tex === 'noise') {
+                let intensity = params.noiseIntensity / 100;
+                for (let i=0;i<800;i++) {
+                    if (Math.random() < intensity) {
+                        ctx.fillStyle = `rgba(0,0,0,${Math.random()*0.15})`;
+                        ctx.fillRect(Math.random()*w, Math.random()*h, 1.5, 1.5);
+                    }
+                }
+            }
+        }
+
+        // 额外噪点装饰（独立于纹理）
+        function addExtraNoise(ctx, w, h) {
+            let strength = params.noiseIntensity / 100 * 0.8;
+            for (let i=0;i<400;i++) {
+                if (Math.random() < strength) {
+                    ctx.fillStyle = `rgba(80,70,50,${Math.random()*0.25})`;
+                    ctx.fillRect(Math.random()*w, Math.random()*h, 1.2, 1.2);
+                }
+            }
+        }
+
+        // 绘制定位角（支持自定义样式）
+        function drawFinderPatterns(ctx, moduleCount, offsetX, offsetY, cellSize) {
+            const size = params.canvasSize;
+            const fStyle = params.finderStyle;
+            const corners = [
+                {x: offsetX, y: offsetY},
+                {x: offsetX + (moduleCount-7)*cellSize, y: offsetY},
+                {x: offsetX, y: offsetY + (moduleCount-7)*cellSize}
+            ];
+            corners.forEach(corner => {
+                ctx.save();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = params.bgColor + "dd";
+                ctx.fillRect(corner.x, corner.y, cellSize*7, cellSize*7);
+                if (fStyle === 'classic') {
+                    ctx.fillStyle = params.foreColor;
+                    ctx.fillRect(corner.x+cellSize, corner.y+cellSize, cellSize*5, cellSize*5);
+                    ctx.fillStyle = params.bgColor;
+                    ctx.fillRect(corner.x+cellSize*2, corner.y+cellSize*2, cellSize*3, cellSize*3);
+                } else if (fStyle === 'round') {
+                    roundedRect(ctx, corner.x+cellSize, corner.y+cellSize, cellSize*5, cellSize*5, cellSize, params.foreColor);
+                    roundedRect(ctx, corner.x+cellSize*2, corner.y+cellSize*2, cellSize*3, cellSize*3, cellSize*0.8, params.bgColor);
+                } else if (fStyle === 'double') {
+                    ctx.strokeStyle = params.foreColor; ctx.lineWidth = 2;
+                    ctx.strokeRect(corner.x+cellSize, corner.y+cellSize, cellSize*5, cellSize*5);
+                    ctx.strokeRect(corner.x+cellSize*1.8, corner.y+cellSize*1.8, cellSize*4.4, cellSize*4.4);
+                }
+                ctx.restore();
+            });
+        }
+
+        // 绘制水印
+        function drawWatermark(ctx, size) {
+            let text = params.watermarkText.trim();
+            if (!text) return;
+            ctx.font = `bold ${Math.floor(size * 0.045)}px "Segoe UI"`;
+            ctx.fillStyle = params.foreColor + "aa";
+            ctx.shadowBlur = 0;
+            let x, y;
+            if (params.watermarkPos === 'tl') { x = 12; y = 28; }
+            else if (params.watermarkPos === 'br') { x = size - ctx.measureText(text).width - 12; y = size - 12; }
+            else { x = size/2 - ctx.measureText(text).width/2; y = size/2 + 15; }
+            ctx.fillText(text, x, y);
+        }
+
+        // 绘制中央图腾
+        function drawCenterIcon(ctx, size, moduleCount, offsetX, offsetY, cellSize) {
+            if (params.centerType === 'none') return;
+            const cx = offsetX + (moduleCount/2)*cellSize;
+            const cy = offsetY + (moduleCount/2)*cellSize;
+            const iconR = Math.min(cellSize*3.2, size*0.14);
+            ctx.beginPath(); ctx.arc(cx, cy, iconR, 0, 2*Math.PI); ctx.fillStyle = params.bgColor+"ee"; ctx.fill(); ctx.strokeStyle = "#b5986e"; ctx.lineWidth=1.8; ctx.stroke();
+            ctx.font = `${Math.floor(iconR*1.2)}px "Segoe UI Emoji"`; ctx.fillStyle = params.foreColor; ctx.textAlign="center"; ctx.textBaseline="middle";
+            let txt = (params.centerType === 'emoji') ? params.centerEmoji : params.centerText.slice(0,3);
+            ctx.fillText(txt, cx, cy);
+        }
+
+        // 主绘制
+        function drawFullQR() {
+            if (!currentQR) return;
+            const moduleCount = currentQR.getModuleCount();
+            const size = params.canvasSize;
+            qrCanvas.width = size; qrCanvas.height = size;
+            const ctx = qrCanvas.getContext('2d');
+            ctx.fillStyle = params.bgColor;
+            ctx.fillRect(0, 0, size, size);
+            applyBackgroundTexture(ctx, size, size);
+            
+            const margin = Math.min(8, Math.max(2, params.marginModules));
+            const totalMod = moduleCount + margin*2;
+            const cellRaw = size / totalMod;
+            const offX = margin * cellRaw, offY = margin * cellRaw;
+            const drawCell = cellRaw * params.blockScale;
+            const drawOff = (cellRaw - drawCell)/2;
+            
+            for (let row=0; row<moduleCount; row++) {
+                for (let col=0; col<moduleCount; col++) {
+                    if (!currentQR.isDark(row, col)) continue;
+                    let x = offX + col*cellRaw + drawOff;
+                    let y = offY + row*cellRaw + drawOff;
+                    let w = drawCell, h = drawCell;
+                    if (x+w > size) w = size-x; if(y+h>size) h=size-y;
+                    if (w<=0||h<=0) continue;
+                    let fill = getFill(ctx, x, y, w, h);
+                    drawModule(ctx, x, y, w, h, params.blockShape, params.cornerRadius, fill, params.glow);
+                }
+            }
+            // 定位角（如果开启强化装饰）
+            if (params.positionDecor) drawFinderPatterns(ctx, moduleCount, offX, offY, cellRaw);
+            drawCenterIcon(ctx, size, moduleCount, offX, offY, cellRaw);
+            drawWatermark(ctx, size);
+            addExtraNoise(ctx, size, size); // 额外噪点
+        }
+
+        function updateCustomText() {
+            let txt = customTextInput.value.trim();
+            if (txt === "") customTextSpan.classList.add('hide');
+            else { customTextSpan.classList.remove('hide'); customTextSpan.innerText = txt; }
+        }
+
+        function refreshAll() {
+            let content = qrContentInput.value.trim();
+            if (!content) content = "https://qrcode.art";
+            syncUItoParams();
+            currentQR = generateQRMatrixWithOptions(content);
+            drawFullQR();
+            updateCustomText();
+        }
+        function redrawOnly() { if (!currentQR) refreshAll(); else { syncUItoParams(); drawFullQR(); updateCustomText(); } }
+
+        // 绑定事件 + toggle
+        function setupToggle(div, activeSetter) {
+            div.addEventListener('click', () => { div.classList.toggle('active'); activeSetter(div.classList.contains('active')); redrawOnly(); });
+        }
+        function bindEvents() {
+            const allInputs = [qrContentInput, customTextInput, errorCorrectionSelect, versionModeSelect, manualVersionInput,
+                foreColorPicker, foreGradColorPicker, bgColorPicker, blockShapeSelect, cornerRadiusRange, blockScaleRange,
+                canvasSizeSelect, marginModulesInput, finderStyleSelect, bgTextureSelect, noiseIntensityRange,
+                centerIconSelect, centerEmojiInput, centerTextInput, watermarkTextInput, watermarkPosSelect];
+            allInputs.forEach(el => el.addEventListener('input', () => redrawOnly()));
+            allInputs.forEach(el => el.addEventListener('change', () => redrawOnly()));
+            generateBtn.addEventListener('click', () => refreshAll());
+            downloadBtn.addEventListener('click', () => { if(!currentQR) refreshAll(); redrawOnly(); const a=document.createElement('a'); a.download=`qrcode_${Date.now()}.png`; a.href=qrCanvas.toDataURL('image/png'); a.click(); });
+            setupToggle(gradientToggleDiv, (v) => params.useGradient = v);
+            setupToggle(glowToggleDiv, (v) => params.glow = v);
+            setupToggle(positionDecorToggleDiv, (v) => params.positionDecor = v);
+            toggleVersionRow(); toggleCenterRows();
+        }
+        function init() { bindEvents(); refreshAll(); }
+        init();
+    })();
+</script>
+</body>
+</html>
