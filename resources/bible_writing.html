@@ -430,6 +430,9 @@
         let activeGlobalIndex = 0;
         let isDownloadMode = false;
         let isSyncMode = false;
+        let currentHistory = {};        // 儲存目前章節的書寫記錄 (IndexedDB 資料的快取)
+        let currentTotalChars = 0;      // 目前章節總字符數
+        let currentStorageKey = "";     // 目前章節在 IndexedDB 中的 key
 
         // IndexedDB variables
         const DB_NAME = "BiblePracticeDB";
@@ -513,6 +516,22 @@
                 btn.innerText = "同步覆蓋相同字：關閉";
                 btn.style.background = "#673ab7";
             }
+        }
+
+        // 從目前索引往後找第一個未寫的字符索引 (不包含 startFrom 本身)
+        function getNextUnsavedIndex(startFrom) {
+            for (let i = startFrom + 1; i < currentTotalChars; i++) {
+                if (!currentHistory[i]) return i;
+            }
+            return -1;
+        }
+
+        // 從頭開始找第一個未寫的字符索引 (若全寫完則回傳 -1)
+        function getFirstUnsavedIndex() {
+            for (let i = 0; i < currentTotalChars; i++) {
+                if (!currentHistory[i]) return i;
+            }
+            return -1;
         }
 
         function toggleDownloadMode() {
@@ -679,9 +698,18 @@
 
             const chapterMeta = await getDB('bible_meta') || {};
             chapterMeta[key] = totalChars;
+            // 讀取目前章節的歷史記錄，並存入全域變數
+            currentStorageKey = `bible_${book.id}_${currentChapter}`;
+            currentHistory = await getDB(currentStorageKey) || {};
+            currentTotalChars = totalChars;
+
+            // 設定第一個未寫的空格為 activeGlobalIndex
+            const firstUnsaved = getFirstUnsavedIndex();
+            activeGlobalIndex = (firstUnsaved !== -1) ? firstUnsaved : 0;
+
             await setDB('bible_meta', chapterMeta);
 
-            activeGlobalIndex = 0;
+            // activeGlobalIndex = 0;
             await updateNavProgress();
             renderDisplay();
             updateTargetChar();
@@ -690,8 +718,9 @@
         async function renderDisplay() {
             const container = document.getElementById('verses-container');
             container.innerHTML = "";
-            const storageKey = `bible_${books[currentBookIndex].id}_${currentChapter}`;
-            const history = await getDB(storageKey) || {};
+            // const storageKey = `bible_${books[currentBookIndex].id}_${currentChapter}`;
+            // const history = await getDB(storageKey) || {};
+            const history = currentHistory || {};
             let globalIdx = 0;
 
             chapterData.forEach((verse, vIdx) => {
@@ -896,9 +925,91 @@
         }
         function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
 
+        //        async function saveWriting() {
+        //            const storageKey = `bible_${books[currentBookIndex].id}_${currentChapter}`;
+        //            const history = await getDB(storageKey) || {};
+        //            const today = new Date().toDateString();
+        //            let lastDate = localStorage.getItem('last_write_date');
+        //            let dailyCount = parseInt(localStorage.getItem('daily_count') || "0");
+        //
+        //            if (lastDate !== today) {
+        //                dailyCount = 1;
+        //                localStorage.setItem('last_write_date', today);
+        //            } else {
+        //                dailyCount++;
+        //            }
+        //            localStorage.setItem('daily_count', dailyCount);
+        //
+        //            // Update the dashboard if the sidebar is open
+        //            const todayDisplay = document.getElementById('today-count');
+        //            if (todayDisplay) todayDisplay.innerText = dailyCount;
+        //            // Create a temporary canvas to add a white background
+        //            const tempCanvas = document.createElement('canvas');
+        //            tempCanvas.width = canvas.width;
+        //            tempCanvas.height = canvas.height;
+        //            const tempCtx = tempCanvas.getContext('2d');
+        //
+        //            // Fill white background (prevents black JPEG issue)
+        //            tempCtx.fillStyle = "#FFFFFF";
+        //            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        //
+        //            // Draw your writing on top of the white
+        //            tempCtx.drawImage(canvas, 0, 0);
+        //
+        //            const imgData = tempCanvas.toDataURL("image/jpeg", 0.5);
+        //
+        //            const allChars = chapterData.flatMap(v => v.chars);
+        //            const currentChar = allChars[activeGlobalIndex];
+        //
+        //            if (isSyncMode && currentChar) {
+        //                // 同步模式：更新 history 物件中所有相同的字[cite: 1]
+        //                allChars.forEach((char, idx) => {
+        //                    if (char === currentChar) {
+        //                        history[idx] = imgData; // 確保寫入 history 物件
+        //
+        //                        // 同時更新 UI
+        //                        const box = document.getElementById(`char-${idx}`);
+        //                        if (box) {
+        //                            const img = box.querySelector('.written-img');
+        //                            if (img) {
+        //                                img.src = imgData;
+        //                                img.style.display = 'block';
+        //                            }
+        //                        }
+        //                    }
+        //                });
+        //            } else {
+        //                // 一般模式：只更新當前索引[cite: 1]
+        //                history[activeGlobalIndex] = imgData;
+        //                const activeBox = document.getElementById(`char-${activeGlobalIndex}`);
+        //                const activeBoxImg = activeBox.querySelector('.written-img');
+        //                if (activeBoxImg) {
+        //                    activeBoxImg.src = imgData;
+        //                    activeBoxImg.style.display = 'block';
+        //                }
+        //            }
+        //            await setDB(storageKey, history);
+        //            //const activeBox = document.getElementById(`char-${activeGlobalIndex}`);
+        //            //const activeBoxImg = activeBox.querySelector('.written-img');
+        //            //if (activeBoxImg) {
+        //            //    activeBoxImg.src = imgData;
+        //            //    activeBoxImg.style.display = 'block'; // Show it now that it has data
+        //            //}
+        //            await updateNavProgress();
+        //            clearCanvas();
+        //            activeGlobalIndex++;
+        //            updateHighlight();
+        //            updateTargetChar();
+        //        }
+
         async function saveWriting() {
-            const storageKey = `bible_${books[currentBookIndex].id}_${currentChapter}`;
-            const history = await getDB(storageKey) || {};
+            // 若章節已無未寫字符，則不儲存
+            if (getFirstUnsavedIndex() === -1) {
+                alert("本章所有漢字皆已寫過！");
+                return;
+            }
+
+            const storageKey = currentStorageKey;
             const today = new Date().toDateString();
             let lastDate = localStorage.getItem('last_write_date');
             let dailyCount = parseInt(localStorage.getItem('daily_count') || "0");
@@ -911,34 +1022,28 @@
             }
             localStorage.setItem('daily_count', dailyCount);
 
-            // Update the dashboard if the sidebar is open
             const todayDisplay = document.getElementById('today-count');
             if (todayDisplay) todayDisplay.innerText = dailyCount;
-            // Create a temporary canvas to add a white background
+
+            // 產生帶白底的 JPEG 圖片
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = canvas.width;
             tempCanvas.height = canvas.height;
             const tempCtx = tempCanvas.getContext('2d');
-
-            // Fill white background (prevents black JPEG issue)
             tempCtx.fillStyle = "#FFFFFF";
             tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-            // Draw your writing on top of the white
             tempCtx.drawImage(canvas, 0, 0);
-
             const imgData = tempCanvas.toDataURL("image/jpeg", 0.5);
 
             const allChars = chapterData.flatMap(v => v.chars);
             const currentChar = allChars[activeGlobalIndex];
 
+            // 儲存圖片到 currentHistory 及 DOM
             if (isSyncMode && currentChar) {
-                // 同步模式：更新 history 物件中所有相同的字[cite: 1]
+                // 同步模式：更新所有相同漢字的位置
                 allChars.forEach((char, idx) => {
                     if (char === currentChar) {
-                        history[idx] = imgData; // 確保寫入 history 物件
-
-                        // 同時更新 UI
+                        currentHistory[idx] = imgData;
                         const box = document.getElementById(`char-${idx}`);
                         if (box) {
                             const img = box.querySelector('.written-img');
@@ -950,29 +1055,36 @@
                     }
                 });
             } else {
-                // 一般模式：只更新當前索引[cite: 1]
-                history[activeGlobalIndex] = imgData;
+                // 一般模式：僅更新當前索引
+                currentHistory[activeGlobalIndex] = imgData;
                 const activeBox = document.getElementById(`char-${activeGlobalIndex}`);
-                const activeBoxImg = activeBox.querySelector('.written-img');
+                const activeBoxImg = activeBox?.querySelector('.written-img');
                 if (activeBoxImg) {
                     activeBoxImg.src = imgData;
                     activeBoxImg.style.display = 'block';
                 }
             }
-            await setDB(storageKey, history);
-            //const activeBox = document.getElementById(`char-${activeGlobalIndex}`);
-            //const activeBoxImg = activeBox.querySelector('.written-img');
-            //if (activeBoxImg) {
-            //    activeBoxImg.src = imgData;
-            //    activeBoxImg.style.display = 'block'; // Show it now that it has data
-            //}
+
+            // 將更新後的記錄存回 IndexedDB
+            await setDB(storageKey, currentHistory);
             await updateNavProgress();
+
+            // 清除畫布
             clearCanvas();
-            activeGlobalIndex++;
+
+            // 尋找下一個未寫的空格
+            const nextUnsaved = getNextUnsavedIndex(activeGlobalIndex);
+            if (nextUnsaved !== -1) {
+                activeGlobalIndex = nextUnsaved;
+            } else {
+                // 全章節已完成
+                alert("🎉 恭喜！本章所有漢字已完成！");
+                // 可選擇停在最後一個字，或不再移動
+            }
+
             updateHighlight();
             updateTargetChar();
         }
-
         function changeBook(dir) { currentBookIndex = Math.max(0, Math.min(books.length - 1, currentBookIndex + dir)); currentChapter = 1; loadChapter(); }
         function changeChapter(dir) { const book = books[currentBookIndex]; const newChap = currentChapter + dir; if (newChap >= 1 && newChap <= book.numberOfChapters) { currentChapter = newChap; loadChapter(); } }
         async function clearChapter() {
@@ -980,6 +1092,9 @@
                 await deleteDB(`bible_${books[currentBookIndex].id}_${currentChapter}`);
                 renderDisplay();
             }
+            currentHistory = {};
+            const firstUnsaved = getFirstUnsavedIndex();
+            activeGlobalIndex = (firstUnsaved !== -1) ? firstUnsaved : 0;
         }
 
         async function clearAll() {
