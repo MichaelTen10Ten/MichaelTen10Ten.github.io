@@ -9,48 +9,49 @@
             box-sizing: border-box;
             image-rendering: crisp-edges;
             image-rendering: pixelated;
-            image-rendering: pixelated;
+        }
+
+        /* 確保整頁無滾動條，內部面板滾動 */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
         }
 
         body {
-            margin: 0;
             background: #0b0c15;
             font-family: 'Courier New', 'VT323', 'Press Start 2P', monospace;
             color: #cff7ff;
-            overflow-x: hidden;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
         }
 
-        /* 像素霓虹風格 & 淺紅 淺藍 淺綠 */
         .pixel-border {
             border-style: solid;
             border-width: 3px;
-            image-rendering: crisp-edges;
-            box-shadow: 0 0 0 2px #0f0f1a;
         }
 
         .app-wrapper {
             display: flex;
-            flex: 1;
             gap: 12px;
             padding: 16px;
+            height: 100vh;
             overflow: hidden;
         }
 
-        /* 主要競技區 */
+        /* 左側競技區 */
         .arena {
             flex: 4;
             background: #121524dd;
-            border-radius: 0px;
             border: 3px solid #6AD4FF;
             backdrop-filter: blur(2px);
             display: flex;
             flex-direction: column;
             padding: 16px;
-            gap: 20px;
+            gap: 16px;
             box-shadow: 8px 8px 0px #FF7B89;
+            height: 100%;
+            overflow: hidden;
         }
 
         .section-title {
@@ -61,49 +62,52 @@
             display: inline-block;
             padding: 4px 12px;
             border-left: 8px solid #9EFF9E;
-            margin-bottom: 8px;
             font-weight: bold;
         }
 
-        /* 融合戰隊 + 棒形圖 列表區 */
+        /* 戰隊 + 棒形圖融合面板 — 內部可滾動，避免整頁滾動 */
         .racers-panel {
             flex: 1;
+            min-height: 0;
             overflow-y: auto;
             display: flex;
-            flex-direction: column;
-            gap: 24px;
-            padding-right: 6px;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 14px;
+            padding: 4px 6px;
         }
 
+        /* 每個騎手單元 — 橫向緊湊布局，自適應寬度 */
         .rider-unit {
             background: #1e1f2c;
             border: 3px solid #FF7B89;
-            padding: 12px;
+            padding: 10px 14px;
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 16px;
             flex-wrap: wrap;
-            transition: 0.1s;
-            box-shadow: 4px 4px 0px #6AD4FF;
+            box-shadow: 3px 3px 0px #6AD4FF;
+            width: calc(50% - 14px);
+            min-width: 360px;
+            flex: 1 1 auto;
+            transition: 0.05s linear;
         }
 
-        /* 棒形圖區域 (垂直長條) */
+        /* 棒形圖區域 */
         .bar-section {
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 90px;
-            min-width: 80px;
+            width: 70px;
         }
 
         .bar-graph {
-            width: 48px;
-            height: 110px;
+            width: 36px;
+            height: 70px;
             background: #2a2e44;
-            border-radius: 0px;
             border: 2px solid #9EFF9E;
             position: relative;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             overflow: hidden;
         }
 
@@ -117,15 +121,15 @@
         }
 
         .bar-value {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             background: black;
-            padding: 2px 8px;
+            padding: 2px 5px;
             border: 1px solid #9EFF9E;
             font-family: monospace;
         }
 
-        /* 控制面板 */
+        /* 控制面板緊湊化 */
         .controls-panel {
             flex: 1;
             display: flex;
@@ -133,31 +137,31 @@
             align-items: center;
             gap: 12px;
             background: #0b0e1a;
-            padding: 10px;
+            padding: 8px 12px;
             border: 2px dashed #6AD4FF;
         }
 
         .logo-box {
-            width: 64px;
-            height: 64px;
+            width: 56px;
+            height: 56px;
             background: #00000066;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 48px;
+            font-size: 44px;
             border: 2px solid #FF7B89;
             cursor: pointer;
             transition: transform 0.1s;
         }
 
         .logo-img {
-            width: 58px;
-            height: 58px;
+            width: 52px;
+            height: 52px;
             object-fit: contain;
         }
 
         .info-group {
-            min-width: 140px;
+            min-width: 130px;
         }
 
         .bike-name-input {
@@ -166,13 +170,14 @@
             color: #9EFF9E;
             font-family: monospace;
             font-weight: bold;
-            padding: 6px;
+            padding: 4px 6px;
             width: 120px;
+            font-size: 12px;
         }
 
         .power-display {
-            font-size: 14px;
-            margin: 5px 0;
+            font-size: 12px;
+            margin: 4px 0;
             color: #FF7B89;
         }
 
@@ -181,11 +186,18 @@
             background: #000;
             padding: 2px 6px;
             display: inline-block;
+            font-size: 12px;
         }
 
         .action-buttons {
             display: flex;
-            gap: 8px;
+            gap: 6px;
+            flex-direction: column;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 6px;
         }
 
         .pixel-btn {
@@ -193,9 +205,10 @@
             border: 2px solid #6AD4FF;
             color: #6AD4FF;
             font-weight: bold;
-            padding: 6px 10px;
+            padding: 4px 8px;
             cursor: pointer;
             font-family: monospace;
+            font-size: 12px;
             transition: 0.05s linear;
         }
 
@@ -206,8 +219,8 @@
         }
 
         .color-pick {
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border: 2px solid white;
             cursor: pointer;
         }
@@ -216,18 +229,19 @@
         .race-console {
             background: #11131f;
             border: 3px solid #9EFF9E;
-            padding: 12px 18px;
+            padding: 10px 18px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
+            gap: 12px;
         }
 
         .class-selector select {
             background: black;
             border: 2px solid #6AD4FF;
             color: #6AD4FF;
-            padding: 8px;
+            padding: 6px;
             font-family: monospace;
             font-weight: bold;
         }
@@ -235,8 +249,8 @@
         .btn-start-big {
             background: #FF7B89;
             border: none;
-            font-size: 28px;
-            padding: 8px 32px;
+            font-size: 24px;
+            padding: 6px 28px;
             font-family: 'Courier New', monospace;
             font-weight: bold;
             color: #111;
@@ -248,23 +262,25 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            font-size: 13px;
         }
 
-        /* 龍虎榜 */
+        /* 右側龍虎榜 */
         .leaderboard {
-            width: 330px;
+            width: 320px;
             background: #0d0f1c;
             border: 3px solid #FF7B89;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            height: 100%;
         }
 
         .tab-header {
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
-            padding: 12px;
+            padding: 10px;
             background: #05070f;
         }
 
@@ -272,10 +288,11 @@
             background: #1e2338;
             border: 1px solid #6AD4FF;
             color: white;
-            padding: 6px 12px;
+            padding: 5px 10px;
             font-family: monospace;
             font-weight: bold;
             cursor: pointer;
+            font-size: 12px;
         }
 
         .tab-btn.active {
@@ -294,12 +311,12 @@
             display: grid;
             grid-template-columns: 1fr 1fr 1.2fr;
             gap: 6px;
-            font-size: 12px;
-            padding: 8px 0;
+            font-size: 11px;
+            padding: 6px 0;
             border-bottom: 1px solid #6AD4FF88;
         }
 
-        /* 大數字覆蓋 */
+        /* 大數字覆蓋層 */
         .big-number {
             position: fixed;
             top: 45%;
@@ -349,6 +366,14 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+
+        /* 響應式：當螢幕太小時單元寬度自動100% */
+        @media (max-width: 900px) {
+            .rider-unit {
+                width: 100%;
+                min-width: auto;
+            }
+        }
     </style>
 </head>
 <body>
@@ -356,12 +381,12 @@
 <div class="app-wrapper">
     <!-- 主要賽場 -->
     <div class="arena">
-        <div style="display: flex; justify-content: space-between;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
             <div class="section-title">⚡ 爆發即時戰況 & 我的戰隊 ⚡</div>
             <button id="globalAddBikeBtn" class="pixel-btn" style="background:#FF7B89; color:black;">➕ 連結新單車</button>
         </div>
 
-        <!-- 融合列表：每個車手一個單元 (棒形圖+控制面板) -->
+        <!-- 融合列表：自動換行，內部滾動 -->
         <div id="racersContainer" class="racers-panel"></div>
 
         <!-- 控制檯 -->
@@ -394,7 +419,6 @@
     let bikes = [];              // BikeEntity 陣列
     let isRacing = false;
     let raceTimerInterval = null;
-    let currentRaceSeconds = 30;
     let globalScale = 0.2;
     let selectedClass = "1A";
     let resultsModal = null;
@@ -467,12 +491,12 @@
         }
     }
     
-    // UI 核心渲染：融合棒形圖+控制項
+    // UI 核心渲染：融合棒形圖+控制項 (上下移動取代左右)
     function renderAllRiders() {
         const container = document.getElementById('racersContainer');
         if(!container) return;
         if(bikes.length === 0) {
-            container.innerHTML = '<div style="padding:30px; text-align:center; border:2px solid #FF7B89;">🚴 點擊「連結新單車」開始配對功率計 🚴</div>';
+            container.innerHTML = '<div style="padding:30px; text-align:center; width:100%; border:2px solid #FF7B89;">🚴 點擊「連結新單車」開始配對功率計 🚴</div>';
             return;
         }
         
@@ -483,8 +507,8 @@
             const dist = bike.getDisplayDistance();
             const percent = maxDist > 0 ? (dist / maxDist) * 100 : 0;
             const logoHtml = bike.customImgUrl ? 
-                `<img class="logo-img" src="${bike.customImgUrl}" style="width:58px; height:58px;">` : 
-                `<div style="font-size:48px;">${bike.logoValue}</div>`;
+                `<img class="logo-img" src="${bike.customImgUrl}" style="width:52px; height:52px;">` : 
+                `<div style="font-size:44px;">${bike.logoValue}</div>`;
             
             const unitDiv = document.createElement('div');
             unitDiv.className = 'rider-unit';
@@ -501,16 +525,18 @@
                     <div class="info-group">
                         <input class="bike-name-input" id="nameInput-${bike.id}" value="${bike.customName}" maxlength="12">
                         <div class="power-display">⚡ <span id="watts-${bike.id}">${bike.watts}</span> W</div>
-                        <div class="distance-display">📏 即時 ${dist.toFixed(1)} m</div>
+                        <div class="distance-display">📏 ${dist.toFixed(1)} m</div>
                     </div>
                     <div style="display:flex; flex-direction:column; gap:6px;">
                         <input type="color" id="colorPick-${bike.id}" value="${bike.color}" class="color-pick">
                         <div class="action-buttons">
-                            <button class="pixel-btn move-left" data-id="${bike.id}">◀ 左移</button>
-                            <button class="pixel-btn move-right" data-id="${bike.id}">右移 ▶</button>
-                            <button class="pixel-btn remove-bike" data-id="${bike.id}" style="border-color:#FF7B89;">🗑️</button>
+                            <div class="action-row">
+                                <button class="pixel-btn move-up" data-id="${bike.id}">▲ 上移</button>
+                                <button class="pixel-btn move-down" data-id="${bike.id}">下移 ▼</button>
+                            </div>
+                            <button class="pixel-btn remove-bike" data-id="${bike.id}" style="border-color:#FF7B89;">🗑️ 移除</button>
+                            <button class="pixel-btn upload-logo" data-id="${bike.id}" style="font-size:10px;">🖼️ 上傳圖標</button>
                         </div>
-                        <button class="pixel-btn upload-logo" data-id="${bike.id}" style="font-size:10px;">🖼️ 上傳圖標</button>
                     </div>
                 </div>
             `;
@@ -519,7 +545,7 @@
             // 綁定事件
             document.getElementById(`nameInput-${bike.id}`).addEventListener('change', (e) => { bike.customName = e.target.value; renderAllRiders(); });
             document.getElementById(`colorPick-${bike.id}`).addEventListener('input', (e) => { bike.color = e.target.value; renderAllRiders(); });
-            // logo 點擊可更換隨機emoji (無自訂圖時)
+            // logo 點擊更換隨機emoji (無自訂圖時)
             const logoBox = document.getElementById(`logoClick-${bike.id}`);
             logoBox.addEventListener('click', () => {
                 if(!bike.customImgUrl) {
@@ -529,11 +555,11 @@
                     if(confirm('清除自訂圖標，改用動物emoji?')) { bike.customImgUrl = null; bike.logoValue = randomEmoji(); renderAllRiders(); }
                 }
             });
-            // 移動
-            const leftBtn = unitDiv.querySelector('.move-left');
-            const rightBtn = unitDiv.querySelector('.move-right');
-            leftBtn.addEventListener('click', () => moveBike(bike.id, -1));
-            rightBtn.addEventListener('click', () => moveBike(bike.id, 1));
+            // 上下移動
+            const upBtn = unitDiv.querySelector('.move-up');
+            const downBtn = unitDiv.querySelector('.move-down');
+            upBtn.addEventListener('click', () => moveBike(bike.id, -1));
+            downBtn.addEventListener('click', () => moveBike(bike.id, 1));
             const removeBtn = unitDiv.querySelector('.remove-bike');
             removeBtn.addEventListener('click', () => removeBike(bike.id));
             const uploadBtn = unitDiv.querySelector('.upload-logo');
@@ -555,8 +581,9 @@
             if(distSpan) distSpan.innerText = `${dist.toFixed(1)} m`;
             const wattSpan = document.getElementById(`watts-${bike.id}`);
             if(wattSpan) wattSpan.innerText = bike.watts;
-            const distanceInline = document.querySelector(`#racersContainer .rider-unit[data-id="${bike.id}"] .distance-display`);
-            if(distanceInline) distanceInline.innerText = `📏 即時 ${dist.toFixed(1)} m`;
+            // 更新內嵌距離顯示
+            const parentDiv = document.querySelector(`.rider-unit[data-id="${bike.id}"] .distance-display`);
+            if(parentDiv) parentDiv.innerText = `📏 ${dist.toFixed(1)} m`;
         });
         updateRankAndLogoScale(maxDist);
     }
@@ -565,22 +592,27 @@
     function updateRankAndLogoScale(maxDist) {
         const sorted = [...bikes].sort((a,b) => b.getDisplayDistance() - a.getDisplayDistance());
         sorted.forEach((bike, idx) => {
-            const rankFactor = 1 + (sorted.length - idx) * 0.12;
-            const logoDiv = document.querySelector(`#racersContainer .rider-unit[data-id="${bike.id}"] .logo-box`);
+            const rankFactor = 1 + (sorted.length - idx) * 0.1;
+            const logoDiv = document.querySelector(`.rider-unit[data-id="${bike.id}"] .logo-box`);
             if(logoDiv) {
-                if(bike.customImgUrl) logoDiv.style.transform = `scale(${Math.min(1.4, rankFactor)})`;
-                else logoDiv.style.fontSize = `${38 + (sorted.length - idx) * 6}px`;
+                if(bike.customImgUrl) logoDiv.style.transform = `scale(${Math.min(1.3, rankFactor)})`;
+                else logoDiv.style.fontSize = `${38 + (sorted.length - idx) * 4}px`;
             }
         });
     }
     
-    function moveBike(id, dir) {
+    // 上下移動順序 (取代左右)
+    function moveBike(id, direction) {
         if(isRacing) return;
         const idx = bikes.findIndex(b => b.id === id);
-        if(idx !== -1 && ((dir === -1 && idx > 0) || (dir === 1 && idx < bikes.length-1))) {
-            const newIdx = dir === -1 ? idx-1 : idx+1;
-            [bikes[idx], bikes[newIdx]] = [bikes[newIdx], bikes[idx]];
-            renderAllRiders();
+        if(idx !== -1) {
+            if(direction === -1 && idx > 0) { // 上移
+                [bikes[idx-1], bikes[idx]] = [bikes[idx], bikes[idx-1]];
+                renderAllRiders();
+            } else if(direction === 1 && idx < bikes.length-1) { // 下移
+                [bikes[idx], bikes[idx+1]] = [bikes[idx+1], bikes[idx]];
+                renderAllRiders();
+            }
         }
     }
     
@@ -625,12 +657,10 @@
                 bikes.push(newBike);
                 renderAllRiders();
             } else alert("連線失敗 請確認功率計藍牙");
-        } catch(e) { console.log(e); alert("連線取消或失敗"); }
+        } catch(e) { console.log(e); alert("連線取消或錯誤"); }
     }
     
     // 比賽流程
-    let countdownTimer = null;
-    let raceLoopInterval = null;
     function startRace() {
         if(bikes.length === 0) { alert("請先連結至少一輛單車"); return; }
         if(isRacing) return;
@@ -654,7 +684,6 @@
             } else if(counter === 0) {
                 bigDiv.innerText = "GO!";
                 isRacing = true;
-                currentRaceSeconds = 30;
                 startRaceTimer(30, bigDiv);
                 clearInterval(countInterval);
                 setTimeout(() => bigDiv.remove(), 800);
@@ -720,7 +749,12 @@
         modalDiv.className = 'results-modal';
         let rows = '';
         ranking.forEach((r, idx) => {
-            rows += `<tr><td>${idx+1}</td><td>${r.name}</td><td>${r.distance.toFixed(1)} m</td><td>${r.avgSpeed.toFixed(2)} m/s</td></tr>`;
+            rows += `<tr>
+                <td>${idx+1}</td>
+                <td>${r.name}</td>
+                <td>${r.distance.toFixed(1)} m</td>
+                <td>${r.avgSpeed.toFixed(2)} m/s</td>
+            </tr>`;
         });
         modalDiv.innerHTML = `
             <div class="results-card">
@@ -735,14 +769,13 @@
         document.getElementById('restartRaceBtn').onclick = () => {
             modalDiv.remove();
             resultsModal = null;
-            // 重置比賽狀態
             isRacing = false;
             if(raceTimerInterval) clearInterval(raceTimerInterval);
             renderAllRiders();
         };
     }
     
-    // ---------- 龍虎榜邏輯 (從Thingspeak讀取) ----------
+    // ---------- 龍虎榜邏輯 ----------
     let allFeeds = [];
     let currentTab = "ALL";
     async function fetchLeaderboardData() {
@@ -835,13 +868,12 @@
         span.innerText = "0.20";
     }
     
-    // 定時刷新功率&距離顯示
+    // 即時更新UI
     setInterval(() => {
         if(!isRacing && document.visibilityState === "visible") updateAllRidersUI();
         else if(isRacing) updateAllRidersUI();
     }, 100);
     
-    // 啟動
     window.onload = () => {
         initClassSelect();
         initScaleControl();
