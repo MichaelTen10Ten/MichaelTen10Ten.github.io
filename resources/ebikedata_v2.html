@@ -1,302 +1,260 @@
-以下是您所需的“电竞单车三十秒爆发挑战”网页的完整代码。它支持连接多部蓝牙单车，进行30秒爆发竞速，并包含排名系统与龙虎榜功能。
-```html
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Neon Sprint Challenge · 三十秒爆發競速</title>
+    <title>PIXEL SPRINT · 單車爆發挑戰</title>
     <style>
         * {
             box-sizing: border-box;
-            user-select: none;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: pixelated;
         }
 
         body {
             margin: 0;
-            background: #0a0c15;
-            font-family: 'Press Start 2P', 'Courier New', monospace, 'Segoe UI';
-            color: #eef5ff;
+            background: #0b0c15;
+            font-family: 'Courier New', 'VT323', 'Press Start 2P', monospace;
+            color: #cff7ff;
             overflow-x: hidden;
             height: 100vh;
             display: flex;
             flex-direction: column;
         }
 
-        /* 像素霓虹主題 */
-        .neon-border {
-            box-shadow: 0 0 0 2px #00f7ff, 0 0 0 5px #0a0c15, 0 0 0 7px #ff44cc;
+        /* 像素霓虹風格 & 淺紅 淺藍 淺綠 */
+        .pixel-border {
+            border-style: solid;
+            border-width: 3px;
+            image-rendering: crisp-edges;
+            box-shadow: 0 0 0 2px #0f0f1a;
         }
 
-        .glow-text {
-            text-shadow: 0 0 4px #0ff, 0 0 8px #f0f;
-        }
-
-        /* 主佈局 */
         .app-wrapper {
             display: flex;
             flex: 1;
-            overflow: hidden;
             gap: 12px;
-            padding: 12px;
+            padding: 16px;
+            overflow: hidden;
         }
 
-        /* 左側主要競技區 */
+        /* 主要競技區 */
         .arena {
             flex: 4;
+            background: #121524dd;
+            border-radius: 0px;
+            border: 3px solid #6AD4FF;
+            backdrop-filter: blur(2px);
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            background: rgba(0, 0, 0, 0.55);
-            border-radius: 28px;
             padding: 16px;
-            backdrop-filter: blur(2px);
-            border: 1px solid #ff44cc88;
-        }
-
-        /* 棒形圖區域 */
-        .barchart-panel {
-            background: #10121f;
-            border-radius: 24px;
-            padding: 16px;
-            border-bottom: 4px solid #0ff;
-        }
-
-        .barchart-title {
-            font-size: 14px;
-            margin-bottom: 12px;
-            letter-spacing: 2px;
-            color: #ffcc44;
-        }
-
-        .bars-container {
-            display: flex;
-            align-items: flex-end;
             gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-            min-height: 200px;
+            box-shadow: 8px 8px 0px #FF7B89;
         }
 
-        .bar-item {
+        .section-title {
+            font-size: 18px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: #00000066;
+            display: inline-block;
+            padding: 4px 12px;
+            border-left: 8px solid #9EFF9E;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        /* 融合戰隊 + 棒形圖 列表區 */
+        .racers-panel {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            padding-right: 6px;
+        }
+
+        .rider-unit {
+            background: #1e1f2c;
+            border: 3px solid #FF7B89;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            transition: 0.1s;
+            box-shadow: 4px 4px 0px #6AD4FF;
+        }
+
+        /* 棒形圖區域 (垂直長條) */
+        .bar-section {
             display: flex;
             flex-direction: column;
             align-items: center;
             width: 90px;
-            background: #1f2538;
-            border-radius: 20px;
-            padding: 8px 0;
-            transition: all 0.2s;
+            min-width: 80px;
         }
 
-        .bar-label {
-            font-size: 11px;
-            font-weight: bold;
-            background: #000000aa;
-            padding: 2px 6px;
-            border-radius: 20px;
-            margin-bottom: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 80px;
-        }
-
-        .bar-graphic {
-            width: 50px;
-            background: #2c3550;
-            border-radius: 30px;
-            margin: 8px 0;
+        .bar-graph {
+            width: 48px;
+            height: 110px;
+            background: #2a2e44;
+            border-radius: 0px;
+            border: 2px solid #9EFF9E;
             position: relative;
-            height: 140px;
-            display: flex;
-            flex-direction: column-reverse;
+            margin-bottom: 8px;
             overflow: hidden;
-            box-shadow: inset 0 0 6px #000;
         }
 
         .bar-fill {
+            position: absolute;
+            bottom: 0;
             width: 100%;
-            background: linear-gradient(0deg, #0ff, #ff66cc);
-            transition: height 0.25s cubic-bezier(0.2, 1, 0.3, 1);
+            background: linear-gradient(0deg, #6AD4FF, #FF7B89);
+            transition: height 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             height: 0%;
-            border-radius: 30px;
         }
 
         .bar-value {
-            font-size: 12px;
-            font-family: monospace;
+            font-size: 14px;
             font-weight: bold;
-            margin-top: 6px;
-            color: #0ff;
+            background: black;
+            padding: 2px 8px;
+            border: 1px solid #9EFF9E;
+            font-family: monospace;
         }
 
-        /* 單車網格 */
-        .bikes-grid {
-            background: #10121fcc;
-            border-radius: 24px;
-            padding: 12px;
-            max-height: 380px;
-            overflow-y: auto;
-        }
-
-        .bikes-list {
+        /* 控制面板 */
+        .controls-panel {
+            flex: 1;
             display: flex;
             flex-wrap: wrap;
-            gap: 16px;
-            justify-content: flex-start;
-        }
-
-        .bike-card {
-            width: 220px;
-            background: #151e2c;
-            border-radius: 28px;
-            padding: 12px;
-            transition: 0.1s linear;
-            border: 1px solid #3a4a6e;
-            backdrop-filter: blur(4px);
-        }
-
-        .bike-header {
-            display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            gap: 12px;
+            background: #0b0e1a;
+            padding: 10px;
+            border: 2px dashed #6AD4FF;
         }
 
-        .logo-area {
-            font-size: 48px;
-            transition: all 0.2s ease;
+        .logo-box {
             width: 64px;
-            text-align: center;
+            height: 64px;
+            background: #00000066;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            border: 2px solid #FF7B89;
             cursor: pointer;
+            transition: transform 0.1s;
         }
 
         .logo-img {
-            width: 56px;
-            height: 56px;
+            width: 58px;
+            height: 58px;
             object-fit: contain;
-            border-radius: 20px;
         }
 
-        .controls-small {
-            display: flex;
-            gap: 6px;
-        }
-
-        .ctrl-icon {
-            background: #00000066;
-            border: none;
-            color: #0ff;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 12px;
-            font-size: 14px;
-            padding: 4px 8px;
+        .info-group {
+            min-width: 140px;
         }
 
         .bike-name-input {
-            background: #00000088;
-            border: 1px solid #0ff;
-            color: white;
-            border-radius: 20px;
-            padding: 5px 8px;
-            font-size: 12px;
-            width: 100%;
-            margin: 6px 0;
+            background: #000;
+            border: 2px solid #9EFF9E;
+            color: #9EFF9E;
             font-family: monospace;
+            font-weight: bold;
+            padding: 6px;
+            width: 120px;
         }
 
-        .power-stats {
-            font-size: 12px;
-            display: flex;
-            justify-content: space-between;
-            margin: 8px 0;
+        .power-display {
+            font-size: 14px;
+            margin: 5px 0;
+            color: #FF7B89;
         }
 
         .distance-display {
-            font-size: 14px;
             font-weight: bold;
-            color: #ffcc44;
+            background: #000;
+            padding: 2px 6px;
+            display: inline-block;
         }
 
-        .color-picker {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 2px solid white;
-            background: #fff;
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .pixel-btn {
+            background: #000;
+            border: 2px solid #6AD4FF;
+            color: #6AD4FF;
+            font-weight: bold;
+            padding: 6px 10px;
             cursor: pointer;
+            font-family: monospace;
+            transition: 0.05s linear;
         }
 
-        .upload-btn {
-            background: #2a3b5c;
-            border: none;
-            border-radius: 24px;
-            color: white;
-            padding: 4px 8px;
-            font-size: 10px;
+        .pixel-btn:active {
+            background: #FF7B89;
+            color: black;
+            border-color: #9EFF9E;
+        }
+
+        .color-pick {
+            width: 36px;
+            height: 36px;
+            border: 2px solid white;
             cursor: pointer;
         }
 
         /* 控制台 */
         .race-console {
-            background: #0f1222dd;
-            border-radius: 36px;
-            padding: 12px 20px;
+            background: #11131f;
+            border: 3px solid #9EFF9E;
+            padding: 12px 18px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 15px;
-            border-top: 2px solid #ff44cc;
-        }
-
-        .class-selector {
-            display: flex;
-            gap: 12px;
             align-items: center;
+            flex-wrap: wrap;
         }
 
-        select, .scale-input {
-            background: #000;
-            color: #0ff;
-            border: 2px solid #0ff;
-            border-radius: 40px;
-            padding: 8px 12px;
+        .class-selector select {
+            background: black;
+            border: 2px solid #6AD4FF;
+            color: #6AD4FF;
+            padding: 8px;
+            font-family: monospace;
             font-weight: bold;
         }
 
         .btn-start-big {
-            background: #ff44cc;
+            background: #FF7B89;
             border: none;
             font-size: 28px;
-            padding: 12px 32px;
-            border-radius: 60px;
+            padding: 8px 32px;
+            font-family: 'Courier New', monospace;
             font-weight: bold;
-            color: #000;
-            box-shadow: 0 0 15px #ff44cc;
+            color: #111;
+            box-shadow: 4px 4px 0 #9EFF9E;
             cursor: pointer;
-            transition: 0.1s;
-            font-family: monospace;
         }
 
-        .btn-add-bike {
-            background: #00aa88;
-            color: black;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 40px;
-            font-weight: bold;
+        .scale-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        /* 右側龍虎榜 */
+        /* 龍虎榜 */
         .leaderboard {
-            width: 320px;
-            background: #0c0f1ae0;
-            border-radius: 28px;
-            backdrop-filter: blur(8px);
-            border-left: 4px solid #ff44cc;
+            width: 330px;
+            background: #0d0f1c;
+            border: 3px solid #FF7B89;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -305,25 +263,25 @@
         .tab-header {
             display: flex;
             flex-wrap: wrap;
-            gap: 5px;
+            gap: 6px;
             padding: 12px;
-            border-bottom: 1px solid #ff44cc;
+            background: #05070f;
         }
 
         .tab-btn {
-            background: #1f2a3e;
-            border: none;
+            background: #1e2338;
+            border: 1px solid #6AD4FF;
             color: white;
             padding: 6px 12px;
-            border-radius: 30px;
-            font-size: 12px;
+            font-family: monospace;
+            font-weight: bold;
             cursor: pointer;
         }
 
         .tab-btn.active {
-            background: #ff44cc;
+            background: #FF7B89;
             color: black;
-            box-shadow: 0 0 8px #ff44cc;
+            border-color: #9EFF9E;
         }
 
         .rank-list {
@@ -334,29 +292,24 @@
 
         .rank-row {
             display: grid;
-            grid-template-columns: 1.2fr 0.8fr 1fr;
-            gap: 8px;
-            font-size: 11px;
+            grid-template-columns: 1fr 1fr 1.2fr;
+            gap: 6px;
+            font-size: 12px;
             padding: 8px 0;
-            border-bottom: 1px solid #2a3a55;
+            border-bottom: 1px solid #6AD4FF88;
         }
 
-        .rank-header {
-            font-weight: bold;
-            color: #ffcc44;
-        }
-
-        /* 覆蓋層 */
+        /* 大數字覆蓋 */
         .big-number {
             position: fixed;
-            top: 40%;
+            top: 45%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 140px;
+            font-size: 130px;
             font-weight: bold;
-            color: #ff44cc;
-            text-shadow: 0 0 30px cyan;
-            z-index: 1000;
+            color: #9EFF9E;
+            text-shadow: 8px 8px 0 #FF7B89;
+            z-index: 2000;
             pointer-events: none;
             font-family: monospace;
         }
@@ -364,139 +317,109 @@
         .results-modal {
             position: fixed;
             inset: 0;
-            background: #010101ee;
-            z-index: 1100;
+            background: #010004dd;
+            z-index: 2000;
             display: flex;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(4px);
         }
 
         .results-card {
-            background: #13182a;
-            border: 3px solid #0ff;
+            background: #1a1f2e;
+            border: 5px solid #9EFF9E;
             max-width: 700px;
-            width: 80%;
-            border-radius: 48px;
-            padding: 24px;
+            width: 85%;
+            padding: 20px;
             text-align: center;
         }
 
         .rank-table {
             width: 100%;
-            margin: 20px 0;
             border-collapse: collapse;
+            font-size: 14px;
         }
 
         .rank-table th, .rank-table td {
-            padding: 10px;
-            border-bottom: 1px solid #44aaff;
-        }
-
-        .btn-again {
-            background: #ff44cc;
-            border: none;
-            padding: 12px 32px;
-            font-size: 20px;
-            border-radius: 60px;
-            font-weight: bold;
-            margin-top: 16px;
-            cursor: pointer;
+            border: 1px solid #6AD4FF;
+            padding: 8px;
         }
 
         button:disabled {
-            opacity: 0.4;
+            opacity: 0.5;
             cursor: not-allowed;
-        }
-
-        ::-webkit-scrollbar {
-            width: 6px;
         }
     </style>
 </head>
 <body>
 
 <div class="app-wrapper">
-    <!-- 主競技區 -->
+    <!-- 主要賽場 -->
     <div class="arena">
-        <div class="barchart-panel">
-            <div class="barchart-title">⚡ 爆發即時戰況 (米) ⚡</div>
-            <div class="bars-container" id="barsContainer"></div>
-            <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center; justify-content: flex-end;">
-                <span>📏 顯示縮放比例</span>
-                <input type="range" id="scaleFactorSlider" min="0.05" max="1.5" step="0.01" value="0.2">
-                <span id="scaleValue">0.20</span>
-            </div>
+        <div style="display: flex; justify-content: space-between;">
+            <div class="section-title">⚡ 爆發即時戰況 & 我的戰隊 ⚡</div>
+            <button id="globalAddBikeBtn" class="pixel-btn" style="background:#FF7B89; color:black;">➕ 連結新單車</button>
         </div>
 
-        <div class="bikes-grid">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                <span>🏍️ 我的戰隊 🚴</span>
-                <button id="globalAddBikeBtn" class="btn-add-bike">➕ 連結新單車</button>
-            </div>
-            <div class="bikes-list" id="bikesList"></div>
-        </div>
+        <!-- 融合列表：每個車手一個單元 (棒形圖+控制面板) -->
+        <div id="racersContainer" class="racers-panel"></div>
 
+        <!-- 控制檯 -->
         <div class="race-console">
             <div class="class-selector">
-                <span>📚 班別</span>
+                <span>📖 班別</span>
                 <select id="classSelect"></select>
             </div>
-            <div>
-                <button id="bigStartBtn" class="btn-start-big">🏁 開始挑戰</button>
+            <div class="scale-control">
+                <span>📏 顯示比例</span>
+                <input type="range" id="scaleSlider" min="0.05" max="1.2" step="0.01" value="0.2">
+                <span id="scaleValue">0.20</span>
             </div>
-            <div class="info-tip">
-                <span>🔥 踩踏爆發! 30秒後結算</span>
-            </div>
+            <button id="bigStartBtn" class="btn-start-big">▶ START ◀</button>
         </div>
     </div>
 
-    <!-- 右側龍虎榜 (Neon 像素) -->
+    <!-- 龍虎榜 -->
     <div class="leaderboard">
         <div class="tab-header" id="tabHeader"></div>
         <div class="rank-list" id="leaderboardList">
-            <div class="rank-row rank-header"><span>班級</span><span>距離(m)</span><span>日期</span></div>
-            <div style="padding: 20px; text-align:center;">載入排行榜中...</div>
+            <div class="rank-row"><span>班級</span><span>距離(m)</span><span>日期</span></div>
+            <div style="padding: 20px;">載入中...</div>
         </div>
     </div>
 </div>
 
 <script>
-    // ---------- 全域變數 ----------
-    let bikes = [];            // 單車物件陣列
+    // ---------- 全局變量 ----------
+    let bikes = [];              // BikeEntity 陣列
     let isRacing = false;
-    let raceStartTimestamp = 0;
     let raceTimerInterval = null;
-    let countdownActive = false;
-    let selectedClass = "1A";     // 預設
-    let globalScale = 0.2;         // 顯示縮放係數
-    let animationFrame = null;
-    let resultsModalDiv = null;    // 動態生成
-    let thingSpeakChannelRead = "https://api.thingspeak.com/channels/3397289/feeds.json?results=10000";
-    const WRITE_API_KEY = "H77SOKUWISJWKMOT";
+    let currentRaceSeconds = 30;
+    let globalScale = 0.2;
+    let selectedClass = "1A";
+    let resultsModal = null;
     
-    // 輔助 emoji 動物庫
-    const animalEmojis = ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐔","🐧","🐦","🐴","🦄","🐌","🐙","🦑","🦀"];
+    // ThingSpeak
+    const READ_CHANNEL = "https://api.thingspeak.com/channels/3397289/feeds.json?results=10000";
+    const WRITE_KEY = "H77SOKUWISJWKMOT";
     
-    // 工具函數
-    function getRandomAnimalEmoji() {
-        return animalEmojis[Math.floor(Math.random() * animalEmojis.length)];
-    }
-
-    // 班別編碼 (class value 1~24)
+    // 動物Emoji庫
+    const animalEmojis = ["🐺","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐔","🐧","🐦","🐴","🦄","🐙","🐉","🐲","🐢"];
+    function randomEmoji() { return animalEmojis[Math.floor(Math.random() * animalEmojis.length)]; }
+    
+    // 班別處理
     function getClassValue(classStr) {
-        if (!classStr) return 1;
+        if(!classStr) return 1;
         const grade = parseInt(classStr[0]);
         const letter = classStr[1];
-        const letterMap = { 'A':0, 'B':1, 'C':2, 'D':3 };
-        return (grade-1)*4 + letterMap[letter] + 1;
+        const map = { 'A':0,'B':1,'C':2,'D':3 };
+        return (grade-1)*4 + map[letter] + 1;
     }
     function decodeClassValue(val) {
         const v = parseInt(val);
         const grade = Math.ceil(v/4);
         const letters = ['A','B','C','D'];
-        const idx = (v-1)%4;
-        return grade + letters[idx];
+        return grade + letters[(v-1)%4];
     }
     
     // 藍牙單車類別
@@ -504,18 +427,15 @@
         constructor(device, color, id) {
             this.id = id || Math.random().toString(36).substr(2, 8);
             this.device = device;
-            this.customName = `騎士${this.id.slice(0,3)}`;
+            this.customName = `騎手${this.id.slice(0,3)}`;
             this.color = color;
             this.logoType = "emoji";
-            this.logoValue = getRandomAnimalEmoji();
+            this.logoValue = randomEmoji();
             this.customImgUrl = null;
-            this.rawDistance = 0;       // 原始累積(基於功率)
+            this.rawDistance = 0;
             this.watts = 0;
-            this.finishedRace = false;
-            this.characteristic = null;
-            this.service = null;
-            this.allWattsLog = [];
             this.connected = false;
+            this.characteristic = null;
         }
         
         async connectAndListen() {
@@ -526,157 +446,154 @@
                 await char.startNotifications();
                 this.characteristic = char;
                 char.addEventListener('characteristicvaluechanged', (e) => {
-                    const value = e.target.value;
-                    const watts = Math.max(0, value.getInt16(2, true));
+                    const watts = Math.max(0, e.target.value.getInt16(2, true));
                     this.watts = watts;
-                    if (isRacing && !this.finishedRace) {
-                        // 每次功率變動增加距離 (原始值)
-                        let delta = watts / 180;   // 調整靈敏度 (讓30秒有明顯差距)
+                    if (isRacing) {
+                        let delta = watts / 160;   // 靈敏度調整
                         if (delta > 0) this.rawDistance += delta;
-                        this.allWattsLog.push(watts);
-                        updateAllUI();
-                        updateRankingsAndLogoSize();
                     }
+                    updateAllRidersUI();
                 });
                 this.connected = true;
                 return true;
-            } catch(e) { console.warn("藍牙連線錯誤", e); return false; }
+            } catch(e) { console.warn(e); return false; }
         }
         
-        getDisplayDistance() {
-            return this.rawDistance * globalScale;
-        }
+        getDisplayDistance() { return this.rawDistance * globalScale; }
         
-        resetForRace() {
+        resetRace() {
             this.rawDistance = 0;
-            this.finishedRace = false;
-            this.allWattsLog = [];
+            this.watts = 0;
         }
-    }
-
-    // UI 渲染函式
-    function renderAll() {
-        renderBikeCards();
-        renderBarChart();
     }
     
-    function renderBikeCards() {
-        const container = document.getElementById('bikesList');
+    // UI 核心渲染：融合棒形圖+控制項
+    function renderAllRiders() {
+        const container = document.getElementById('racersContainer');
         if(!container) return;
+        if(bikes.length === 0) {
+            container.innerHTML = '<div style="padding:30px; text-align:center; border:2px solid #FF7B89;">🚴 點擊「連結新單車」開始配對功率計 🚴</div>';
+            return;
+        }
+        
+        // 計算最大距離用於長條比例
+        const maxDist = Math.max(...bikes.map(b => b.getDisplayDistance()), 0.01);
         container.innerHTML = '';
         bikes.forEach((bike, idx) => {
-            const card = document.createElement('div');
-            card.className = 'bike-card';
-            card.style.borderLeft = `8px solid ${bike.color}`;
+            const dist = bike.getDisplayDistance();
+            const percent = maxDist > 0 ? (dist / maxDist) * 100 : 0;
             const logoHtml = bike.customImgUrl ? 
-                `<img class="logo-img" src="${bike.customImgUrl}" style="width:56px; height:56px;">` : 
-                `<div style="font-size:52px;">${bike.logoValue}</div>`;
-            card.innerHTML = `
-                <div class="bike-header">
-                    <div class="logo-area" id="logo-${bike.id}" style="transition: transform 0.1s, font-size 0.1s;">${logoHtml}</div>
-                    <div class="controls-small">
-                        <button class="ctrl-icon" data-move="left" data-id="${bike.id}">◀</button>
-                        <button class="ctrl-icon" data-move="right" data-id="${bike.id}">▶</button>
-                        <button class="ctrl-icon" data-remove="${bike.id}">🗑️</button>
+                `<img class="logo-img" src="${bike.customImgUrl}" style="width:58px; height:58px;">` : 
+                `<div style="font-size:48px;">${bike.logoValue}</div>`;
+            
+            const unitDiv = document.createElement('div');
+            unitDiv.className = 'rider-unit';
+            unitDiv.setAttribute('data-id', bike.id);
+            unitDiv.innerHTML = `
+                <div class="bar-section">
+                    <div class="bar-graph">
+                        <div class="bar-fill" id="barfill-${bike.id}" style="height: ${percent}%;"></div>
+                    </div>
+                    <div class="bar-value" id="distVal-${bike.id}">${dist.toFixed(1)} m</div>
+                </div>
+                <div class="controls-panel">
+                    <div class="logo-box" id="logoClick-${bike.id}">${logoHtml}</div>
+                    <div class="info-group">
+                        <input class="bike-name-input" id="nameInput-${bike.id}" value="${bike.customName}" maxlength="12">
+                        <div class="power-display">⚡ <span id="watts-${bike.id}">${bike.watts}</span> W</div>
+                        <div class="distance-display">📏 即時 ${dist.toFixed(1)} m</div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <input type="color" id="colorPick-${bike.id}" value="${bike.color}" class="color-pick">
+                        <div class="action-buttons">
+                            <button class="pixel-btn move-left" data-id="${bike.id}">◀ 左移</button>
+                            <button class="pixel-btn move-right" data-id="${bike.id}">右移 ▶</button>
+                            <button class="pixel-btn remove-bike" data-id="${bike.id}" style="border-color:#FF7B89;">🗑️</button>
+                        </div>
+                        <button class="pixel-btn upload-logo" data-id="${bike.id}" style="font-size:10px;">🖼️ 上傳圖標</button>
                     </div>
                 </div>
-                <input class="bike-name-input" data-name="${bike.id}" value="${bike.customName}" placeholder="名稱">
-                <div class="power-stats"><span>⚡功率: <span id="watts-${bike.id}">0</span> W</span><span class="distance-display">📏 ${bike.getDisplayDistance().toFixed(1)} m</span></div>
-                <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
-                    <input type="color" data-color="${bike.id}" value="${bike.color}" class="color-picker">
-                    <button class="upload-btn" data-upload="${bike.id}">🖼️ 上傳圖標</button>
-                </div>
             `;
-            container.appendChild(card);
+            container.appendChild(unitDiv);
             
             // 綁定事件
-            const nameInput = card.querySelector(`[data-name="${bike.id}"]`);
-            nameInput.addEventListener('change', (e) => { bike.customName = e.target.value; renderBarChart(); });
-            const colorPicker = card.querySelector(`[data-color="${bike.id}"]`);
-            colorPicker.addEventListener('input', (e) => { bike.color = e.target.value; renderBikeCards(); renderBarChart(); });
-            const uploadBtn = card.querySelector(`[data-upload="${bike.id}"]`);
-            uploadBtn.addEventListener('click', () => uploadImageForBike(bike));
-            const leftBtn = card.querySelector(`[data-move="left"][data-id="${bike.id}"]`);
+            document.getElementById(`nameInput-${bike.id}`).addEventListener('change', (e) => { bike.customName = e.target.value; renderAllRiders(); });
+            document.getElementById(`colorPick-${bike.id}`).addEventListener('input', (e) => { bike.color = e.target.value; renderAllRiders(); });
+            // logo 點擊可更換隨機emoji (無自訂圖時)
+            const logoBox = document.getElementById(`logoClick-${bike.id}`);
+            logoBox.addEventListener('click', () => {
+                if(!bike.customImgUrl) {
+                    bike.logoValue = randomEmoji();
+                    renderAllRiders();
+                } else {
+                    if(confirm('清除自訂圖標，改用動物emoji?')) { bike.customImgUrl = null; bike.logoValue = randomEmoji(); renderAllRiders(); }
+                }
+            });
+            // 移動
+            const leftBtn = unitDiv.querySelector('.move-left');
+            const rightBtn = unitDiv.querySelector('.move-right');
             leftBtn.addEventListener('click', () => moveBike(bike.id, -1));
-            const rightBtn = card.querySelector(`[data-move="right"][data-id="${bike.id}"]`);
             rightBtn.addEventListener('click', () => moveBike(bike.id, 1));
-            const removeBtn = card.querySelector(`[data-remove="${bike.id}"]`);
+            const removeBtn = unitDiv.querySelector('.remove-bike');
             removeBtn.addEventListener('click', () => removeBike(bike.id));
-            
-            // 即時功率顯示更新
-            const wattSpan = document.getElementById(`watts-${bike.id}`);
-            if(wattSpan) wattSpan.innerText = bike.watts;
+            const uploadBtn = unitDiv.querySelector('.upload-logo');
+            uploadBtn.addEventListener('click', () => uploadImageForBike(bike));
         });
+        updateRankAndLogoScale(maxDist);
     }
     
-    function updateAllUI() {
-        // 更新卡片距離顯示 + 功率
-        bikes.forEach(b => {
-            const distSpan = document.querySelector(`.bike-card:has([data-name="${b.id}"]) .distance-display`);
-            if(distSpan) distSpan.innerText = `📏 ${b.getDisplayDistance().toFixed(1)} m`;
-            const wattSpan = document.getElementById(`watts-${b.id}`);
-            if(wattSpan) wattSpan.innerText = b.watts;
-        });
-        renderBarChart();
-        updateRankingsAndLogoSize();
-    }
-    
-    function renderBarChart() {
-        const container = document.getElementById('barsContainer');
-        if(!container) return;
-        if(bikes.length === 0) { container.innerHTML = '<div style="padding:20px;">等待連結單車...</div>'; return; }
-        const maxDist = Math.max(...bikes.map(b => b.getDisplayDistance()), 0.1);
-        container.innerHTML = '';
+    // 更新每個車的長條高度、數值、功率顯示 & logo大小排名
+    function updateAllRidersUI() {
+        if(!bikes.length) return;
+        const maxDist = Math.max(...bikes.map(b => b.getDisplayDistance()), 0.01);
         bikes.forEach(bike => {
             const dist = bike.getDisplayDistance();
             const percent = (dist / maxDist) * 100;
-            const barDiv = document.createElement('div');
-            barDiv.className = 'bar-item';
-            barDiv.innerHTML = `
-                <div class="bar-label">${bike.customName}</div>
-                <div class="bar-graphic"><div class="bar-fill" style="height: ${percent}%;"></div></div>
-                <div class="bar-value">${dist.toFixed(1)} m</div>
-            `;
-            container.appendChild(barDiv);
-            // 動畫效果：由於每次renderBarChart都會重新建立，transition會重新觸發，這已經滿足「顯示上一個值的動畫」需求，但我們保留即時更新
+            const barFill = document.getElementById(`barfill-${bike.id}`);
+            if(barFill) barFill.style.height = `${percent}%`;
+            const distSpan = document.getElementById(`distVal-${bike.id}`);
+            if(distSpan) distSpan.innerText = `${dist.toFixed(1)} m`;
+            const wattSpan = document.getElementById(`watts-${bike.id}`);
+            if(wattSpan) wattSpan.innerText = bike.watts;
+            const distanceInline = document.querySelector(`#racersContainer .rider-unit[data-id="${bike.id}"] .distance-display`);
+            if(distanceInline) distanceInline.innerText = `📏 即時 ${dist.toFixed(1)} m`;
         });
+        updateRankAndLogoScale(maxDist);
     }
     
-    function updateRankingsAndLogoSize() {
+    // 根據排名調整logo大小 (排名越高越大)
+    function updateRankAndLogoScale(maxDist) {
         const sorted = [...bikes].sort((a,b) => b.getDisplayDistance() - a.getDisplayDistance());
         sorted.forEach((bike, idx) => {
-            const logoDiv = document.querySelector(`#logo-${bike.id}`);
+            const rankFactor = 1 + (sorted.length - idx) * 0.12;
+            const logoDiv = document.querySelector(`#racersContainer .rider-unit[data-id="${bike.id}"] .logo-box`);
             if(logoDiv) {
-                const rank = idx+1;
-                const scaleVal = Math.min(1.6, 0.8 + (sorted.length - idx) * 0.2);
-                if(bike.customImgUrl) {
-                    logoDiv.style.transform = `scale(${scaleVal})`;
-                } else {
-                    logoDiv.style.fontSize = `${34 + (sorted.length - idx) * 6}px`;
-                }
+                if(bike.customImgUrl) logoDiv.style.transform = `scale(${Math.min(1.4, rankFactor)})`;
+                else logoDiv.style.fontSize = `${38 + (sorted.length - idx) * 6}px`;
             }
         });
     }
     
-    // 移動單車順序
-    function moveBike(id, direction) {
+    function moveBike(id, dir) {
         if(isRacing) return;
-        const index = bikes.findIndex(b => b.id === id);
-        if(index !== -1 && ((direction === -1 && index > 0) || (direction === 1 && index < bikes.length-1))) {
-            const newIndex = direction === -1 ? index-1 : index+1;
-            [bikes[index], bikes[newIndex]] = [bikes[newIndex], bikes[index]];
-            renderAll();
+        const idx = bikes.findIndex(b => b.id === id);
+        if(idx !== -1 && ((dir === -1 && idx > 0) || (dir === 1 && idx < bikes.length-1))) {
+            const newIdx = dir === -1 ? idx-1 : idx+1;
+            [bikes[idx], bikes[newIdx]] = [bikes[newIdx], bikes[idx]];
+            renderAllRiders();
         }
     }
+    
     async function removeBike(id) {
         if(isRacing) return;
         const bike = bikes.find(b => b.id === id);
-        if(bike && bike.device && bike.device.gatt?.connected) {
+        if(bike && bike.device?.gatt?.connected) {
             try{ await bike.device.gatt.disconnect(); }catch(e){}
         }
         bikes = bikes.filter(b => b.id !== id);
-        renderAll();
+        renderAllRiders();
     }
+    
     async function uploadImageForBike(bike) {
         const input = document.createElement('input');
         input.type = 'file';
@@ -688,8 +605,7 @@
                 reader.onload = (ev) => {
                     bike.customImgUrl = ev.target.result;
                     bike.logoType = "image";
-                    renderBikeCards();
-                    updateRankingsAndLogoSize();
+                    renderAllRiders();
                 };
                 reader.readAsDataURL(file);
             }
@@ -697,50 +613,51 @@
         input.click();
     }
     
-    // 新增單車
+    // 藍牙新增單車
     async function addNewBike() {
         if(isRacing) { alert("比賽進行中，請結束後再連結"); return; }
         try {
             const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['cycling_power'] }] });
-            const newColor = `hsl(${Math.random() * 360}, 80%, 60%)`;
-            const newBike = new BikeEntity(device, newColor, null);
+            const newColor = `hsl(${Math.floor(Math.random() * 360)}, 70%, 65%)`;
+            const newBike = new BikeEntity(device, newColor);
             const ok = await newBike.connectAndListen();
             if(ok) {
                 bikes.push(newBike);
-                renderAll();
-            } else alert("連線失敗 請確認功率計");
-        } catch(e) { alert("取消或錯誤"); }
+                renderAllRiders();
+            } else alert("連線失敗 請確認功率計藍牙");
+        } catch(e) { console.log(e); alert("連線取消或失敗"); }
     }
     
-    // 倒數&比賽核心
-    let raceSecondsLeft = 30;
+    // 比賽流程
     let countdownTimer = null;
-    let finalTenInterval = null;
-    function startRaceSequence() {
-        if(bikes.length === 0) { alert("尚未連結任何單車!"); return; }
-        if(!selectedClass) { alert("請選擇班別"); return; }
+    let raceLoopInterval = null;
+    function startRace() {
+        if(bikes.length === 0) { alert("請先連結至少一輛單車"); return; }
         if(isRacing) return;
+        const classVal = document.getElementById('classSelect').value;
+        if(!classVal) { alert("請選擇班別"); return; }
+        selectedClass = classVal;
         // 重置所有單車數據
-        bikes.forEach(b => b.resetForRace());
-        isRacing = false; 
-        renderAll();
-        let bigOverlay = document.createElement('div');
-        bigOverlay.className = 'big-number';
-        document.body.appendChild(bigOverlay);
-        let count = 3;
+        bikes.forEach(b => b.resetRace());
+        isRacing = false;
+        renderAllRiders();
+        
+        // 倒數3秒
+        let bigDiv = document.createElement('div');
+        bigDiv.className = 'big-number';
+        document.body.appendChild(bigDiv);
+        let counter = 3;
         const countInterval = setInterval(() => {
-            if(count > 0) {
-                bigOverlay.innerText = count;
-                count--;
-            } else if(count === 0) {
-                bigOverlay.innerText = "GO!";
-                // 開始計時30秒
+            if(counter > 0) {
+                bigDiv.innerText = counter;
+                counter--;
+            } else if(counter === 0) {
+                bigDiv.innerText = "GO!";
                 isRacing = true;
-                raceStartTimestamp = Date.now();
-                raceSecondsLeft = 30;
-                startRaceTimer(30, bigOverlay);
+                currentRaceSeconds = 30;
+                startRaceTimer(30, bigDiv);
                 clearInterval(countInterval);
-                setTimeout(() => { if(bigOverlay) bigOverlay.remove(); }, 800);
+                setTimeout(() => bigDiv.remove(), 800);
             } else {
                 clearInterval(countInterval);
             }
@@ -749,108 +666,98 @@
     
     function startRaceTimer(duration, overlayElem) {
         let remaining = duration;
-        const updateTimer = () => {
+        const tick = () => {
             if(!isRacing) return;
             if(remaining <= 0) {
-                clearInterval(raceTimerInterval);
-                if(finalTenInterval) clearInterval(finalTenInterval);
-                endRace();
+                if(raceTimerInterval) clearInterval(raceTimerInterval);
+                endRaceAndShowResults();
                 if(overlayElem) overlayElem.remove();
                 return;
             }
             if(remaining <= 10 && remaining > 0) {
-                if(overlayElem) { overlayElem.innerText = remaining; overlayElem.style.fontSize = '100px'; overlayElem.style.color = '#ff44cc'; }
-                setTimeout(() => { if(overlayElem && remaining <=10 && isRacing) overlayElem.innerText = ""; }, 400);
-            } else {
-                if(overlayElem && remaining >10) overlayElem.innerText = "";
+                if(overlayElem) { overlayElem.innerText = remaining; overlayElem.style.fontSize = "100px"; }
+                setTimeout(() => { if(overlayElem && isRacing) overlayElem.innerText = ""; }, 350);
             }
             remaining--;
         };
-        updateTimer();
-        raceTimerInterval = setInterval(updateTimer, 1000);
-        finalTenInterval = setInterval(() => {}, 1000);
+        tick();
+        raceTimerInterval = setInterval(tick, 1000);
     }
     
-    async function endRace() {
-        if(!isRacing) return;
+    async function endRaceAndShowResults() {
+        if(!isRacing && raceTimerInterval === null) return;
         isRacing = false;
         if(raceTimerInterval) clearInterval(raceTimerInterval);
-        if(finalTenInterval) clearInterval(finalTenInterval);
-        // 計算成績
-        const results = bikes.map(b => ({
-            name: b.customName,
-            distanceMeters: b.getDisplayDistance(),
-            avgSpeed: (b.getDisplayDistance() / 30).toFixed(2),
-            rawDist: b.rawDistance,
-            color: b.color,
-            logo: b.logoValue
-        })).sort((a,b) => b.distanceMeters - a.distanceMeters);
-        const totalDistance = results.reduce((sum, r) => sum + r.distanceMeters, 0);
-        // 上傳到 ThingSpeak (班別, 總距離)
+        raceTimerInterval = null;
+        
+        // 計算總距離 (每個車的顯示距離)
+        let totalDistance = 0;
+        const ranking = bikes.map(b => {
+            const dist = b.getDisplayDistance();
+            totalDistance += dist;
+            return {
+                name: b.customName,
+                distance: dist,
+                avgSpeed: dist / 30,
+                color: b.color
+            };
+        }).sort((a,b) => b.distance - a.distance);
+        
+        // 上傳 ThingSpeak (班別field1, 總距離field2)
         const classCode = getClassValue(selectedClass);
-        const uploadUrl = `https://api.thingspeak.com/update?api_key=${WRITE_API_KEY}&field1=${classCode}&field2=${totalDistance.toFixed(2)}`;
+        const uploadUrl = `https://api.thingspeak.com/update?api_key=${WRITE_KEY}&field1=${classCode}&field2=${totalDistance.toFixed(2)}`;
         try { await fetch(uploadUrl); } catch(e) { console.warn("上傳失敗"); }
         
-        // 顯示結算modal
-        showResultsModal(results, totalDistance);
-        // 更新龍虎榜
-        setTimeout(() => fetchLeaderboardData(), 1500);
+        // 顯示結算
+        showResultsModal(ranking, totalDistance);
+        // 刷新龍虎榜
+        setTimeout(() => fetchLeaderboardData(), 1200);
     }
     
-    function showResultsModal(results, totalMeters) {
-        if(resultsModalDiv) resultsModalDiv.remove();
-        const modal = document.createElement('div');
-        modal.className = 'results-modal';
+    function showResultsModal(ranking, totalMeters) {
+        if(resultsModal) resultsModal.remove();
+        const modalDiv = document.createElement('div');
+        modalDiv.className = 'results-modal';
         let rows = '';
-        results.forEach((r, idx) => {
-            rows += `<tr><td>${idx+1}</td><td>${r.name}</td><td>${r.distanceMeters.toFixed(1)} m</td><td>${r.avgSpeed} m/s</td></tr>`;
+        ranking.forEach((r, idx) => {
+            rows += `<tr><td>${idx+1}</td><td>${r.name}</td><td>${r.distance.toFixed(1)} m</td><td>${r.avgSpeed.toFixed(2)} m/s</td></tr>`;
         });
-        modal.innerHTML = `
+        modalDiv.innerHTML = `
             <div class="results-card">
-                <h2 style="color:#0ff;">🏆 爆發結算 🏆</h2>
-                <p>班級: ${selectedClass} | 車隊總里程: ${totalMeters.toFixed(1)} m</p>
-                <table class="rank-table"><thead><tr><th>排名</th><th>騎士</th><th>距離(m)</th><th>平均速度</th></tr></thead><tbody>${rows}</tbody></table>
-                <button id="restartBtn" class="btn-again">🔥 再來一次 🔥</button>
+                <h2 style="color:#9EFF9E;">🏆 三十秒爆發戰績 🏆</h2>
+                <p>班級: ${selectedClass} | 團隊總里程: ${totalMeters.toFixed(1)} 公尺</p>
+                <table class="rank-table"><thead><tr><th>名次</th><th>騎士</th><th>距離</th><th>平均速度</th></tr></thead><tbody>${rows}</tbody></table>
+                <button id="restartRaceBtn" class="pixel-btn" style="background:#FF7B89; color:black; font-size:20px; margin-top:20px;">⚡ 再來一次 ⚡</button>
             </div>
         `;
-        document.body.appendChild(modal);
-        resultsModalDiv = modal;
-        document.getElementById('restartBtn').onclick = () => {
-            modal.remove();
-            resultsModalDiv = null;
-            resetToLobby();
+        document.body.appendChild(modalDiv);
+        resultsModal = modalDiv;
+        document.getElementById('restartRaceBtn').onclick = () => {
+            modalDiv.remove();
+            resultsModal = null;
+            // 重置比賽狀態
+            isRacing = false;
+            if(raceTimerInterval) clearInterval(raceTimerInterval);
+            renderAllRiders();
         };
     }
     
-    function resetToLobby() {
-        isRacing = false;
-        if(raceTimerInterval) clearInterval(raceTimerInterval);
-        if(finalTenInterval) clearInterval(finalTenInterval);
-        // 保留單車但歸零數據
-        bikes.forEach(b => { b.rawDistance = 0; b.finishedRace = false; b.allWattsLog = []; });
-        renderAll();
-        // 確保開始按鈕啟用
-        const startBtn = document.getElementById('bigStartBtn');
-        if(startBtn) startBtn.disabled = false;
-        document.getElementById('globalAddBikeBtn').disabled = false;
-    }
-    
-    // 龍虎榜邏輯
+    // ---------- 龍虎榜邏輯 (從Thingspeak讀取) ----------
     let allFeeds = [];
+    let currentTab = "ALL";
     async function fetchLeaderboardData() {
         try {
-            const resp = await fetch(thingSpeakChannelRead);
-            const data = await resp.json();
+            const res = await fetch(READ_CHANNEL);
+            const data = await res.json();
             allFeeds = data.feeds.filter(f => f.field1 && f.field2).map(f => ({
                 classVal: parseInt(f.field1),
                 distance: parseFloat(f.field2),
                 created: new Date(f.created_at)
             }));
             renderLeaderboardByTab(currentTab);
-        } catch(e) { console.warn(e); }
+        } catch(e) { console.error(e); }
     }
     
-    let currentTab = "ALL";
     function renderLeaderboardByTab(tab) {
         const container = document.getElementById('leaderboardList');
         if(!container) return;
@@ -859,31 +766,29 @@
             const gradeNum = parseInt(tab);
             filtered = filtered.filter(f => Math.ceil(f.classVal/4) === gradeNum);
         }
-        // 分組: 每個班別(班級編碼)取前三最高距離
-        const groupMap = new Map(); // key: classVal -> 陣列距離紀錄
+        // 每個班級取前三最高距離
+        const groupMap = new Map();
         filtered.forEach(entry => {
             if(!groupMap.has(entry.classVal)) groupMap.set(entry.classVal, []);
             groupMap.get(entry.classVal).push({ dist: entry.distance, date: entry.created });
         });
         let bestRows = [];
         for(let [classVal, records] of groupMap.entries()) {
-            const sortedRec = records.sort((a,b) => b.dist - a.dist).slice(0,3);
-            sortedRec.forEach(rec => {
-                bestRows.push({ classVal, distance: rec.dist, date: rec.date });
-            });
+            const top3 = records.sort((a,b) => b.dist - a.dist).slice(0,3);
+            top3.forEach(rec => bestRows.push({ classVal, distance: rec.dist, date: rec.date }));
         }
         bestRows.sort((a,b) => b.distance - a.distance);
-        if(tab !== "ALL") bestRows = bestRows.slice(0, 12); // 最多12筆
+        if(tab !== "ALL") bestRows = bestRows.slice(0, 12);
         else bestRows = bestRows.slice(0, 60);
-        container.innerHTML = `<div class="rank-row rank-header"><span>班級</span><span>距離(m)</span><span>日期</span></div>`;
+        container.innerHTML = `<div class="rank-row"><span>班級</span><span>距離(m)</span><span>日期</span></div>`;
         bestRows.forEach(row => {
-            const dateStr = `${row.date.getMonth()+1}/${row.date.getDate()} ${row.date.getHours()}:${row.date.getMinutes()}`;
-            const div = document.createElement('div');
-            div.className = 'rank-row';
-            div.innerHTML = `<span>${decodeClassValue(row.classVal)}</span><span>${row.distance.toFixed(1)}</span><span>${dateStr}</span>`;
-            container.appendChild(div);
+            const dateStr = `${row.date.getMonth()+1}/${row.date.getDate()} ${row.date.getHours().toString().padStart(2,'0')}:${row.date.getMinutes().toString().padStart(2,'0')}`;
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'rank-row';
+            rowDiv.innerHTML = `<span>${decodeClassValue(row.classVal)}</span><span>${row.distance.toFixed(1)}</span><span>${dateStr}</span>`;
+            container.appendChild(rowDiv);
         });
-        if(bestRows.length === 0) container.innerHTML += '<div style="padding:16px;">暫無數據</div>';
+        if(bestRows.length === 0) container.innerHTML += '<div style="padding:20px;">尚無紀錄</div>';
     }
     
     function initTabs() {
@@ -904,37 +809,39 @@
         });
     }
     
-    // 班別下拉選單
     function initClassSelect() {
         const sel = document.getElementById('classSelect');
         for(let g=1; g<=6; g++) {
             for(let l of ['A','B','C','D']) {
-                const val = g+l;
-                const opt = new Option(val, val);
-                sel.appendChild(opt);
+                sel.add(new Option(g+l, g+l));
             }
         }
         sel.value = "1A";
-        sel.addEventListener('change', (e) => { selectedClass = e.target.value; });
         selectedClass = "1A";
+        sel.addEventListener('change', (e) => selectedClass = e.target.value);
     }
     
-    // 比例調節
     function initScaleControl() {
-        const slider = document.getElementById('scaleFactorSlider');
-        const scaleSpan = document.getElementById('scaleValue');
+        const slider = document.getElementById('scaleSlider');
+        const span = document.getElementById('scaleValue');
         slider.addEventListener('input', (e) => {
             globalScale = parseFloat(e.target.value);
-            scaleSpan.innerText = globalScale.toFixed(2);
-            renderAll();
-            updateRankingsAndLogoSize();
+            span.innerText = globalScale.toFixed(2);
+            renderAllRiders();
+            updateAllRidersUI();
         });
         globalScale = 0.2;
         slider.value = "0.2";
-        scaleSpan.innerText = "0.20";
+        span.innerText = "0.20";
     }
     
-    // 事件綁定
+    // 定時刷新功率&距離顯示
+    setInterval(() => {
+        if(!isRacing && document.visibilityState === "visible") updateAllRidersUI();
+        else if(isRacing) updateAllRidersUI();
+    }, 100);
+    
+    // 啟動
     window.onload = () => {
         initClassSelect();
         initScaleControl();
@@ -942,16 +849,9 @@
         fetchLeaderboardData();
         setInterval(fetchLeaderboardData, 30000);
         document.getElementById('globalAddBikeBtn').onclick = addNewBike;
-        document.getElementById('bigStartBtn').onclick = startRaceSequence;
-        renderAll();
+        document.getElementById('bigStartBtn').onclick = startRace;
+        renderAllRiders();
     };
-    
-    // 輔助即時更新UI
-    setInterval(() => {
-        if(!isRacing) return;
-        updateAllUI();
-    }, 100);
 </script>
 </body>
 </html>
-```
