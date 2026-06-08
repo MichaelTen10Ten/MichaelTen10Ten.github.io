@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Pixel Body Painter - MediaPipe Pose + Pixel Art</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0f1e;
+            margin: 0;
+            padding: 20px;
+            color: #d4f1f9;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            justify-content: center;
+        }
+
+        /* 屏幕显示区域 (camera + overlay) */
+        .screen-panel {
+            flex: 2;
+            min-width: 500px;
+            background: #1e2a2f;
+            border-radius: 24px;
+            padding: 16px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            border: 2px solid #3e5a5f;
+        }
+
+        .screen-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 12px;
+            text-align: center;
+            letter-spacing: 2px;
+            background: #00000066;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .video-wrapper {
+            position: relative;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            aspect-ratio: 4 / 3;
+            width: 100%;
+            border: 3px solid #2ecc71;
+            box-shadow: 0 0 0 2px #0f2b2b;
+        }
+
+        #videoCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+        }
+
+        #outputCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            pointer-events: none;
+        }
+
+        /* 绘图画板区域 (pixel editor) */
+        .draw-panel {
+            flex: 1.2;
+            min-width: 380px;
+            background: #1a1f2b;
+            border-radius: 28px;
+            padding: 20px;
+            border: 1px solid #4a6272;
+            backdrop-filter: blur(2px);
+        }
+
+        .part-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 24px;
+            justify-content: center;
+        }
+
+        .part-btn {
+            background: #2c3e3f;
+            border: none;
+            font-family: monospace;
+            font-weight: bold;
+            padding: 8px 12px;
+            border-radius: 40px;
+            color: #eef4ff;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-size: 0.8rem;
+            box-shadow: 0 2px 4px black;
+        }
+
+        .part-btn.active {
+            background: #e67e22;
+            color: white;
+            box-shadow: 0 0 8px #f39c12;
+            border: 1px solid #ffd966;
+        }
+
+        .pixel-editor {
+            background: #10161e;
+            border-radius: 24px;
+            padding: 16px;
+            margin: 16px 0;
+            text-align: center;
+        }
+
+        .pixel-canvas-container {
+            display: flex;
+            justify-content: center;
+            margin: 12px 0;
+            background: #2a2f3a;
+            padding: 12px;
+            border-radius: 20px;
+        }
+
+        canvas.pixelGridCanvas {
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: pixelated;
+            background: #2e2e2e;
+            box-shadow: 0 0 0 2px #5f7f7f;
+            cursor: crosshair;
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 10px;
+            margin: 20px 0 12px;
+        }
+
+        .color-swatch {
+            aspect-ratio: 1 / 1;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 2px solid #3a4a50;
+            transition: 0.05s linear;
+            box-shadow: 0 1px 3px black;
+        }
+
+        .color-swatch.active-color {
+            border: 3px solid white;
+            transform: scale(1.02);
+            box-shadow: 0 0 8px cyan;
+        }
+
+        .eraser-btn {
+            background: #445;
+            color: white;
+            border: none;
+            padding: 10px;
+            font-family: monospace;
+            font-weight: bold;
+            border-radius: 36px;
+            width: 100%;
+            font-size: 1.2rem;
+            margin: 8px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .info-text {
+            font-size: 0.75rem;
+            text-align: center;
+            margin-top: 12px;
+            background: #00000077;
+            padding: 6px;
+            border-radius: 20px;
+        }
+
+        button {
+            background: #2e5f6b;
+            border: none;
+            font-family: monospace;
+        }
+
+        hr {
+            border-color: #2ecc7133;
+        }
+        .footer {
+            font-size: 11px;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- 左边屏幕显示 + MediaPipe overlay -->
+    <div class="screen-panel">
+        <div class="screen-title">⚡ PIXEL BODY TRACKING ⚡</div>
+        <div class="video-wrapper">
+            <video id="webcam" autoplay playsinline style="display:none"></video>
+            <canvas id="videoCanvas" width="640" height="480"></canvas>
+            <canvas id="outputCanvas" width="640" height="480"></canvas>
+        </div>
+        <div class="info-text">✨ MediaPipe detects: Body · Arms · Legs · Mask ✨<br>
+            🎨 Draw on pixel canvas → see live overlay!</div>
+    </div>
+
+    <!-- 右边绘画画板区域 -->
+    <div class="draw-panel">
+        <div style="font-weight: bold; font-size: 1.5rem; text-align:center;">🖌️ PIXEL STUDIO</div>
+        <div class="part-selector" id="partSelector">
+            <button data-part="mask" class="part-btn">🎭 MASK 8x8</button>
+            <button data-part="body" class="part-btn">👕 BODY 12x8</button>
+            <button data-part="leftArm" class="part-btn">💪 LEFT ARM 12x4</button>
+            <button data-part="rightArm" class="part-btn">💪 RIGHT ARM 12x4</button>
+            <button data-part="leftLeg" class="part-btn">🦵 LEFT LEG 12x4</button>
+            <button data-part="rightLeg" class="part-btn">🦵 RIGHT LEG 12x4</button>
+        </div>
+
+        <div class="pixel-editor">
+            <div style="margin-bottom: 6px;">🎨 16-bit color palette</div>
+            <div class="color-palette" id="colorPalette"></div>
+            <button id="eraserButton" class="eraser-btn">🧽 ERASER (transparent)</button>
+            <div class="pixel-canvas-container">
+                <canvas id="drawingGridCanvas" width="320" height="320" style="width: 100%; height: auto; max-width: 320px; image-rendering: pixelated;"></canvas>
+            </div>
+            <div class="info-text">✏️ Click / Drag on grid to draw. Pixel perfect!</div>
+        </div>
+    </div>
+</div>
+<div class="footer">⚡ Pixel style: Mask=8x8, Body=12x8, Arms/Legs=12x4 | Eraser clears pixels</div>
+
+<!-- 引入 MediaPipe 核心库 -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js"></script>
+<script>
+    (function(){
+        // ---------- 画板尺寸定义 ----------
+        const PART_SIZES = {
+            mask:       { w: 8, h: 8 },
+            body:       { w: 8, h: 12 },   // 宽度8,高度12
+            leftArm:    { w: 4, h: 12 },
+            rightArm:   { w: 4, h: 12 },
+            leftLeg:    { w: 4, h: 12 },
+            rightLeg:   { w: 4, h: 12 }
+        };
+
+        // 存储每个部分的像素数据 (离屏canvas)
+        const partCanvases = {};
+        const partCtx = {};
+
+        // 初始化所有部分画板 (透明背景)
+        for (const [partId, size] of Object.entries(PART_SIZES)) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size.w;
+            canvas.height = size.h;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, size.w, size.h);
+            // 初始全透明 (像素艺术透明)
+            ctx.fillStyle = 'rgba(0,0,0,0)';
+            ctx.fillRect(0, 0, size.w, size.h);
+            partCanvases[partId] = canvas;
+            partCtx[partId] = ctx;
+        }
+
+        // ---------- 当前选中的部分 + 绘图状态 ----------
+        let currentPart = "mask";       // default
+        let currentColor = "#FF3366";   //  vivid
+        let eraserMode = false;
+        let isDrawing = false;
+
+        // 定义16种鲜艳颜色 (像素风)
+        const colorPalette = [
+            "#FF0044", "#FFB13B", "#FFE073", "#B0FF57", "#2BFF88", "#1AD6FF", "#3D5AFF", "#A155FF",
+            "#FF71CE", "#FFFFFF", "#A9A9A9", "#5D3A1A", "#4C9F70", "#F08080", "#9370DB", "#000000"
+        ];
+
+        // ---------- DOM 元素 ----------
+        const drawingGridCanvas = document.getElementById('drawingGridCanvas');
+        let gridCtx = drawingGridCanvas.getContext('2d');
+        const partSelectorDiv = document.getElementById('partSelector');
+        const colorPaletteDiv = document.getElementById('colorPalette');
+        const eraserBtn = document.getElementById('eraserButton');
+
+        // 刷新绘图网格显示 (根据当前part尺寸)
+        function refreshDrawingGrid() {
+            const size = PART_SIZES[currentPart];
+            const pixelW = size.w;
+            const pixelH = size.h;
+            const cellSize = Math.min(40, Math.floor(300 / Math.max(pixelW, pixelH)));
+            const gridWidth = pixelW * cellSize;
+            const gridHeight = pixelH * cellSize;
+            drawingGridCanvas.width = gridWidth;
+            drawingGridCanvas.height = gridHeight;
+            drawingGridCanvas.style.width = `${gridWidth}px`;
+            drawingGridCanvas.style.height = `${gridHeight}px`;
+            gridCtx = drawingGridCanvas.getContext('2d');
+            gridCtx.imageSmoothingEnabled = false;
+            
+            // 获取当前part的像素数据 (从 partCanvases 中读取)
+            const srcCanvas = partCanvases[currentPart];
+            const srcW = srcCanvas.width;
+            const srcH = srcCanvas.height;
+            
+            // 绘制放大的像素网格
+            const imgData = srcCanvas.getContext('2d').getImageData(0, 0, srcW, srcH);
+            for (let y = 0; y < srcH; y++) {
+                for (let x = 0; x < srcW; x++) {
+                    const idx = (y * srcW + x) * 4;
+                    const r = imgData.data[idx];
+                    const g = imgData.data[idx+1];
+                    const b = imgData.data[idx+2];
+                    const a = imgData.data[idx+3];
+                    let fillColor;
+                    if (a === 0) {
+                        fillColor = "#2a2f3a";  // 透明网格背景
+                    } else {
+                        fillColor = `rgb(${r},${g},${b})`;
+                    }
+                    gridCtx.fillStyle = fillColor;
+                    gridCtx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    // 网格线
+                    gridCtx.strokeStyle = "#4f6f7f";
+                    gridCtx.lineWidth = 0.5;
+                    gridCtx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+
+        // 更新指定部分的像素数据 (画板更新)
+        function setPixelOnPart(partId, x, y, color, erase = false) {
+            const canvas = partCanvases[partId];
+            const ctx = partCtx[partId];
+            if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) return;
+            if (erase) {
+                ctx.clearRect(x, y, 1, 1);
+                // 确保透明
+            } else {
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, 1, 1);
+            }
+            // 如果当前编辑的part正好是当前part，则刷新预览
+            if (partId === currentPart) {
+                refreshDrawingGrid();
+            }
+        }
+
+        // 处理画板内画笔 (根据鼠标坐标设置像素)
+        function handleDrawOnGrid(e) {
+            const rect = drawingGridCanvas.getBoundingClientRect();
+            const scaleX = drawingGridCanvas.width / rect.width;   // 实际canvas像素比
+            const scaleY = drawingGridCanvas.height / rect.height;
+            let clientX, clientY;
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+                e.preventDefault();
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            const canvasX = (clientX - rect.left) * scaleX;
+            const canvasY = (clientY - rect.top) * scaleY;
+            if (canvasX >= 0 && canvasX < drawingGridCanvas.width && canvasY >= 0 && canvasY < drawingGridCanvas.height) {
+                const size = PART_SIZES[currentPart];
+                const cellW = drawingGridCanvas.width / size.w;
+                const cellH = drawingGridCanvas.height / size.h;
+                const pixelX = Math.floor(canvasX / cellW);
+                const pixelY = Math.floor(canvasY / cellH);
+                if (pixelX >= 0 && pixelX < size.w && pixelY >= 0 && pixelY < size.h) {
+                    if (eraserMode) {
+                        setPixelOnPart(currentPart, pixelX, pixelY, null, true);
+                    } else {
+                        setPixelOnPart(currentPart, pixelX, pixelY, currentColor, false);
+                    }
+                }
+            }
+        }
+
+        // 初始化颜色面板
+        function initColorPalette() {
+            colorPaletteDiv.innerHTML = '';
+            colorPalette.forEach(col => {
+                const swatch = document.createElement('div');
+                swatch.className = 'color-swatch';
+                swatch.style.backgroundColor = col;
+                swatch.addEventListener('click', () => {
+                    currentColor = col;
+                    eraserMode = false;
+                    eraserBtn.style.background = "#445";
+                    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active-color'));
+                    swatch.classList.add('active-color');
+                });
+                colorPaletteDiv.appendChild(swatch);
+            });
+            // 默认激活第一个颜色
+            document.querySelectorAll('.color-swatch')[0].classList.add('active-color');
+            currentColor = colorPalette[0];
+        }
+
+        // 切换部件激活样式
+        function switchPart(partId) {
+            currentPart = partId;
+            document.querySelectorAll('.part-btn').forEach(btn => {
+                if (btn.dataset.part === partId) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+            refreshDrawingGrid();
+        }
+
+        // 事件绑定绘图
+        function bindDrawingEvents() {
+            const startDraw = (e) => {
+                isDrawing = true;
+                handleDrawOnGrid(e);
+                e.preventDefault();
+            };
+            const drawMove = (e) => {
+                if (!isDrawing) return;
+                handleDrawOnGrid(e);
+                e.preventDefault();
+            };
+            const endDraw = () => { isDrawing = false; };
+            drawingGridCanvas.addEventListener('mousedown', startDraw);
+            window.addEventListener('mousemove', drawMove);
+            window.addEventListener('mouseup', endDraw);
+            drawingGridCanvas.addEventListener('touchstart', startDraw);
+            window.addEventListener('touchmove', drawMove);
+            window.addEventListener('touchend', endDraw);
+        }
+
+        // ---------- MediaPipe 相关 ----------
+        let poseLandmarker = null;
+        let webcamRunning = false;
+        const video = document.getElementById('webcam');
+        const videoCanvas = document.getElementById('videoCanvas');
+        const outputCanvas = document.getElementById('outputCanvas');
+        const videoCtx = videoCanvas.getContext('2d');
+        const outputCtx = outputCanvas.getContext('2d');
+        let lastVideoTime = -1;
+
+        async function initMediaPipe() {
+            const vision = window.vision;
+            const filesetResolver = await vision.FilesetResolver.forVisionTasks(
+                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+            );
+            poseLandmarker = await vision.PoseLandmarker.createFromOptions(filesetResolver, {
+                baseOptions: {
+                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+                    delegate: "GPU"
+                },
+                runningMode: "VIDEO",
+                numPoses: 1
+            });
+            startWebcam();
+        }
+
+        function startWebcam() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.play();
+                    webcamRunning = true;
+                    requestAnimationFrame(renderLoop);
+                })
+                .catch(e => console.error("camera error", e));
+        }
+
+        // 辅助函数: 计算两点之间欧氏距离
+        function distance(p1,p2){ return Math.hypot(p1.x-p2.x, p1.y-p2.y); }
+
+        // ---------- 映射quad & 绘制纹理 (将像素art通过仿射变换映射到四个角) ----------
+        function drawPixelArtOnQuad(ctx, srcCanvas, quadPoints, srcW, srcH) {
+            // quadPoints: [pTL, pTR, pBR, pBL] 顺序: 左上,右上,右下,左下
+            if (!quadPoints || quadPoints.length !== 4) return;
+            const [p0, p1, p2, p3] = quadPoints;
+            // 构建仿射变换矩阵 (矩形 -> 任意四边形 使用matrix从[0,0]->p0, [w,0]->p1, [0,h]->p3)
+            const w = srcW;
+            const h = srcH;
+            const x0 = p0.x, y0 = p0.y;
+            const x1 = p1.x, y1 = p1.y;
+            const x2 = p2.x, y2 = p2.y;
+            const x3 = p3.x, y3 = p3.y;
+            // 解算仿射变换 (从矩形到目标四边形, 使用标准仿射矩阵)
+            // 设矩阵将 (0,0) -> (x0,y0); (w,0)->(x1,y1); (0,h)->(x3,y3)
+            // 则变换: M = [ (x1-x0)/w , (x3-x0)/h , x0 ; (y1-y0)/w , (y3-y0)/h , y0 ]
+            const a = (x1 - x0) / w;
+            const b = (x3 - x0) / h;
+            const c = x0;
+            const d = (y1 - y0) / w;
+            const e = (y3 - y0) / h;
+            const f = y0;
+            ctx.save();
+            ctx.setTransform(a, d, b, e, c, f);
+            ctx.drawImage(srcCanvas, 0, 0, w, h);
+            ctx.restore();
+        }
+
+        // 根据landmarks构建每个部分的quad四边形 (像素精确映射)
+        function getPartQuad(landmarks, partId, canvasW, canvasH) {
+            if (!landmarks) return null;
+            const lm = (idx) => ({ x: landmarks[idx].x * canvasW, y: landmarks[idx].y * canvasH });
+            // 定义关键点索引
+            const LEFT_SHOULDER = 11, RIGHT_SHOULDER = 12;
+            const LEFT_HIP = 23, RIGHT_HIP = 24;
+            const LEFT_ELBOW = 13, RIGHT_ELBOW = 14;
+            const LEFT_WRIST = 15, RIGHT_WRIST = 16;
+            const LEFT_KNEE = 25, RIGHT_KNEE = 26;
+            const LEFT_ANKLE = 27, RIGHT_ANKLE = 28;
+            const NOSE = 0, LEFT_EYE = 1, RIGHT_EYE = 2, MOUTH = 9;
+            
+            // 辅助: 获取带法线宽度的肢体矩形 (起点,终点, 宽度比例基于肩宽或臂长)
+            function getLimbQuad(start, end, widthScale = 0.35, refLength = null) {
+                let dirX = end.x - start.x;
+                let dirY = end.y - start.y;
+                let len = Math.hypot(dirX, dirY);
+                if(len < 0.001) return null;
+                let normX = dirX / len;
+                let normY = dirY / len;
+                let perpX = -normY;
+                let perpY = normX;
+                let width = widthScale * len;
+                if(refLength) width = Math.min(width, refLength*0.6);
+                const halfW = width / 2;
+                const p1 = { x: start.x - perpX*halfW, y: start.y - perpY*halfW };
+                const p2 = { x: start.x + perpX*halfW, y: start.y + perpY*halfW };
+                const p3 = { x: end.x + perpX*halfW, y: end.y + perpY*halfW };
+                const p4 = { x: end.x - perpX*halfW, y: end.y - perpY*halfW };
+                return [p1, p2, p3, p4];  // TL,TR,BR,BL 沿着肢体方向有序
+            }
+            
+            if(partId === "mask") {
+                // mask: 基于眼睛鼻子 8x8方形区域
+                const leftEye = lm(LEFT_EYE);
+                const rightEye = lm(RIGHT_EYE);
+                const nose = lm(NOSE);
+                const eyeCenter = { x: (leftEye.x+rightEye.x)/2, y: (leftEye.y+rightEye.y)/2 };
+                const eyeDist = distance(leftEye, rightEye);
+                const size = eyeDist * 1.6;
+                const half = size / 2;
+                const upDir = { x: 0, y: -1 };
+                const rightDir = { x: 1, y: 0 };
+                const center = { x: eyeCenter.x, y: (eyeCenter.y + nose.y)/2 - half*0.2 };
+                const pTL = { x: center.x - half, y: center.y - half };
+                const pTR = { x: center.x + half, y: center.y - half };
+                const pBR = { x: center.x + half, y: center.y + half };
+                const pBL = { x: center.x - half, y: center.y + half };
+                return [pTL, pTR, pBR, pBL];
+            }
+            else if(partId === "body") {
+                const ls = lm(LEFT_SHOULDER);
+                const rs = lm(RIGHT_SHOULDER);
+                const lh = lm(LEFT_HIP);
+                const rh = lm(RIGHT_HIP);
+                if(!ls || !rs || !lh || !rh) return null;
+                return [ls, rs, rh, lh];  // 左上,右上,右下,左下
+            }
+            else if(partId === "leftArm") {
+                const shoulder = lm(LEFT_SHOULDER);
+                const wrist = lm(LEFT_WRIST);
+                const elbow = lm(LEFT_ELBOW);
+                const armLen = distance(shoulder, wrist);
+                if(armLen < 5) return null;
+                const widthScale = 0.32;
+                return getLimbQuad(shoulder, wrist, widthScale, distance(shoulder, elbow));
+            }
+            else if(partId === "rightArm") {
+                const shoulder = lm(RIGHT_SHOULDER);
+                const wrist = lm(RIGHT_WRIST);
+                const elbow = lm(RIGHT_ELBOW);
+                if(distance(shoulder, wrist) < 5) return null;
+                return getLimbQuad(shoulder, wrist, 0.32, distance(shoulder, elbow));
+            }
+            else if(partId === "leftLeg") {
+                const hip = lm(LEFT_HIP);
+                const ankle = lm(LEFT_ANKLE);
+                const knee = lm(LEFT_KNEE);
+                if(distance(hip, ankle) < 5) return null;
+                return getLimbQuad(hip, ankle, 0.3, distance(hip, knee));
+            }
+            else if(partId === "rightLeg") {
+                const hip = lm(RIGHT_HIP);
+                const ankle = lm(RIGHT_ANKLE);
+                const knee = lm(RIGHT_KNEE);
+                if(distance(hip, ankle) < 5) return null;
+                return getLimbQuad(hip, ankle, 0.3, distance(hip, knee));
+            }
+            return null;
+        }
+
+        // 渲染显示: 绘制视频和Pixel overlay + 透明占位框
+        function renderFrame(landmarks, videoWidth, videoHeight) {
+            if(!videoCtx) return;
+            // 绘制视频帧
+            if(video.videoWidth) {
+                videoCtx.drawImage(video, 0, 0, videoCanvas.width, videoCanvas.height);
+            }
+            outputCtx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+            
+            // 如果无 landmarks 或者未检测, 显示透明占位符轮廓
+            if(!landmarks) {
+                outputCtx.globalAlpha = 0.5;
+                outputCtx.strokeStyle = "#ffe484";
+                outputCtx.lineWidth = 3;
+                outputCtx.setLineDash([8, 8]);
+                // 占位符: 显示示意区域 (身躯示意)
+                const w = videoCanvas.width;
+                const h = videoCanvas.height;
+                outputCtx.strokeRect(w*0.3, h*0.2, w*0.4, h*0.5);
+                outputCtx.beginPath();
+                outputCtx.arc(w*0.5, h*0.35, 30, 0, 2*Math.PI);
+                outputCtx.stroke();
+                outputCtx.fillStyle = "#ffffff30";
+                outputCtx.fillText("🔍 waiting for pose...", w*0.35, h*0.15);
+                outputCtx.setLineDash([]);
+                outputCtx.globalAlpha = 1;
+                return;
+            }
+            
+            // 绘制每个部分的像素纹理
+            const partIds = ["mask","body","leftArm","rightArm","leftLeg","rightLeg"];
+            for(let part of partIds) {
+                const quad = getPartQuad(landmarks, part, videoCanvas.width, videoCanvas.height);
+                if(quad && partCanvases[part]) {
+                    const srcCanvas = partCanvases[part];
+                    const size = PART_SIZES[part];
+                    drawPixelArtOnQuad(outputCtx, srcCanvas, quad, size.w, size.h);
+                }
+            }
+            
+            // 额外画一些轮廓点缀 (可选): 显示个边缘效果
+            outputCtx.globalAlpha = 0.6;
+            outputCtx.strokeStyle = "#0affb6";
+            outputCtx.lineWidth = 1.5;
+            outputCtx.setLineDash([4,6]);
+            const leftShoulder = landmarks[11]; const rightShoulder = landmarks[12];
+            if(leftShoulder && rightShoulder){
+                const x1 = leftShoulder.x * videoCanvas.width;
+                const y1 = leftShoulder.y * videoCanvas.height;
+                const x2 = rightShoulder.x * videoCanvas.width;
+                const y2 = rightShoulder.y * videoCanvas.height;
+                outputCtx.beginPath();
+                outputCtx.moveTo(x1,y1);
+                outputCtx.lineTo(x2,y2);
+                outputCtx.stroke();
+            }
+            outputCtx.setLineDash([]);
+            outputCtx.globalAlpha = 1;
+        }
+
+        // 主循环
+        let lastLandmarks = null;
+        async function renderLoop() {
+            if (!webcamRunning) {
+                requestAnimationFrame(renderLoop);
+                return;
+            }
+            if (video.readyState >= 2 && video.videoWidth > 0) {
+                if (videoCanvas.width !== video.videoWidth || videoCanvas.height !== video.videoHeight) {
+                    videoCanvas.width = video.videoWidth;
+                    videoCanvas.height = video.videoHeight;
+                    outputCanvas.width = video.videoWidth;
+                    outputCanvas.height = video.videoHeight;
+                }
+                const now = video.currentTime;
+                if (poseLandmarker && now !== lastVideoTime) {
+                    lastVideoTime = now;
+                    const results = await poseLandmarker.detectForVideo(video, now);
+                    if (results.landmarks && results.landmarks.length > 0) {
+                        lastLandmarks = results.landmarks[0];
+                    } else {
+                        lastLandmarks = null;
+                    }
+                }
+                renderFrame(lastLandmarks, videoCanvas.width, videoCanvas.height);
+            }
+            requestAnimationFrame(renderLoop);
+        }
+        
+        // 页面启动
+        function initUI() {
+            initColorPalette();
+            // 部件切换事件
+            document.querySelectorAll('.part-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    switchPart(btn.dataset.part);
+                });
+            });
+            eraserBtn.addEventListener('click', () => {
+                eraserMode = !eraserMode;
+                eraserBtn.style.background = eraserMode ? "#e67e22" : "#445";
+                eraserBtn.style.boxShadow = eraserMode ? "0 0 8px orange" : "none";
+            });
+            switchPart("mask");
+            bindDrawingEvents();
+            // 初始化透明像素画板备用
+            initMediaPipe().catch(e=> console.warn(e));
+        }
+        initUI();
+    })();
+</script>
+</body>
+</html>
