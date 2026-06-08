@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Pixel Body Painter - MediaPipe Pose + Pixel Art</title>
+    <title>Pixel Pulse - Uniform Body Scaling for Limbs</title>
     <style>
         * {
             box-sizing: border-box;
@@ -11,626 +11,778 @@
         }
 
         body {
-            font-family: 'Courier New', monospace;
-            background: #0a0f1e;
             margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%);
+            font-family: 'Courier New', 'VT323', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             padding: 20px;
-            color: #d4f1f9;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
+        .app-container {
+            max-width: 1480px;
+            width: 100%;
+            background: #1a1f2e;
+            border-radius: 28px;
+            padding: 20px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+            border: 1px solid #2e3a4e;
+        }
+
+        .dashboard {
             display: flex;
             flex-wrap: wrap;
             gap: 24px;
             justify-content: center;
         }
 
-        .screen-panel {
+        .camera-panel {
             flex: 2;
-            min-width: 500px;
-            background: #1e2a2f;
+            min-width: 320px;
+            background: #000000;
             border-radius: 24px;
-            padding: 16px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-            border: 2px solid #3e5a5f;
+            overflow: hidden;
+            box-shadow: 0 12px 28px black;
+            border: 3px solid #2c3e4e;
+            display: flex;
+            flex-direction: column;
         }
 
-        .screen-title {
-            font-size: 1.4rem;
+        .camera-header {
+            background: #0f121c;
+            padding: 10px 16px;
             font-weight: bold;
-            margin-bottom: 12px;
-            text-align: center;
+            font-size: 1.1rem;
             letter-spacing: 2px;
-            background: #00000066;
-            display: inline-block;
-            width: 100%;
+            color: #7fffd4;
+            text-shadow: 0 0 3px #0affb4;
+            border-bottom: 2px solid #2c3e4e;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .camera-header span {
+            background: #1e2a36;
+            padding: 4px 12px;
+            border-radius: 60px;
+            font-size: 0.7rem;
+            color: #bbf0e6;
         }
 
         .video-wrapper {
             position: relative;
-            background: #000;
-            border-radius: 16px;
-            overflow: hidden;
             aspect-ratio: 4 / 3;
-            width: 100%;
-            border: 3px solid #2ecc71;
-            box-shadow: 0 0 0 2px #0f2b2b;
+            background: #0b0e16;
         }
 
-        #videoCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
+        #videoCam {
             width: 100%;
             height: 100%;
-            display: block;
             object-fit: cover;
+            display: block;
+            transform: scaleX(-1);
         }
 
-        #outputCanvas {
+        #overlayCanvas {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            display: block;
             pointer-events: none;
+            transform: scaleX(-1);
+        }
+
+        .camera-footer {
+            background: #0f121c;
+            padding: 12px;
+            display: flex;
+            justify-content: center;
+            border-top: 1px solid #2c3e4e;
+        }
+
+        #snapshotBtn {
+            background: #2a6f8f;
+            border: none;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 1rem;
+            padding: 8px 24px;
+            border-radius: 60px;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 2px 8px black;
+            transition: 0.05s linear;
+            letter-spacing: 2px;
+        }
+
+        #snapshotBtn:active {
+            transform: scale(0.96);
         }
 
         .draw-panel {
-            flex: 1.2;
+            flex: 1.5;
             min-width: 380px;
-            background: #1a1f2b;
-            border-radius: 28px;
-            padding: 20px;
-            border: 1px solid #4a6272;
+            background: #11151f;
+            border-radius: 24px;
+            border: 2px solid #2e4057;
             backdrop-filter: blur(2px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .draw-header {
+            background: #0b0e18;
+            padding: 14px 20px;
+            border-bottom: 2px solid #2c3e4e;
         }
 
         .part-selector {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 24px;
-            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
         }
 
         .part-btn {
-            background: #2c3e3f;
+            background: #1e2636;
             border: none;
             font-family: monospace;
             font-weight: bold;
-            padding: 8px 12px;
+            font-size: 0.75rem;
+            padding: 6px 12px;
             border-radius: 40px;
-            color: #eef4ff;
+            color: #cbd5e6;
             cursor: pointer;
-            transition: all 0.15s;
-            font-size: 0.8rem;
-            box-shadow: 0 2px 4px black;
+            transition: 0.1s linear;
+            box-shadow: inset 0 -1px 0 #2f3b4e;
         }
 
         .part-btn.active {
-            background: #e67e22;
+            background: #4a6f8f;
             color: white;
-            box-shadow: 0 0 8px #f39c12;
-            border: 1px solid #ffd966;
-        }
-
-        .pixel-editor {
-            background: #10161e;
-            border-radius: 24px;
-            padding: 16px;
-            margin: 16px 0;
-            text-align: center;
+            box-shadow: 0 0 8px #5bc0ff;
+            border: 1px solid #a9e6ff;
         }
 
         .pixel-canvas-container {
+            background: #0a0c14;
             display: flex;
             justify-content: center;
-            margin: 12px 0;
-            background: #2a2f3a;
-            padding: 12px;
-            border-radius: 20px;
+            align-items: center;
+            padding: 24px 12px;
+            border-bottom: 2px solid #232a38;
         }
 
-        canvas.pixelGridCanvas {
+        #pixelGridCanvas {
+            background: #1e242f;
+            box-shadow: 0 0 0 3px #0f111a, 0 8px 18px black;
             image-rendering: crisp-edges;
             image-rendering: pixelated;
-            background: #2e2e2e;
-            box-shadow: 0 0 0 2px #5f7f7f;
             cursor: crosshair;
+        }
+
+        .tools-row {
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
         .color-palette {
             display: grid;
             grid-template-columns: repeat(8, 1fr);
             gap: 10px;
-            margin: 20px 0 12px;
         }
 
         .color-swatch {
             aspect-ratio: 1 / 1;
             border-radius: 12px;
             cursor: pointer;
-            border: 2px solid #3a4a50;
+            border: 2px solid #2c3a4a;
             transition: 0.05s linear;
-            box-shadow: 0 1px 3px black;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
 
-        .color-swatch.active-color {
+        .color-swatch.active-swatch {
+            transform: scale(1.08);
             border: 3px solid white;
-            transform: scale(1.02);
-            box-shadow: 0 0 8px cyan;
+            box-shadow: 0 0 0 2px #00ffff;
         }
 
-        .eraser-btn {
-            background: #445;
-            color: white;
-            border: none;
-            padding: 10px;
-            font-family: monospace;
-            font-weight: bold;
-            border-radius: 36px;
-            width: 100%;
-            font-size: 1.2rem;
-            margin: 8px 0;
-            cursor: pointer;
+        .eraser-tool {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
+            gap: 12px;
+            background: #0f1420;
+            padding: 8px 14px;
+            border-radius: 60px;
+            margin-top: 6px;
         }
 
-        .info-text {
-            font-size: 0.75rem;
+        #eraserBtn {
+            background: #2d2f3e;
+            border: none;
+            font-family: monospace;
+            font-weight: bold;
+            padding: 8px 18px;
+            border-radius: 40px;
+            color: #ffbc6e;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100px;
+        }
+
+        #eraserBtn.active-tool {
+            background: #886633;
+            color: white;
+            box-shadow: 0 0 6px #ffb347;
+        }
+
+        .clear-btn {
+            background: #3a2a2a;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 28px;
+            font-family: monospace;
+            font-weight: bold;
+            color: #ffb7b7;
+            cursor: pointer;
+        }
+
+        .status {
+            font-size: 0.7rem;
             text-align: center;
-            margin-top: 12px;
-            background: #00000077;
-            padding: 6px;
-            border-radius: 20px;
+            padding: 8px;
+            color: #6e88a0;
+            border-top: 1px solid #202634;
         }
 
         button {
-            background: #2e5f6b;
-            border: none;
-            font-family: monospace;
+            transition: all 0.07s;
         }
-
-        .footer {
-            font-size: 11px;
-            text-align: center;
-            margin-top: 20px;
+        button:active {
+            transform: scale(0.96);
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="screen-panel">
-        <div class="screen-title">⚡ PIXEL BODY TRACKING ⚡</div>
-        <div class="video-wrapper">
-            <video id="webcam" autoplay playsinline style="display:none"></video>
-            <canvas id="videoCanvas" width="640" height="480"></canvas>
-            <canvas id="outputCanvas" width="640" height="480"></canvas>
-        </div>
-        <div class="info-text">✨ MediaPipe detects: Body · Arms · Legs · Mask ✨<br>
-            🎨 Draw on pixel canvas → see live overlay!</div>
-    </div>
-
-    <div class="draw-panel">
-        <div style="font-weight: bold; font-size: 1.5rem; text-align:center;">🖌️ PIXEL STUDIO</div>
-        <div class="part-selector" id="partSelector">
-            <button data-part="mask" class="part-btn">🎭 MASK 8x8</button>
-            <button data-part="body" class="part-btn">👕 BODY 12x8</button>
-            <button data-part="leftArm" class="part-btn">💪 LEFT ARM 12x4</button>
-            <button data-part="rightArm" class="part-btn">💪 RIGHT ARM 12x4</button>
-            <button data-part="leftLeg" class="part-btn">🦵 LEFT LEG 12x4</button>
-            <button data-part="rightLeg" class="part-btn">🦵 RIGHT LEG 12x4</button>
-        </div>
-
-        <div class="pixel-editor">
-            <div style="margin-bottom: 6px;">🎨 16-bit color palette</div>
-            <div class="color-palette" id="colorPalette"></div>
-            <button id="eraserButton" class="eraser-btn">🧽 ERASER (transparent)</button>
-            <div class="pixel-canvas-container">
-                <canvas id="drawingGridCanvas" width="320" height="320" style="width: 100%; height: auto; max-width: 320px; image-rendering: pixelated;"></canvas>
+<div class="app-container">
+    <div class="dashboard">
+        <!-- LEFT: Camera with pixel art overlay + snapshot -->
+        <div class="camera-panel">
+            <div class="camera-header">
+                🧩 UNIFORM BODY SCALING
+                <span>limbs follow body pixel size</span>
             </div>
-            <div class="info-text">✏️ Click / Drag on grid to draw. Pixel perfect!</div>
+            <div class="video-wrapper">
+                <video id="videoCam" autoplay playsinline muted></video>
+                <canvas id="overlayCanvas"></canvas>
+            </div>
+            <div class="camera-footer">
+                <button id="snapshotBtn">📸 TAKE PICTURE</button>
+            </div>
+            <div class="status">
+                ✨ Arms & legs scale with body (landmarks only for rotation)
+            </div>
+        </div>
+
+        <!-- RIGHT: Pixel Editor -->
+        <div class="draw-panel">
+            <div class="draw-header">
+                <div class="part-selector" id="partSelector"></div>
+                <div style="font-size: 0.7rem; color:#8aa9c9;">✏️ click & drag — draw pixel art</div>
+            </div>
+            <div class="pixel-canvas-container">
+                <canvas id="pixelGridCanvas" width="320" height="320"></canvas>
+            </div>
+            <div class="tools-row">
+                <div class="color-palette" id="colorPalette"></div>
+                <div class="eraser-tool">
+                    <button id="eraserBtn">🧽 ERASER</button>
+                    <button id="clearPartBtn" class="clear-btn">🗑️ CLEAR PART</button>
+                </div>
+                <div class="status">
+                    🖌️ selected: <span id="selectedPartName">mask</span>  |  🎨 mode: <span id="toolMode">color</span>
+                </div>
+            </div>
         </div>
     </div>
 </div>
-<div class="footer">⚡ Pixel style: Mask=8x8, Body=12x8, Arms/Legs=12x4 | Eraser clears pixels</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js"></script>
+<!-- MediaPipe Pose -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+
 <script>
     (function(){
-        // ---------- 画板尺寸定义 ----------
-        const PART_SIZES = {
-            mask:       { w: 8, h: 8 },
-            body:       { w: 8, h: 12 },
-            leftArm:    { w: 4, h: 12 },
-            rightArm:   { w: 4, h: 12 },
-            leftLeg:    { w: 4, h: 12 },
-            rightLeg:   { w: 4, h: 12 }
+        // ------------------- PART DIMENSIONS ------------------
+        const PART_CONFIG = {
+            mask:      { name: "mask",  rows: 8, cols: 8,   label: "🎭 MASK", transform: "mask" },
+            body:      { name: "body",  rows: 12, cols: 8,  label: "👕 BODY", transform: "limb" },
+            rightArm:  { name: "rightArm", rows: 12, cols: 4, label: "💪 R ARM", transform: "limb" },
+            leftArm:   { name: "leftArm",  rows: 12, cols: 4, label: "🤚 L ARM", transform: "limb" },
+            rightFoot: { name: "rightFoot",rows: 12, cols: 4, label: "🦵 R LEG", transform: "limb" },
+            leftFoot:  { name: "leftFoot", rows: 12, cols: 4,  label: "🦵 L LEG", transform: "limb" }
         };
-
-        const partCanvases = {};
-        const partCtx = {};
-
-        for (const [partId, size] of Object.entries(PART_SIZES)) {
-            const canvas = document.createElement('canvas');
-            canvas.width = size.w;
-            canvas.height = size.h;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, size.w, size.h);
-            ctx.fillStyle = 'rgba(0,0,0,0)';
-            ctx.fillRect(0, 0, size.w, size.h);
-            partCanvases[partId] = canvas;
-            partCtx[partId] = ctx;
+        const PART_IDS = ["mask","body","rightArm","leftArm","rightFoot","leftFoot"];
+        
+        // pixel storage
+        let pixelData = {};
+        function initPixelData() {
+            for(let id of PART_IDS) {
+                let cfg = PART_CONFIG[id];
+                let rows = cfg.rows, cols = cfg.cols;
+                let grid = Array(rows).fill().map(() => Array(cols).fill(null));
+                pixelData[id] = grid;
+            }
         }
-
+        initPixelData();
+        
+        // UI State
         let currentPart = "mask";
-        let currentColor = "#FF3366";
+        let currentColor = "#FF4785";
         let eraserMode = false;
         let isDrawing = false;
-
-        const colorPalette = [
-            "#FF0044", "#FFB13B", "#FFE073", "#B0FF57", "#2BFF88", "#1AD6FF", "#3D5AFF", "#A155FF",
-            "#FF71CE", "#FFFFFF", "#A9A9A9", "#5D3A1A", "#4C9F70", "#F08080", "#9370DB", "#000000"
+        
+        const COLOR_PALETTE = [
+            "#FF004D", "#FF8C42", "#F9E75C", "#00CC66",
+            "#2A6FDB", "#9147FF", "#FF66CC", "#3BC0FC",
+            "#FFB347", "#A5F0D1", "#E56B6F", "#6A4E9B",
+            "#BC9A6C", "#6C91B2", "#E3B23C", "#FFFFFF"
         ];
-
-        const drawingGridCanvas = document.getElementById('drawingGridCanvas');
-        let gridCtx = drawingGridCanvas.getContext('2d');
+        
+        // DOM elements
+        const videoElement = document.getElementById('videoCam');
+        const overlayCanvas = document.getElementById('overlayCanvas');
+        const pixelGridCanvas = document.getElementById('pixelGridCanvas');
+        const partSelectorDiv = document.getElementById('partSelector');
         const colorPaletteDiv = document.getElementById('colorPalette');
-        const eraserBtn = document.getElementById('eraserButton');
-
-        function refreshDrawingGrid() {
-            const size = PART_SIZES[currentPart];
-            const pixelW = size.w;
-            const pixelH = size.h;
-            const cellSize = Math.min(40, Math.floor(300 / Math.max(pixelW, pixelH)));
-            const gridWidth = pixelW * cellSize;
-            const gridHeight = pixelH * cellSize;
-            drawingGridCanvas.width = gridWidth;
-            drawingGridCanvas.height = gridHeight;
-            drawingGridCanvas.style.width = `${gridWidth}px`;
-            drawingGridCanvas.style.height = `${gridHeight}px`;
-            gridCtx = drawingGridCanvas.getContext('2d');
-            gridCtx.imageSmoothingEnabled = false;
-            
-            const srcCanvas = partCanvases[currentPart];
-            const srcW = srcCanvas.width;
-            const srcH = srcCanvas.height;
-            const imgData = srcCanvas.getContext('2d').getImageData(0, 0, srcW, srcH);
-            for (let y = 0; y < srcH; y++) {
-                for (let x = 0; x < srcW; x++) {
-                    const idx = (y * srcW + x) * 4;
-                    const r = imgData.data[idx];
-                    const g = imgData.data[idx+1];
-                    const b = imgData.data[idx+2];
-                    const a = imgData.data[idx+3];
-                    let fillColor = a === 0 ? "#2a2f3a" : `rgb(${r},${g},${b})`;
-                    gridCtx.fillStyle = fillColor;
-                    gridCtx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-                    gridCtx.strokeStyle = "#4f6f7f";
-                    gridCtx.lineWidth = 0.5;
-                    gridCtx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+        const eraserBtn = document.getElementById('eraserBtn');
+        const clearPartBtn = document.getElementById('clearPartBtn');
+        const selectedPartNameSpan = document.getElementById('selectedPartName');
+        const toolModeSpan = document.getElementById('toolMode');
+        const snapshotBtn = document.getElementById('snapshotBtn');
+        
+        // ---------- EDITOR (static pixel grid) ----------
+        let currentGridRows = PART_CONFIG.mask.rows;
+        let currentGridCols = PART_CONFIG.mask.cols;
+        const CELL_SIZE = 28;
+        
+        function resizeAndDrawEditor() {
+            let cfg = PART_CONFIG[currentPart];
+            currentGridRows = cfg.rows;
+            currentGridCols = cfg.cols;
+            const width = currentGridCols * CELL_SIZE;
+            const height = currentGridRows * CELL_SIZE;
+            pixelGridCanvas.width = width;
+            pixelGridCanvas.height = height;
+            pixelGridCanvas.style.width = `${width}px`;
+            pixelGridCanvas.style.height = `${height}px`;
+            drawEditorGrid();
+        }
+        
+        function drawEditorGrid() {
+            const ctx = pixelGridCanvas.getContext('2d');
+            const grid = pixelData[currentPart];
+            if(!grid) return;
+            const rows = currentGridRows, cols = currentGridCols;
+            ctx.imageSmoothingEnabled = false;
+            for(let row = 0; row < rows; row++) {
+                for(let col = 0; col < cols; col++) {
+                    let color = grid[row][col];
+                    let x = col * CELL_SIZE, y = row * CELL_SIZE;
+                    if(color) {
+                        ctx.fillStyle = color;
+                        ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+                    } else {
+                        ctx.fillStyle = "#2a2f3c";
+                        ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+                        ctx.fillStyle = "#3a4050";
+                        ctx.fillRect(x + CELL_SIZE/2, y, CELL_SIZE/2, CELL_SIZE/2);
+                        ctx.fillRect(x, y + CELL_SIZE/2, CELL_SIZE/2, CELL_SIZE/2);
+                    }
+                    ctx.strokeStyle = "#1a1e2c";
+                    ctx.lineWidth = 0.8;
+                    ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
                 }
             }
         }
-
-        function setPixelOnPart(partId, x, y, color, erase = false) {
-            const canvas = partCanvases[partId];
-            const ctx = partCtx[partId];
-            if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) return;
-            if (erase) {
-                ctx.clearRect(x, y, 1, 1);
-            } else {
-                ctx.fillStyle = color;
-                ctx.fillRect(x, y, 1, 1);
+        
+        function setPixelOnPart(partId, col, row, newColorOrNull) {
+            if(!pixelData[partId]) return;
+            let cfg = PART_CONFIG[partId];
+            if(col >= 0 && col < cfg.cols && row >= 0 && row < cfg.rows) {
+                pixelData[partId][row][col] = newColorOrNull;
+                if(partId === currentPart) drawEditorGrid();
             }
-            if (partId === currentPart) refreshDrawingGrid();
         }
-
-        function handleDrawOnGrid(e) {
-            const rect = drawingGridCanvas.getBoundingClientRect();
-            const scaleX = drawingGridCanvas.width / rect.width;
-            const scaleY = drawingGridCanvas.height / rect.height;
-            let clientX, clientY;
-            if (e.touches) {
-                clientX = e.touches[0].clientX;
-                clientY = e.touches[0].clientY;
-                e.preventDefault();
-            } else {
-                clientX = e.clientX;
-                clientY = e.clientY;
-            }
+        
+        // drawing interaction
+        function handleDrawOnEditor(clientX, clientY) {
+            const rect = pixelGridCanvas.getBoundingClientRect();
+            const scaleX = pixelGridCanvas.width / rect.width;
+            const scaleY = pixelGridCanvas.height / rect.height;
             const canvasX = (clientX - rect.left) * scaleX;
             const canvasY = (clientY - rect.top) * scaleY;
-            if (canvasX >= 0 && canvasX < drawingGridCanvas.width && canvasY >= 0 && canvasY < drawingGridCanvas.height) {
-                const size = PART_SIZES[currentPart];
-                const cellW = drawingGridCanvas.width / size.w;
-                const cellH = drawingGridCanvas.height / size.h;
-                const pixelX = Math.floor(canvasX / cellW);
-                const pixelY = Math.floor(canvasY / cellH);
-                if (pixelX >= 0 && pixelX < size.w && pixelY >= 0 && pixelY < size.h) {
-                    if (eraserMode) setPixelOnPart(currentPart, pixelX, pixelY, null, true);
-                    else setPixelOnPart(currentPart, pixelX, pixelY, currentColor, false);
-                }
+            if(canvasX < 0 || canvasX > pixelGridCanvas.width || canvasY < 0 || canvasY > pixelGridCanvas.height) return;
+            const col = Math.floor(canvasX / CELL_SIZE);
+            const row = Math.floor(canvasY / CELL_SIZE);
+            if(col >= 0 && col < currentGridCols && row >= 0 && row < currentGridRows) {
+                let newVal = eraserMode ? null : currentColor;
+                setPixelOnPart(currentPart, col, row, newVal);
             }
         }
-
-        function initColorPalette() {
+        
+        function startDraw(e) { isDrawing = true; handleDrawOnEditor(e.clientX, e.clientY); e.preventDefault(); }
+        function drawMove(e) { if(isDrawing) handleDrawOnEditor(e.clientX, e.clientY); e.preventDefault(); }
+        function endDraw() { isDrawing = false; }
+        pixelGridCanvas.addEventListener('mousedown', startDraw);
+        window.addEventListener('mousemove', drawMove);
+        window.addEventListener('mouseup', endDraw);
+        pixelGridCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e.touches[0]); });
+        window.addEventListener('touchmove', (e) => { if(isDrawing) { e.preventDefault(); drawMove(e.touches[0]); } });
+        window.addEventListener('touchend', endDraw);
+        
+        function buildPartSelector() {
+            partSelectorDiv.innerHTML = '';
+            for(let id of PART_IDS) {
+                let btn = document.createElement('button');
+                btn.className = 'part-btn';
+                if(id === currentPart) btn.classList.add('active');
+                btn.textContent = PART_CONFIG[id].label;
+                btn.dataset.part = id;
+                btn.addEventListener('click', () => {
+                    currentPart = id;
+                    document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedPartNameSpan.innerText = PART_CONFIG[id].label;
+                    resizeAndDrawEditor();
+                });
+                partSelectorDiv.appendChild(btn);
+            }
+        }
+        
+        function buildColorPalette() {
             colorPaletteDiv.innerHTML = '';
-            colorPalette.forEach(col => {
+            COLOR_PALETTE.forEach((color) => {
                 const swatch = document.createElement('div');
                 swatch.className = 'color-swatch';
-                swatch.style.backgroundColor = col;
+                swatch.style.backgroundColor = color;
+                if(color === currentColor && !eraserMode) swatch.classList.add('active-swatch');
                 swatch.addEventListener('click', () => {
-                    currentColor = col;
                     eraserMode = false;
-                    eraserBtn.style.background = "#445";
-                    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active-color'));
-                    swatch.classList.add('active-color');
+                    currentColor = color;
+                    toolModeSpan.innerText = 'color';
+                    eraserBtn.classList.remove('active-tool');
+                    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active-swatch'));
+                    swatch.classList.add('active-swatch');
                 });
                 colorPaletteDiv.appendChild(swatch);
             });
-            document.querySelectorAll('.color-swatch')[0].classList.add('active-color');
-            currentColor = colorPalette[0];
         }
-
-        function switchPart(partId) {
-            currentPart = partId;
-            document.querySelectorAll('.part-btn').forEach(btn => {
-                if (btn.dataset.part === partId) btn.classList.add('active');
-                else btn.classList.remove('active');
-            });
-            refreshDrawingGrid();
-        }
-
-        function bindDrawingEvents() {
-            const startDraw = (e) => { isDrawing = true; handleDrawOnGrid(e); e.preventDefault(); };
-            const drawMove = (e) => { if (isDrawing) handleDrawOnGrid(e); e.preventDefault(); };
-            const endDraw = () => { isDrawing = false; };
-            drawingGridCanvas.addEventListener('mousedown', startDraw);
-            window.addEventListener('mousemove', drawMove);
-            window.addEventListener('mouseup', endDraw);
-            drawingGridCanvas.addEventListener('touchstart', startDraw);
-            window.addEventListener('touchmove', drawMove);
-            window.addEventListener('touchend', endDraw);
-        }
-
-        // ---------- MediaPipe with safe global check ----------
-        let poseLandmarker = null;
-        let webcamRunning = false;
-        const video = document.getElementById('webcam');
-        const videoCanvas = document.getElementById('videoCanvas');
-        const outputCanvas = document.getElementById('outputCanvas');
-        const videoCtx = videoCanvas.getContext('2d');
-        const outputCtx = outputCanvas.getContext('2d');
-        let lastVideoTime = -1;
-        let lastLandmarks = null;
-
-        async function waitForMediaPipeGlobals(timeout = 10000) {
-            const start = Date.now();
-            while (!window.FilesetResolver || !window.PoseLandmarker) {
-                if (Date.now() - start > timeout) {
-                    throw new Error("MediaPipe globals not loaded after timeout");
-                }
-                await new Promise(r => setTimeout(r, 100));
-            }
-        }
-
-        async function initMediaPipe() {
-            try {
-                await waitForMediaPipeGlobals();
-                const filesetResolver = await FilesetResolver.forVisionTasks(
-                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
-                );
-                poseLandmarker = await PoseLandmarker.createFromOptions(filesetResolver, {
-                    baseOptions: {
-                        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
-                        delegate: "GPU"
-                    },
-                    runningMode: "VIDEO",
-                    numPoses: 1
-                });
-                startWebcam();
-            } catch (error) {
-                console.error("MediaPipe init failed:", error);
-                const infoDiv = document.querySelector('.info-text');
-                if (infoDiv) infoDiv.innerHTML += "<br>⚠️ MediaPipe error: " + error.message;
-            }
-        }
-
-        function startWebcam() {
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(stream => {
-                    video.srcObject = stream;
-                    video.play();
-                    webcamRunning = true;
-                    requestAnimationFrame(renderLoop);
-                })
-                .catch(e => {
-                    console.error("camera error", e);
-                    document.querySelector('.info-text').innerHTML += "<br>❌ Camera access denied";
-                });
-        }
-
-        function distance(p1,p2){ return Math.hypot(p1.x-p2.x, p1.y-p2.y); }
-
-        function drawPixelArtOnQuad(ctx, srcCanvas, quadPoints, srcW, srcH) {
-            if (!quadPoints || quadPoints.length !== 4) return;
-            const [p0, p1, p2, p3] = quadPoints;
-            const w = srcW, h = srcH;
-            const x0 = p0.x, y0 = p0.y;
-            const x1 = p1.x, y1 = p1.y;
-            const x3 = p3.x, y3 = p3.y;
-            const a = (x1 - x0) / w;
-            const b = (x3 - x0) / h;
-            const c = x0;
-            const d = (y1 - y0) / w;
-            const e = (y3 - y0) / h;
-            const f = y0;
-            ctx.save();
-            ctx.setTransform(a, d, b, e, c, f);
-            ctx.drawImage(srcCanvas, 0, 0, w, h);
-            ctx.restore();
-        }
-
-        function getPartQuad(landmarks, partId, canvasW, canvasH) {
-            if (!landmarks) return null;
-            const lm = (idx) => ({ x: landmarks[idx].x * canvasW, y: landmarks[idx].y * canvasH });
-            const LEFT_SHOULDER = 11, RIGHT_SHOULDER = 12;
-            const LEFT_HIP = 23, RIGHT_HIP = 24;
-            const LEFT_ELBOW = 13, RIGHT_ELBOW = 14;
-            const LEFT_WRIST = 15, RIGHT_WRIST = 16;
-            const LEFT_KNEE = 25, RIGHT_KNEE = 26;
-            const LEFT_ANKLE = 27, RIGHT_ANKLE = 28;
-            const LEFT_EYE = 1, RIGHT_EYE = 2, NOSE = 0;
-
-            function getLimbQuad(start, end, widthScale = 0.35, refLength = null) {
-                let dirX = end.x - start.x, dirY = end.y - start.y;
-                let len = Math.hypot(dirX, dirY);
-                if(len < 0.001) return null;
-                let normX = dirX/len, normY = dirY/len;
-                let perpX = -normY, perpY = normX;
-                let width = widthScale * len;
-                if(refLength) width = Math.min(width, refLength*0.6);
-                const halfW = width/2;
-                const p1 = { x: start.x - perpX*halfW, y: start.y - perpY*halfW };
-                const p2 = { x: start.x + perpX*halfW, y: start.y + perpY*halfW };
-                const p3 = { x: end.x + perpX*halfW, y: end.y + perpY*halfW };
-                const p4 = { x: end.x - perpX*halfW, y: end.y - perpY*halfW };
-                return [p1, p2, p3, p4];
-            }
-
-            if(partId === "mask") {
-                const leftEye = lm(LEFT_EYE), rightEye = lm(RIGHT_EYE), nose = lm(NOSE);
-                const eyeCenter = { x: (leftEye.x+rightEye.x)/2, y: (leftEye.y+rightEye.y)/2 };
-                const eyeDist = distance(leftEye, rightEye);
-                const size = eyeDist * 1.6;
-                const half = size/2;
-                const center = { x: eyeCenter.x, y: (eyeCenter.y + nose.y)/2 - half*0.2 };
-                const pTL = { x: center.x - half, y: center.y - half };
-                const pTR = { x: center.x + half, y: center.y - half };
-                const pBR = { x: center.x + half, y: center.y + half };
-                const pBL = { x: center.x - half, y: center.y + half };
-                return [pTL, pTR, pBR, pBL];
-            }
-            else if(partId === "body") {
-                const ls = lm(LEFT_SHOULDER), rs = lm(RIGHT_SHOULDER);
-                const lh = lm(LEFT_HIP), rh = lm(RIGHT_HIP);
-                if(!ls || !rs || !lh || !rh) return null;
-                return [ls, rs, rh, lh];
-            }
-            else if(partId === "leftArm") {
-                const shoulder = lm(LEFT_SHOULDER), wrist = lm(LEFT_WRIST), elbow = lm(LEFT_ELBOW);
-                if(distance(shoulder, wrist) < 5) return null;
-                return getLimbQuad(shoulder, wrist, 0.32, distance(shoulder, elbow));
-            }
-            else if(partId === "rightArm") {
-                const shoulder = lm(RIGHT_SHOULDER), wrist = lm(RIGHT_WRIST), elbow = lm(RIGHT_ELBOW);
-                if(distance(shoulder, wrist) < 5) return null;
-                return getLimbQuad(shoulder, wrist, 0.32, distance(shoulder, elbow));
-            }
-            else if(partId === "leftLeg") {
-                const hip = lm(LEFT_HIP), ankle = lm(LEFT_ANKLE), knee = lm(LEFT_KNEE);
-                if(distance(hip, ankle) < 5) return null;
-                return getLimbQuad(hip, ankle, 0.3, distance(hip, knee));
-            }
-            else if(partId === "rightLeg") {
-                const hip = lm(RIGHT_HIP), ankle = lm(RIGHT_ANKLE), knee = lm(RIGHT_KNEE);
-                if(distance(hip, ankle) < 5) return null;
-                return getLimbQuad(hip, ankle, 0.3, distance(hip, knee));
-            }
-            return null;
-        }
-
-        function renderFrame(landmarks, videoWidth, videoHeight) {
-            if(video.videoWidth) videoCtx.drawImage(video, 0, 0, videoCanvas.width, videoCanvas.height);
-            outputCtx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
-            if(!landmarks) {
-                outputCtx.globalAlpha = 0.6;
-                outputCtx.strokeStyle = "#ffe484";
-                outputCtx.lineWidth = 3;
-                outputCtx.setLineDash([8,8]);
-                const w = videoCanvas.width, h = videoCanvas.height;
-                outputCtx.strokeRect(w*0.3, h*0.2, w*0.4, h*0.5);
-                outputCtx.beginPath();
-                outputCtx.arc(w*0.5, h*0.35, 30, 0, 2*Math.PI);
-                outputCtx.stroke();
-                outputCtx.fillStyle = "#ffffffaa";
-                outputCtx.font = "bold 14px monospace";
-                outputCtx.fillText("🔍 waiting for pose...", w*0.35, h*0.15);
-                outputCtx.setLineDash([]);
-                outputCtx.globalAlpha = 1;
-                return;
-            }
-            const partIds = ["mask","body","leftArm","rightArm","leftLeg","rightLeg"];
-            for(let part of partIds) {
-                const quad = getPartQuad(landmarks, part, videoCanvas.width, videoCanvas.height);
-                if(quad && partCanvases[part]) {
-                    const srcCanvas = partCanvases[part];
-                    const size = PART_SIZES[part];
-                    drawPixelArtOnQuad(outputCtx, srcCanvas, quad, size.w, size.h);
-                }
-            }
-            outputCtx.globalAlpha = 0.6;
-            outputCtx.strokeStyle = "#0affb6";
-            outputCtx.lineWidth = 1.5;
-            outputCtx.setLineDash([4,6]);
-            const leftShoulder = landmarks[11], rightShoulder = landmarks[12];
-            if(leftShoulder && rightShoulder){
-                const x1 = leftShoulder.x * videoCanvas.width, y1 = leftShoulder.y * videoCanvas.height;
-                const x2 = rightShoulder.x * videoCanvas.width, y2 = rightShoulder.y * videoCanvas.height;
-                outputCtx.beginPath();
-                outputCtx.moveTo(x1,y1);
-                outputCtx.lineTo(x2,y2);
-                outputCtx.stroke();
-            }
-            outputCtx.setLineDash([]);
-            outputCtx.globalAlpha = 1;
-        }
-
-        async function renderLoop() {
-            if (!webcamRunning) { requestAnimationFrame(renderLoop); return; }
-            if (video.readyState >= 2 && video.videoWidth > 0) {
-                if (videoCanvas.width !== video.videoWidth || videoCanvas.height !== video.videoHeight) {
-                    videoCanvas.width = video.videoWidth;
-                    videoCanvas.height = video.videoHeight;
-                    outputCanvas.width = video.videoWidth;
-                    outputCanvas.height = video.videoHeight;
-                }
-                const now = video.currentTime;
-                if (poseLandmarker && now !== lastVideoTime) {
-                    lastVideoTime = now;
-                    try {
-                        const results = await poseLandmarker.detectForVideo(video, now);
-                        lastLandmarks = results.landmarks && results.landmarks.length > 0 ? results.landmarks[0] : null;
-                    } catch(e) { console.warn(e); lastLandmarks = null; }
-                }
-                renderFrame(lastLandmarks, videoCanvas.width, videoCanvas.height);
-            }
-            requestAnimationFrame(renderLoop);
-        }
-
-        function initUI() {
-            initColorPalette();
-            document.querySelectorAll('.part-btn').forEach(btn => {
-                btn.addEventListener('click', () => switchPart(btn.dataset.part));
-            });
+        
+        function initTools() {
             eraserBtn.addEventListener('click', () => {
                 eraserMode = !eraserMode;
-                eraserBtn.style.background = eraserMode ? "#e67e22" : "#445";
-                eraserBtn.style.boxShadow = eraserMode ? "0 0 8px orange" : "none";
+                if(eraserMode) {
+                    eraserBtn.classList.add('active-tool');
+                    toolModeSpan.innerText = 'eraser';
+                    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active-swatch'));
+                } else {
+                    eraserBtn.classList.remove('active-tool');
+                    toolModeSpan.innerText = 'color';
+                    const activeSwatch = Array.from(document.querySelectorAll('.color-swatch')).find(s => s.style.backgroundColor === currentColor);
+                    if(activeSwatch) activeSwatch.classList.add('active-swatch');
+                }
             });
-            switchPart("mask");
-            bindDrawingEvents();
-            initMediaPipe().catch(e => console.warn(e));
+            clearPartBtn.addEventListener('click', () => {
+                if(confirm(`Clear ${PART_CONFIG[currentPart].label} pixel art?`)){
+                    let rows = PART_CONFIG[currentPart].rows;
+                    let cols = PART_CONFIG[currentPart].cols;
+                    for(let r=0; r<rows; r++) for(let c=0; c<cols; c++) pixelData[currentPart][r][c] = null;
+                    drawEditorGrid();
+                }
+            });
         }
-        initUI();
+        
+        // ------------------- TRANSFORMATIONS ------------------
+        // mask: double size
+        function getMaskTransform(landmarks, vw, vh) {
+            if(!landmarks) return null;
+            const leftEye = landmarks[2], rightEye = landmarks[5], nose = landmarks[0];
+            if(!leftEye || !rightEye || !nose || leftEye.visibility<0.3 || rightEye.visibility<0.3) return null;
+            let eyeCenterX = (leftEye.x + rightEye.x)/2 * vw;
+            let eyeCenterY = (leftEye.y + rightEye.y)/2 * vh;
+            let noseX = nose.x * vw, noseY = nose.y * vh;
+            let eyeDistance = Math.hypot((rightEye.x-leftEye.x)*vw, (rightEye.y-leftEye.y)*vh);
+            let widthWorld = eyeDistance * 5.6;
+            let heightWorld = eyeDistance * 6.4;
+            let angle = Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x);
+            let rows = PART_CONFIG.mask.rows, cols = PART_CONFIG.mask.cols;
+            let cellSizeW = widthWorld / cols;
+            let cellSizeH = heightWorld / rows;
+            let cellSize = (cellSizeW + cellSizeH) / 2;
+            let centerX = (eyeCenterX + noseX)/2;
+            let centerY = (eyeCenterY + noseY)/2 - cellSize * 0.5;
+            return { angleRad: angle, centerX, centerY, cellSizeWorld: cellSize, rows, cols, type: "mask" };
+        }
+        
+        // body transform: also returns cellSizeWorld for limbs to reuse
+        function getBodyTransform(landmarks, vw, vh) {
+            if(!landmarks) return null;
+            const leftShoulder = landmarks[11], rightShoulder = landmarks[12];
+            const leftHip = landmarks[23], rightHip = landmarks[24];
+            if(!leftShoulder || !rightShoulder || !leftHip || !rightHip) return null;
+            let shoulderCenter = { x: (leftShoulder.x+rightShoulder.x)/2 * vw, y: (leftShoulder.y+rightShoulder.y)/2 * vh };
+            let hipCenter = { x: (leftHip.x+rightHip.x)/2 * vw, y: (leftHip.y+rightHip.y)/2 * vh };
+            let dy = hipCenter.y - shoulderCenter.y, dx = hipCenter.x - shoulderCenter.x;
+            let torsoLength = Math.hypot(dx, dy);
+            if(torsoLength < 10) return null;
+            let angle = Math.atan2(dy, dx);
+            let rows = PART_CONFIG.body.rows, cols = PART_CONFIG.body.cols;
+            let cellSize = torsoLength / rows;
+            let centerX = (shoulderCenter.x + hipCenter.x)/2;
+            let centerY = (shoulderCenter.y + hipCenter.y)/2;
+            return { angleRad: angle, centerX, centerY, cellSizeWorld: cellSize, rows, cols, type: "body" };
+        }
+        
+        // Limb transform using body cell size for scale, landmarks only for orientation and center
+        function getLimbTransformWithBodyScale(landmarks, startIdx, endIdx, partId, vw, vh, bodyCellSize) {
+            if(!landmarks || bodyCellSize === undefined || bodyCellSize <= 0) return null;
+            let start = landmarks[startIdx], end = landmarks[endIdx];
+            if(!start || !end || start.visibility<0.3 || end.visibility<0.3) return null;
+            let sx = start.x * vw, sy = start.y * vh;
+            let ex = end.x * vw, ey = end.y * vh;
+            let dx = ex - sx, dy = ey - sy;
+            let angle = Math.atan2(dy, dx);
+            let centerX = (sx + ex)/2, centerY = (sy + ey)/2;
+            let cfg = PART_CONFIG[partId];
+            let rows = cfg.rows, cols = cfg.cols;
+            // use body cell size for uniform pixel scaling
+            let cellSizeWorld = bodyCellSize;
+            return { angleRad: angle, centerX, centerY, cellSizeWorld, rows, cols, type: "limb" };
+        }
+        
+        // ---------- OUTLINE HELPER ----------
+        function getOutlineEdges(grid, rows, cols, cellSize) {
+            let edges = [];
+            for(let r = 0; r < rows; r++) {
+                for(let c = 0; c < cols; c++) {
+                    if(grid[r][c] === null) continue;
+                    let left = (c - cols/2) * cellSize;
+                    let right = left + cellSize;
+                    let top = (r - rows/2) * cellSize;
+                    let bottom = top + cellSize;
+                    if(r === 0 || grid[r-1][c] === null) edges.push({ x1: left, y1: top, x2: right, y2: top });
+                    if(r === rows-1 || grid[r+1][c] === null) edges.push({ x1: left, y1: bottom, x2: right, y2: bottom });
+                    if(c === 0 || grid[r][c-1] === null) edges.push({ x1: left, y1: top, x2: left, y2: bottom });
+                    if(c === cols-1 || grid[r][c+1] === null) edges.push({ x1: right, y1: top, x2: right, y2: bottom });
+                }
+            }
+            return edges;
+        }
+        
+        function transformEdge(edge, transform, partType) {
+            const { angleRad, centerX, centerY, cellSizeWorld } = transform;
+            function mapPoint(lx, ly) {
+                if(partType === "mask") {
+                    let mx = lx;
+                    let my = -ly;
+                    let x1_rot = mx * Math.cos(angleRad) - my * Math.sin(angleRad);
+                    let y1_rot = mx * Math.sin(angleRad) + my * Math.cos(angleRad);
+                    return { x: centerX + x1_rot, y: centerY + y1_rot };
+                } else {
+                    // limb mapping: newX = origY, newY = origX
+                    let mx = ly;
+                    let my = lx;
+                    let x1_rot = mx * Math.cos(angleRad) - my * Math.sin(angleRad);
+                    let y1_rot = mx * Math.sin(angleRad) + my * Math.cos(angleRad);
+                    return { x: centerX + x1_rot, y: centerY + y1_rot };
+                }
+            }
+            let p1 = mapPoint(edge.x1, edge.y1);
+            let p2 = mapPoint(edge.x2, edge.y2);
+            return { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y };
+        }
+        
+        function drawRotatedPixelPartWithOutline(ctx, partId, transform, grid) {
+            if(!transform || !grid) return;
+            const { angleRad, centerX, centerY, cellSizeWorld, rows, cols, type } = transform;
+            // Draw filled pixels
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(angleRad);
+            if(type === "mask") {
+                for(let row = 0; row < rows; row++) {
+                    for(let col = 0; col < cols; col++) {
+                        const color = grid[row][col];
+                        if(color) {
+                            const mirroredRow = rows - 1 - row;
+                            const x = (col - cols/2) * cellSizeWorld;
+                            const y = (mirroredRow - rows/2) * cellSizeWorld;
+                            ctx.fillStyle = color;
+                            ctx.fillRect(x, y, cellSizeWorld, cellSizeWorld);
+                        }
+                    }
+                }
+            } else { // limb or body (both use same mapping)
+                for(let r = 0; r < rows; r++) {
+                    for(let c = 0; c < cols; c++) {
+                        const color = grid[r][c];
+                        if(color) {
+                            const origX = (c - cols/2) * cellSizeWorld;
+                            const origY = (r - rows/2) * cellSizeWorld;
+                            const newX = origY;
+                            const newY = origX;
+                            ctx.fillStyle = color;
+                            ctx.fillRect(newX, newY, cellSizeWorld, cellSizeWorld);
+                        }
+                    }
+                }
+            }
+            ctx.restore();
+            
+            // Draw outline
+            const edges = getOutlineEdges(grid, rows, cols, cellSizeWorld);
+            if(edges.length === 0) return;
+            ctx.save();
+            for(let edge of edges) {
+                let tEdge = transformEdge(edge, transform, (type === "mask") ? "mask" : "limb");
+                ctx.beginPath();
+                ctx.moveTo(tEdge.x1, tEdge.y1);
+                ctx.lineTo(tEdge.x2, tEdge.y2);
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.lineWidth = Math.max(2.5, cellSizeWorld * 0.2);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+        
+        // ---------- MEDIAPIPE OVERLAY ----------
+        let pose = null;
+        let camera = null;
+        let overlayCtx = overlayCanvas.getContext('2d');
+        
+        function drawFullOverlay(landmarks, videoWidth, videoHeight) {
+            if(!overlayCtx) return;
+            overlayCanvas.width = videoWidth;
+            overlayCanvas.height = videoHeight;
+            overlayCtx.clearRect(0, 0, videoWidth, videoHeight);
+            if(!landmarks) return;
+            
+            // First get body transform to extract cellSizeWorld for limbs
+            const bodyTransform = getBodyTransform(landmarks, videoWidth, videoHeight);
+            const bodyCellSize = bodyTransform ? bodyTransform.cellSizeWorld : null;
+            
+            const maskTransform = getMaskTransform(landmarks, videoWidth, videoHeight);
+            // Limb transforms using body scale
+            const rightArmTransform = bodyCellSize ? getLimbTransformWithBodyScale(landmarks, 12, 16, "rightArm", videoWidth, videoHeight, bodyCellSize) : null;
+            const leftArmTransform = bodyCellSize ? getLimbTransformWithBodyScale(landmarks, 11, 15, "leftArm", videoWidth, videoHeight, bodyCellSize) : null;
+            const rightFootTransform = bodyCellSize ? getLimbTransformWithBodyScale(landmarks, 24, 28, "rightFoot", videoWidth, videoHeight, bodyCellSize) : null;
+            const leftFootTransform = bodyCellSize ? getLimbTransformWithBodyScale(landmarks, 23, 27, "leftFoot", videoWidth, videoHeight, bodyCellSize) : null;
+            
+            const transforms = {
+                mask: maskTransform,
+                body: bodyTransform,
+                rightArm: rightArmTransform,
+                leftArm: leftArmTransform,
+                rightFoot: rightFootTransform,
+                leftFoot: leftFootTransform
+            };
+            
+            for(let partId of PART_IDS) {
+                const t = transforms[partId];
+                if(t && pixelData[partId]) {
+                    drawRotatedPixelPartWithOutline(overlayCtx, partId, t, pixelData[partId]);
+                }
+            }
+        }
+        
+        // SNAPSHOT: capture exactly what user sees (mirrored left-right)
+        function takeSnapshot() {
+            const video = videoElement;
+            if(video.videoWidth === 0) return;
+            const width = video.videoWidth;
+            const height = video.videoHeight;
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // Draw video (mirrored)
+            tempCtx.save();
+            tempCtx.scale(-1, 1);
+            tempCtx.drawImage(video, -width, 0, width, height);
+            tempCtx.restore();
+            
+            // Draw overlay canvas content, also mirrored to match screen
+            tempCtx.save();
+            tempCtx.scale(-1, 1);
+            tempCtx.drawImage(overlayCanvas, -width, 0, width, height);
+            tempCtx.restore();
+            
+            const link = document.createElement('a');
+            link.download = `pixel-snapshot-${Date.now()}.png`;
+            link.href = tempCanvas.toDataURL();
+            link.click();
+        }
+        
+        snapshotBtn.addEventListener('click', takeSnapshot);
+        
+        function initMediaPipe() {
+            pose = new Pose({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+            });
+            pose.setOptions({
+                modelComplexity: 1,
+                smoothLandmarks: true,
+                enableSegmentation: false,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+            pose.onResults(onPoseResults);
+            
+            camera = new Camera(videoElement, {
+                onFrame: async () => { if(pose) await pose.send({image: videoElement}); },
+                width: 640,
+                height: 480
+            });
+            camera.start().catch(e => console.warn("camera error", e));
+        }
+        
+        function onPoseResults(results) {
+            const video = videoElement;
+            if(video.videoWidth === 0) return;
+            let width = video.videoWidth;
+            let height = video.videoHeight;
+            if(results.poseLandmarks) {
+                drawFullOverlay(results.poseLandmarks, width, height);
+            } else {
+                overlayCtx.clearRect(0, 0, width, height);
+                overlayCtx.fillStyle = "#000000aa";
+                overlayCtx.fillRect(0,0,width,height);
+                overlayCtx.fillStyle = "white";
+                overlayCtx.font = "bold 18px monospace";
+                overlayCtx.fillText("🧘 waiting for pose...", width/2-120, height/2);
+            }
+        }
+        
+        function setupUiAndStart() {
+            buildPartSelector();
+            buildColorPalette();
+            initTools();
+            resizeAndDrawEditor();
+            selectedPartNameSpan.innerText = PART_CONFIG.mask.label;
+            initMediaPipe();
+            overlayCanvas.style.transform = "scaleX(-1)";
+        }
+        
+        setupUiAndStart();
     })();
 </script>
 </body>
