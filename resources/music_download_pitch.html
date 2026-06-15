@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>🎛️ MP3 Pitch Shifter · Key Changer & Downloader</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(145deg, #0b1120 0%, #111827 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 2rem 1.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .glass-card {
+      max-width: 880px;
+      width: 100%;
+      background: rgba(18, 25, 40, 0.85);
+      backdrop-filter: blur(12px);
+      border-radius: 2.5rem;
+      padding: 2rem 1.8rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      transition: all 0.2s ease;
+    }
+
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #E0E7FF, #A78BFA);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    h1 small {
+      font-size: 0.7rem;
+      background: #2d3a5e;
+      color: #b9c8ff;
+      padding: 2px 8px;
+      border-radius: 40px;
+      font-weight: normal;
+    }
+
+    .sub {
+      color: #94a3b8;
+      margin-bottom: 2rem;
+      border-left: 3px solid #7c3aed;
+      padding-left: 12px;
+      font-size: 0.9rem;
+    }
+
+    .section {
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 1.5rem;
+      padding: 1.4rem;
+      margin-bottom: 1.8rem;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .section-title {
+      font-weight: 600;
+      color: #cbd5e6;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.1rem;
+    }
+
+    .external-link-card {
+      background: #1e293b;
+      border-radius: 1.2rem;
+      padding: 0.9rem 1rem;
+      margin: 0.75rem 0 1.25rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      border: 1px solid #334155;
+    }
+
+    .external-link-card span {
+      color: #cbd5e1;
+      font-size: 0.9rem;
+    }
+
+    .y2mate-link {
+      background: #4f46e5;
+      padding: 8px 20px;
+      border-radius: 60px;
+      text-decoration: none;
+      color: white;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: 0.2s;
+      font-size: 0.85rem;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .y2mate-link:hover {
+      background: #6366f1;
+      transform: scale(0.97);
+    }
+
+    input, button {
+      border-radius: 60px;
+      border: none;
+      outline: none;
+      font-weight: 500;
+    }
+
+    button {
+      background: #4f46e5;
+      color: white;
+      padding: 12px 24px;
+      cursor: pointer;
+      transition: 0.2s;
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    button:hover {
+      background: #6366f1;
+      transform: scale(0.97);
+    }
+
+    .secondary-btn {
+      background: #2d3a5e;
+    }
+
+    .secondary-btn:hover {
+      background: #3b4a72;
+    }
+
+    .flex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .pitch-control {
+      background: #0f172ad9;
+      border-radius: 2rem;
+      padding: 0.8rem 1.2rem;
+      margin: 1rem 0;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      color: #cbd5e1;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      background: #334155;
+      height: 4px;
+      border-radius: 10px;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]:focus {
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: #c084fc;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 6px #a78bfa;
+    }
+
+    .preview-buttons {
+      display: flex;
+      gap: 12px;
+      margin: 18px 0 12px;
+    }
+
+    .status {
+      background: #00000066;
+      padding: 10px 16px;
+      border-radius: 40px;
+      font-size: 0.85rem;
+      font-family: monospace;
+      color: #9ca3af;
+      word-break: break-word;
+    }
+
+    .download-area {
+      margin-top: 24px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .btn-download {
+      background: #10b981;
+      padding: 14px 28px;
+      font-size: 1rem;
+      width: 100%;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-download:disabled {
+      background: #2c5a4a;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    audio {
+      width: 100%;
+      margin-top: 15px;
+      border-radius: 40px;
+    }
+
+    hr {
+      border-color: #2d3a5e;
+      margin: 16px 0;
+    }
+
+    .file-upload {
+      margin-top: 15px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      background: #4c1d95;
+      padding: 4px 12px;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+
+    @media (max-width: 650px) {
+      .glass-card {
+        padding: 1.5rem;
+      }
+      button {
+        padding: 10px 16px;
+      }
+      .external-link-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+  <!-- LameJS encoder for high-quality MP3 export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.0/lame.all.js"></script>
+</head>
+<body>
+<div class="glass-card">
+  <h1>🎛️ PitchShift MP3 <small>Key Changer</small></h1>
+  <div class="sub">⬆️⬇️ Upload any MP3 → Change semitones (pitch) → Download pitch-shifted MP3.<br>📌 <strong>YouTube users:</strong> get MP3 via the external tool below, then upload.</div>
+
+  <!-- Source Audio Section: replaced YouTube fetch with external link + local upload -->
+  <div class="section">
+    <div class="section-title">🎧 1. GET YOUR MP3 FILE</div>
+    
+    <!-- External link card: Y2Mate -->
+    <div class="external-link-card">
+      <span>🎬 <strong>Download YouTube video as MP3</strong> (external service)</span>
+      <a href="https://v3.y2mate.nu/" target="_blank" rel="noopener noreferrer" class="y2mate-link">
+        🔗 v3.y2mate.nu ➜
+      </a>
+    </div>
+    
+    <div style="margin: 0.5rem 0 0.2rem; color:#b9c8ff; font-size:0.85rem;">— OR upload a local MP3 file —</div>
+    
+    <div class="file-upload">
+      <label for="localMp3Upload" class="secondary-btn" style="padding: 8px 20px; background:#334155; border-radius:60px; cursor:pointer; display:inline-block;">📂 Choose MP3 file</label>
+      <input type="file" id="localMp3Upload" accept="audio/mpeg,audio/mp3" style="display:none">
+      <span id="uploadFilename" style="color:#8b9bc2; font-size:0.8rem;"></span>
+    </div>
+    <div class="status" id="sourceStatus">💡 Ready: upload an MP3 file or use Y2Mate to get YouTube MP3, then upload it here.</div>
+  </div>
+
+  <!-- Pitch Control Section (works with uploaded MP3) -->
+  <div class="section">
+    <div class="section-title">🎵 2. PITCH / KEY ADJUSTMENT</div>
+    <div class="pitch-control">
+      <div class="slider-label">
+        <span>⬇️ -12 semitones (lower)</span>
+        <span><strong id="semitoneValue">0</strong> semitones</span>
+        <span>⬆️ +12 semitones (higher)</span>
+      </div>
+      <input type="range" id="pitchSlider" min="-12" max="12" value="0" step="1">
+      <div style="font-size:0.75rem; margin-top: 8px; color:#a78bfa;">* Pitch shift changes playback speed = affects duration (tempo shifts accordingly). Works with any uploaded MP3.</div>
+    </div>
+    <div class="preview-buttons">
+      <button id="previewOriginalBtn" class="secondary-btn">▶️ Preview Original</button>
+      <button id="previewPitchedBtn" class="secondary-btn">✨ Preview Pitched</button>
+    </div>
+    <audio id="audioPreview" controls style="display: none;"></audio>
+    <div class="status" id="pitchStatus">🎼 No audio loaded. Please upload an MP3 file first.</div>
+  </div>
+
+  <!-- Download Section -->
+  <div class="download-area">
+    <button id="downloadPitchedBtn" class="btn-download" disabled>💾 Download Pitched MP3 (Key changed)</button>
+  </div>
+  <hr>
+  <div style="font-size: 0.7rem; text-align: center; color:#5f6c84;">
+    ⚡ Pitch shift & MP3 encoding inside your browser (Web Audio + LameJS). For YouTube downloads, use the external service above. No server uploads — all local.
+  </div>
+</div>
+
+<script>
+  // ---------- GLOBALS ----------
+  let originalAudioBuffer = null;       // original AudioBuffer (from uploaded MP3)
+  let originalSampleRate = 44100;
+  let originalChannels = 2;
+  let originalLength = 0;
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  // DOM elements
+  const sourceStatus = document.getElementById('sourceStatus');
+  const pitchSlider = document.getElementById('pitchSlider');
+  const semitoneSpan = document.getElementById('semitoneValue');
+  const previewOriginalBtn = document.getElementById('previewOriginalBtn');
+  const previewPitchedBtn = document.getElementById('previewPitchedBtn');
+  const audioPreviewElem = document.getElementById('audioPreview');
+  const downloadBtn = document.getElementById('downloadPitchedBtn');
+  const pitchStatusSpan = document.getElementById('pitchStatus');
+  const localUploadInput = document.getElementById('localMp3Upload');
+  const uploadFilenameSpan = document.getElementById('uploadFilename');
+
+  // Helper: enable download & update UI when audio buffer exists
+  function updateUiAfterBuffer() {
+    if (originalAudioBuffer) {
+      downloadBtn.disabled = false;
+      pitchStatusSpan.innerHTML = `✅ Audio loaded: ${originalAudioBuffer.duration.toFixed(2)} sec, ${originalAudioBuffer.numberOfChannels} channel(s). Adjust pitch & download.`;
+      sourceStatus.innerHTML = `✅ MP3 ready! Duration: ${originalAudioBuffer.duration.toFixed(2)}s. Now use pitch controls.`;
+    } else {
+      downloadBtn.disabled = true;
+      pitchStatusSpan.innerHTML = `⏳ No audio loaded. Upload an MP3 file.`;
+      sourceStatus.innerHTML = `💡 Waiting for MP3 upload. Use Y2Mate link above if you need to convert YouTube videos.`;
+    }
+  }
+
+  // Decode MP3/Audio data to AudioBuffer
+  async function decodeAudioData(arrayBuffer) {
+    return new Promise((resolve, reject) => {
+      audioCtx.decodeAudioData(arrayBuffer, resolve, reject);
+    });
+  }
+
+  // Load audio from File object (upload)
+  async function loadAudioFromFile(file) {
+    if (!file) return false;
+    sourceStatus.innerHTML = `📂 Loading "${file.name}" ... decoding MP3.`;
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const decoded = await decodeAudioData(arrayBuffer);
+      originalAudioBuffer = decoded;
+      originalSampleRate = decoded.sampleRate;
+      originalChannels = decoded.numberOfChannels;
+      originalLength = decoded.length;
+      updateUiAfterBuffer();
+      // Hide any ongoing preview element
+      audioPreviewElem.style.display = 'none';
+      audioPreviewElem.src = '';
+      sourceStatus.innerHTML = `✅ Loaded: ${file.name} (${decoded.duration.toFixed(2)}s)`;
+      return true;
+    } catch (err) {
+      console.error(err);
+      sourceStatus.innerHTML = `❌ Failed to decode MP3: ${err.message}. Try a different file.`;
+      originalAudioBuffer = null;
+      updateUiAfterBuffer();
+      return false;
+    }
+  }
+
+  // ---------- LOCAL MP3 UPLOAD HANDLER ----------
+  localUploadInput.addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    uploadFilenameSpan.innerText = file.name;
+    await loadAudioFromFile(file);
+    localUploadInput.value = ''; // allow re-upload same file if needed
+  });
+
+  // ---- PITCH SHIFT using OfflineAudioContext (playbackRate method) ----
+  // ratio = 2^(semitones/12). ratio >1 = higher pitch & shorter duration; ratio<1 = lower pitch & longer duration.
+  async function applyPitchShiftAndGetBuffer(semitones) {
+    if (!originalAudioBuffer) throw new Error("No audio loaded");
+    const ratio = Math.pow(2, semitones / 12);
+    const originalDuration = originalAudioBuffer.duration;
+    const newDuration = originalDuration / ratio;
+    if (newDuration <= 0.02) throw new Error("Resulting audio too short");
+    
+    const offlineCtx = new OfflineAudioContext(
+      originalAudioBuffer.numberOfChannels,
+      newDuration * originalAudioBuffer.sampleRate,
+      originalAudioBuffer.sampleRate
+    );
+    const source = offlineCtx.createBufferSource();
+    source.buffer = originalAudioBuffer;
+    source.playbackRate.value = ratio;
+    source.connect(offlineCtx.destination);
+    source.start();
+    const renderedBuffer = await offlineCtx.startRendering();
+    return renderedBuffer;
+  }
+
+  // Helper: convert AudioBuffer to WAV blob (fast preview, not for MP3 download)
+  function audioBufferToWavBlob(buffer) {
+    const numChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const format = 1; // PCM
+    const bitDepth = 16;
+    let samples = buffer.getChannelData(0);
+    let dataLength = samples.length * (bitDepth / 8) * numChannels;
+    const bufferBytes = new ArrayBuffer(44 + dataLength);
+    const view = new DataView(bufferBytes);
+    // RIFF chunk
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + dataLength, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, format, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numChannels * (bitDepth / 8), true);
+    view.setUint16(32, numChannels * (bitDepth / 8), true);
+    view.setUint16(34, bitDepth, true);
+    writeString(view, 36, 'data');
+    view.setUint32(40, dataLength, true);
+    let offset = 44;
+    for (let i = 0; i < samples.length; i++) {
+      for (let ch = 0; ch < numChannels; ch++) {
+        let sample = (ch === 0) ? samples[i] : buffer.getChannelData(ch)[i];
+        sample = Math.max(-1, Math.min(1, sample));
+        const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+        view.setInt16(offset, intSample, true);
+        offset += 2;
+      }
+    }
+    return new Blob([bufferBytes], { type: 'audio/wav' });
+  }
+
+  function writeString(view, offset, str) {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  }
+
+  // Preview original (play original buffer as WAV)
+  function previewOriginal() {
+    if (!originalAudioBuffer) {
+      pitchStatusSpan.innerHTML = "⚠️ No audio to preview. Upload MP3 first.";
+      return;
+    }
+    const blob = audioBufferToWavBlob(originalAudioBuffer);
+    const url = URL.createObjectURL(blob);
+    audioPreviewElem.src = url;
+    audioPreviewElem.style.display = 'block';
+    audioPreviewElem.play().catch(e => console.warn("Preview autoplay blocked", e));
+    pitchStatusSpan.innerHTML = "🔊 Playing ORIGINAL audio (no pitch shift).";
+  }
+
+  // Preview pitched version (using offline rendering, then WAV preview)
+  async function previewPitched() {
+    if (!originalAudioBuffer) {
+      pitchStatusSpan.innerHTML = "❌ No audio loaded. Upload MP3 first.";
+      return;
+    }
+    const semitones = parseInt(pitchSlider.value);
+    pitchStatusSpan.innerHTML = `🌀 Rendering pitch preview (${semitones > 0 ? '+' : ''}${semitones} semitones)... wait`;
+    try {
+      const pitchedBuffer = await applyPitchShiftAndGetBuffer(semitones);
+      const wavBlob = audioBufferToWavBlob(pitchedBuffer);
+      const previewUrl = URL.createObjectURL(wavBlob);
+      audioPreviewElem.src = previewUrl;
+      audioPreviewElem.style.display = 'block';
+      audioPreviewElem.play().catch(e=>console.log);
+      pitchStatusSpan.innerHTML = `🎧 Preview: ${semitones} semitones (pitch shifted). Duration now: ${pitchedBuffer.duration.toFixed(2)}s (original ${originalAudioBuffer.duration.toFixed(2)}s).`;
+    } catch (err) {
+      pitchStatusSpan.innerHTML = `⚠️ Pitch preview error: ${err.message}`;
+      console.error(err);
+    }
+  }
+
+  // ----- MP3 ENCODING via lamejs (from AudioBuffer) with high quality -----
+  function audioBufferToMp3Blob(audioBuffer, bitRate = 192) {
+    return new Promise((resolve, reject) => {
+      try {
+        const numChannels = audioBuffer.numberOfChannels;
+        const sampleRate = audioBuffer.sampleRate;
+        const samples = audioBuffer.getChannelData(0);
+        const lengthSamples = samples.length;
+        // Interleaved data (left + right if stereo)
+        let samplesInt = new Int16Array(lengthSamples * numChannels);
+        for (let i = 0; i < lengthSamples; i++) {
+          for (let ch = 0; ch < numChannels; ch++) {
+            let val = audioBuffer.getChannelData(ch)[i];
+            val = Math.max(-1, Math.min(1, val));
+            let intVal = val < 0 ? val * 0x8000 : val * 0x7FFF;
+            samplesInt[i * numChannels + ch] = intVal;
+          }
+        }
+        const encoder = new lamejs.Mp3Encoder(numChannels, sampleRate, bitRate);
+        const mp3Data = [];
+        const sampleBlockSize = 1152; // lamejs recommended block
+        for (let i = 0; i < samplesInt.length; i += sampleBlockSize * numChannels) {
+          const sampleChunk = samplesInt.subarray(i, i + sampleBlockSize * numChannels);
+          const mp3buf = encoder.encodeBuffer(sampleChunk);
+          if (mp3buf.length > 0) mp3Data.push(mp3buf);
+        }
+        const endBuf = encoder.flush();
+        if (endBuf.length > 0) mp3Data.push(endBuf);
+        const blob = new Blob(mp3Data, { type: 'audio/mp3' });
+        resolve(blob);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  // main download action: apply pitch shift, encode to MP3, trigger download
+  async function downloadPitchedMp3() {
+    if (!originalAudioBuffer) {
+      pitchStatusSpan.innerHTML = "⛔ No audio loaded. Upload an MP3 file first.";
+      return;
+    }
+    const semitones = parseInt(pitchSlider.value);
+    downloadBtn.disabled = true;
+    const originalText = downloadBtn.innerText;
+    downloadBtn.innerText = "⏳ Rendering & Encoding MP3...";
+    pitchStatusSpan.innerHTML = `🔧 Applying pitch shift (${semitones > 0 ? '+' : ''}${semitones} semitones) and encoding high-quality MP3...`;
+    try {
+      const pitchedBuffer = await applyPitchShiftAndGetBuffer(semitones);
+      pitchStatusSpan.innerHTML = `🎛️ Pitch shift done. Now encoding MP3 (lamejs) ...`;
+      const mp3Blob = await audioBufferToMp3Blob(pitchedBuffer, 192);
+      const url = URL.createObjectURL(mp3Blob);
+      const a = document.createElement('a');
+      const timestamp = new Date().toISOString().slice(0,19).replace(/:/g, '-');
+      let fileName = `pitch_${semitones}st_${timestamp}.mp3`;
+      // If we want a friendly name
+      if (uploadFilenameSpan.innerText) {
+        const baseName = uploadFilenameSpan.innerText.replace('.mp3','').replace(/[^a-z0-9]/gi, '_').slice(0, 30);
+        fileName = `${baseName}_${semitones}st.mp3`;
+      } else {
+        fileName = `pitchshift_${semitones}st_${timestamp}.mp3`;
+      }
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      pitchStatusSpan.innerHTML = `✅ Download ready! ${semitones} semitones applied. Original duration: ${originalAudioBuffer.duration.toFixed(2)}s → new duration: ${pitchedBuffer.duration.toFixed(2)}s.`;
+      downloadBtn.innerText = originalText;
+      downloadBtn.disabled = false;
+    } catch (err) {
+      console.error(err);
+      pitchStatusSpan.innerHTML = `❌ Pitch shift / encoding failed: ${err.message}`;
+      downloadBtn.innerText = originalText;
+      downloadBtn.disabled = false;
+    }
+  }
+
+  // Event listeners for pitch slider, preview, download
+  pitchSlider.addEventListener('input', (e) => {
+    const val = e.target.value;
+    semitoneSpan.innerText = val;
+  });
+
+  previewOriginalBtn.addEventListener('click', previewOriginal);
+  previewPitchedBtn.addEventListener('click', previewPitched);
+  downloadBtn.addEventListener('click', downloadPitchedMp3);
+
+  // Unlock AudioContext on first user gesture (required by some browsers)
+  function unlockAudioContext() {
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume().then(() => {
+        console.log("AudioContext resumed");
+      });
+    }
+  }
+  document.body.addEventListener('click', unlockAudioContext);
+  document.body.addEventListener('touchstart', unlockAudioContext);
+  
+  // initial status
+  updateUiAfterBuffer();
+</script>
+</body>
+</html>

@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>📋 今日预约列表 | 智能课室预约系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', 'Inter', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f0f4fa 0%, #e6ecf3 100%);
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        /* 主卡片 */
+        .dashboard-card {
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.05);
+            overflow: hidden;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .card-header {
+            background: #1a2c3e;
+            padding: 1.5rem 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 3px solid #f59e0b;
+        }
+
+        .title-section h1 {
+            color: white;
+            font-weight: 700;
+            font-size: 1.8rem;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .title-section h1::before {
+            content: "📅";
+            font-size: 1.8rem;
+            font-weight: normal;
+        }
+
+        .sub {
+            color: #b9d0e8;
+            margin-top: 0.3rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .refresh-btn {
+            background: #f59e0b;
+            border: none;
+            padding: 0.7rem 1.6rem;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #1e2a3a;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .refresh-btn:hover {
+            background: #ffb224;
+            transform: scale(1.02);
+            box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.98);
+        }
+
+        .content-body {
+            padding: 2rem;
+        }
+
+        /* 统计卡片区 */
+        .stats-badge {
+            background: #f8fafc;
+            border-radius: 60px;
+            padding: 0.4rem 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #1e293b;
+            border: 1px solid #cbd5e1;
+        }
+
+        .booking-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .booking-item {
+            background: white;
+            border-radius: 1.2rem;
+            padding: 1.2rem 1.4rem;
+            transition: all 0.2s;
+            border: 1px solid #e2edf7;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .booking-item:hover {
+            border-color: #f59e0b50;
+            box-shadow: 0 12px 20px -12px rgba(0,0,0,0.12);
+            transform: translateY(-1px);
+        }
+
+        .booking-icon {
+            background: #fef3c7;
+            width: 52px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 28px;
+            font-size: 1.8rem;
+        }
+
+        .booking-details {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .booking-title {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #0f172a;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+
+        .booking-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-top: 0.4rem;
+            font-size: 0.75rem;
+            color: #475569;
+        }
+
+        .badge-id {
+            background: #eef2ff;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-family: monospace;
+            font-weight: 500;
+        }
+
+        .loading-state, .error-state, .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            background: #f9fafc;
+            border-radius: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 42px;
+            height: 42px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #f59e0b;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-card {
+            background: #fff1f0;
+            border-left: 5px solid #dc2626;
+            text-align: left;
+        }
+
+        .notice {
+            background: #fffbeb;
+            border-radius: 1rem;
+            padding: 0.8rem 1.2rem;
+            margin-top: 1.8rem;
+            font-size: 0.8rem;
+            color: #92400e;
+            border: 1px solid #fed7aa;
+        }
+
+        .footer-note {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #5b6e8c;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 1rem;
+            }
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .booking-item {
+                padding: 1rem;
+            }
+            .booking-icon {
+                width: 42px;
+                height: 42px;
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="dashboard-card">
+        <div class="card-header">
+            <div class="title-section">
+                <h1>📖 课室预约清单</h1>
+                <div class="sub">实时获取今日可用预约 · 设备借用时段</div>
+            </div>
+            <button class="refresh-btn" id="refreshBtn" aria-label="重新加载预约列表">
+                🔄 刷新列表
+            </button>
+        </div>
+        <div class="content-body" id="bookingContainer">
+            <!-- 动态内容会渲染在这里 -->
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p style="margin-top: 1rem; color: #2c3e50;">正在获取预约数据，请稍候...</p>
+                <p style="font-size: 0.75rem; margin-top: 0.5rem; color:#5b6e8c;">📡 调用远端预约API (需支持CORS)</p>
+            </div>
+        </div>
+        <div class="footer-note">
+            ⚡ 数据源: 智能课室系统 | 列表展示所有可预约时段
+        </div>
+    </div>
+    <div class="notice" id="noticeArea" style="display: none;">
+        💡 提示：若因CORS或证书问题无法加载，请确保此HTML部署在同源服务器或后端已配置 Access-Control-Allow-Origin。<br>
+        🔐 如遇自签名证书错误，请在浏览器中先访问 <strong id="apiHostPlaceholder"></strong> 并接受安全风险，再刷新本页面。
+    </div>
+</div>
+
+<script>
+    // API 端点（与 Python 示例完全一致）
+    const BASE_URL = "https://student.plkcastar.edu.hk:7861/tool/gradio_api/call/get_today_booking_1";
+
+    // 辅助函数：显示加载状态
+    function showLoading() {
+        const container = document.getElementById('bookingContainer');
+        container.innerHTML = `
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p style="margin-top: 1rem; color: #2c3e50;">⏳ 正在连接预约服务器...</p>
+                <p style="font-size: 0.7rem; margin-top: 0.5rem;">🔁 步骤: 获取会话ID → 拉取预约列表</p>
+            </div>
+        `;
+    }
+
+    // 显示错误信息（友好且具体）
+    function showError(message, technicalDetail = '') {
+        const container = document.getElementById('bookingContainer');
+        container.innerHTML = `
+            <div class="error-state error-card" style="text-align: left;">
+                <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 1rem;">
+                    <span style="font-size: 2rem;">⚠️</span>
+                    <strong style="font-size: 1.2rem;">获取预约失败</strong>
+                </div>
+                <p>${escapeHtml(message)}</p>
+                ${technicalDetail ? `<details style="margin-top: 0.8rem; font-size: 0.75rem; color: #4b5563;"><summary>🔍 技术详情</summary><pre style="background:#f1f5f9; padding:0.5rem; border-radius:8px; overflow-x:auto;">${escapeHtml(technicalDetail)}</pre></details>` : ''}
+                <button id="retryBtn" style="margin-top: 1.2rem; background:#1e2a3a; border:none; color:white; padding:0.5rem 1.2rem; border-radius:40px; cursor:pointer;">🔄 重试</button>
+            </div>
+        `;
+        const retryBtn = document.getElementById('retryBtn');
+        if (retryBtn) retryBtn.addEventListener('click', () => fetchAndDisplayBookings());
+        
+        // 显示底部提示区域 (针对证书/CORS)
+        const noticeDiv = document.getElementById('noticeArea');
+        if (noticeDiv) {
+            noticeDiv.style.display = 'block';
+            const apiHostSpan = document.getElementById('apiHostPlaceholder');
+            if (apiHostSpan) apiHostSpan.innerText = BASE_URL.split('/call')[0];
+        }
+    }
+
+    // 显示空数据
+    function showEmpty() {
+        const container = document.getElementById('bookingContainer');
+        container.innerHTML = `
+            <div class="empty-state">
+                <span style="font-size: 3rem;">📭</span>
+                <h3 style="margin: 0.8rem 0 0.4rem;">暂无预约记录</h3>
+                <p style="color: #556b82;">今天没有任何预约条目，或API返回空列表</p>
+            </div>
+        `;
+    }
+
+    // 渲染预约列表 (核心展示)
+    function renderBookingList(choicesArray) {
+        if (!choicesArray || !Array.isArray(choicesArray) || choicesArray.length === 0) {
+            showEmpty();
+            return;
+        }
+
+        // choicesArray 结构示例: [["15 10:05 - 10:45 34部 E-iPad  (Kwong Wai Man) 6B ID: 8200", ...], ...]
+        // 每个元素是一个数组，取第一个非空字符串作为主要描述
+        const bookings = choicesArray.map((item, idx) => {
+            let displayText = "";
+            let secondaryText = "";
+            if (Array.isArray(item) && item.length > 0) {
+                displayText = item[0] || "";
+                secondaryText = (item[1] && item[1] !== item[0]) ? item[1] : "";
+            } else if (typeof item === 'string') {
+                displayText = item;
+            } else {
+                displayText = JSON.stringify(item);
+            }
+            return { primary: displayText, secondary: secondaryText, raw: item };
+        });
+
+        const totalCount = bookings.length;
+        // 提取ID的简单辅助: 从文本中提取 "ID:数字"
+        const extractId = (text) => {
+            const match = text.match(/ID[:\s]*(\d+)/i);
+            return match ? match[1] : null;
+        };
+
+        const html = `
+            <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; margin-bottom: 1.2rem;">
+                <div class="stats-badge">
+                    📌 共 <strong style="margin:0 4px;">${totalCount}</strong> 个可预约时段
+                </div>
+                <div class="stats-badge" style="background:#eef2ff;">
+                    🕒 数据更新于 ${new Date().toLocaleTimeString()}
+                </div>
+            </div>
+            <div class="booking-grid">
+                ${bookings.map((booking, idx) => {
+                    const primaryText = booking.primary;
+                    const bookingId = extractId(primaryText) || (idx + 1);
+                    // 美化: 尝试分割时间段和设备信息，但保持完整
+                    return `
+                        <div class="booking-item">
+                            <div class="booking-icon">🎧</div>
+                            <div class="booking-details">
+                                <div class="booking-title">${escapeHtml(primaryText)}</div>
+                                ${booking.secondary ? `<div class="booking-meta"><span>📎 备用信息: ${escapeHtml(booking.secondary)}</span></div>` : ''}
+                                <div class="booking-meta">
+                                    <span class="badge-id">🆔 预约代号 #${bookingId}</span>
+                                    <span>📆 今日有效</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+        const container = document.getElementById('bookingContainer');
+        container.innerHTML = html;
+        // 若有成功加载，确保提示区域不过度干扰，可保持隐藏或淡出
+        const noticeDiv = document.getElementById('noticeArea');
+        if (noticeDiv && !noticeDiv.innerHTML.includes("已成功加载")) {
+            // 保留但柔和显示：让用户知道网络环境，但不强制高亮
+            noticeDiv.style.opacity = "0.7";
+        }
+    }
+
+    // 辅助：转义HTML防止XSS
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+
+    // 步骤1: POST 获取 event_id
+    async function fetchEventId() {
+        const postUrl = BASE_URL;
+        const payload = { data: [] };
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超时
+
+        try {
+            const response = await fetch(postUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(payload),
+                signal: controller.signal,
+                mode: 'cors',          // 显式cors模式
+                credentials: 'omit'    // 不发送凭据
+            });
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                throw new Error(`POST请求失败 (HTTP ${response.status}): ${response.statusText}`);
+            }
+            const data = await response.json();
+            if (!data || typeof data.event_id === 'undefined') {
+                throw new Error('API返回格式异常，未包含 event_id');
+            }
+            return data.event_id;
+        } catch (err) {
+            clearTimeout(timeoutId);
+            if (err.name === 'AbortError') {
+                throw new Error('请求超时 (15秒) ，服务器响应过慢');
+            }
+            throw new Error(`获取event_id失败: ${err.message}`);
+        }
+    }
+
+    // 步骤2: 根据 event_id 获取 SSE 流文本（完整输出内容）
+    async function fetchStreamText(eventId) {
+        const streamUrl = `${BASE_URL}/${eventId}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20秒超时
+        
+        try {
+            const response = await fetch(streamUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'text/event-stream, application/json, text/plain'
+                },
+                signal: controller.signal,
+                mode: 'cors'
+            });
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                throw new Error(`拉取流数据失败 (HTTP ${response.status})`);
+            }
+            const rawText = await response.text();
+            return rawText;
+        } catch (err) {
+            clearTimeout(timeoutId);
+            if (err.name === 'AbortError') {
+                throw new Error('获取预约流数据超时');
+            }
+            throw new Error(`读取SSE流失败: ${err.message}`);
+        }
+    }
+
+    // 解析 SSE 格式文本，提取完整 data 内容并解析为 JSON，返回 choices 数组
+    function parseBookingFromSSE(sseText) {
+        // 按行解析
+        const lines = sseText.split(/\r?\n/);
+        let lastDataLine = null;
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            if (line.startsWith('data:')) {
+                // 提取 data: 之后的内容 (可能有空格)
+                let dataContent = line.substring(5).trim();
+                if (dataContent) {
+                    lastDataLine = dataContent;
+                }
+            }
+            // 兼容某些 event: complete 后跟随data，但无需额外操作
+        }
+        
+        if (!lastDataLine) {
+            throw new Error('SSE 数据中未找到任何 data 字段，可能API响应为空');
+        }
+        
+        // 尝试解析 JSON
+        let parsedJson;
+        try {
+            parsedJson = JSON.parse(lastDataLine);
+        } catch (e) {
+            throw new Error(`无法解析预约数据JSON: ${e.message}\n原始数据片段: ${lastDataLine.substring(0, 200)}`);
+        }
+        
+        // 根据Python输出结构: 返回的data是一个数组，第一个元素包含 choices 字段
+        let choicesArray = null;
+        if (Array.isArray(parsedJson) && parsedJson.length > 0 && parsedJson[0].hasOwnProperty('choices')) {
+            choicesArray = parsedJson[0].choices;
+        } else if (parsedJson && parsedJson.choices) {
+            choicesArray = parsedJson.choices;
+        } else if (parsedJson && Array.isArray(parsedJson) && parsedJson.length === 1 && Array.isArray(parsedJson[0])) {
+            // 后备情况：某些版本直接返回 [["...","..."]]
+            choicesArray = parsedJson[0];
+        } else {
+            // 最后尝试: 如果是直接返回 choices 数组的简化形式
+            if (Array.isArray(parsedJson)) {
+                choicesArray = parsedJson;
+            } else {
+                throw new Error('数据格式不符合预期：缺少 choices 字段。返回结构:' + JSON.stringify(parsedJson).substring(0, 200));
+            }
+        }
+        
+        // 确保 choicesArray 是一个数组，每个元素代表一个预约
+        if (!Array.isArray(choicesArray)) {
+            throw new Error('choices 字段不是数组');
+        }
+        
+        return choicesArray;
+    }
+
+    // 主控函数：获取预约列表并渲染
+    async function fetchAndDisplayBookings() {
+        showLoading();
+        // 可选隐藏旧提示通知暂不彻底隐藏，但防止过于醒目
+        const noticeDiv = document.getElementById('noticeArea');
+        if (noticeDiv) noticeDiv.style.display = 'none';
+        
+        try {
+            // 1. 获取 event_id
+            const eventId = await fetchEventId();
+            if (!eventId) throw new Error('未获取到有效的 event_id');
+            
+            // 2. 根据 event_id 获取 SSE 完整文本
+            const streamData = await fetchStreamText(eventId);
+            if (!streamData || streamData.trim() === '') {
+                throw new Error('返回的预约流数据为空');
+            }
+            
+            // 3. 解析出 choices 列表
+            const bookingChoices = parseBookingFromSSE(streamData);
+            
+            // 4. 渲染页面
+            if (bookingChoices && bookingChoices.length > 0) {
+                renderBookingList(bookingChoices);
+            } else {
+                showEmpty();
+            }
+            
+            // 成功加载后，显示一条简短的临时成功反馈（非阻塞）
+            const container = document.getElementById('bookingContainer');
+            if (container && !container.innerHTML.includes('暂无预约')) {
+                // 可优雅显示一个小toast效果，简单展示在标题下
+                const refreshBtn = document.getElementById('refreshBtn');
+                if (refreshBtn) {
+                    const originalText = refreshBtn.innerHTML;
+                    refreshBtn.innerHTML = '✅ 已更新';
+                    setTimeout(() => { if (refreshBtn) refreshBtn.innerHTML = originalText; }, 1500);
+                }
+            }
+        } catch (err) {
+            console.error('[BookingLoader] 错误详情:', err);
+            let userMessage = err.message;
+            // 针对常见网络/CORS问题给出更友好提示
+            if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+                userMessage = '网络请求被阻断，可能是CORS跨域限制或SSL证书问题。请确保HTML文件托管在与API同源的服务器上，或已在浏览器中信任该API站点证书。';
+            } else if (err.message.includes('HTTP 403') || err.message.includes('401')) {
+                userMessage = 'API鉴权失败，可能需要有效会话或凭证。';
+            } else if (err.message.includes('Unexpected end of JSON')) {
+                userMessage = '预约数据解析异常，API返回非标准JSON。请联系管理员。';
+            }
+            showError(userMessage, err.stack || err.message);
+        }
+    }
+
+    // 添加手动刷新和页面初始化
+    document.addEventListener('DOMContentLoaded', () => {
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                fetchAndDisplayBookings();
+            });
+        }
+        // 显示API主机，方便用户手动信任证书 (自签名时)
+        const apiHostElem = document.getElementById('apiHostPlaceholder');
+        if (apiHostElem) {
+            const host = BASE_URL.split('/tool/gradio_api')[0];
+            apiHostElem.innerText = host;
+        }
+        // 开始加载数据
+        fetchAndDisplayBookings();
+    });
+</script>
+</body>
+</html>

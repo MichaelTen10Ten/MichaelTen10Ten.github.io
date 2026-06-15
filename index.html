@@ -3,112 +3,1081 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Michael Ten | Home</title>
-    <link rel="icon" type="image/x-icon" href="resources/images/icon.ico">
-    <link rel="stylesheet" href="resources/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>MIC TERMINAL // BLACK HOLE BUBBLES + HISTORY</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at 20% 30%, #0a0f1a, #03060c);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            padding: 2rem;
+        }
+
+        /* FLEX LAYOUT: LEFT (main terminal) + RIGHT (history panel) */
+        .app-dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+            align-items: stretch;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        /* MAIN NEO CARD (left side) */
+        .neo-container {
+            flex: 3;
+            min-width: 280px;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(177, 156, 217, 0.2);
+            overflow: hidden;
+        }
+
+        /* HISTORY PANEL (right side) */
+        .history-panel {
+            flex: 1.2;
+            min-width: 240px;
+            background: rgba(5, 8, 18, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 1.8rem;
+            border: 1px solid rgba(177, 156, 217, 0.4);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        .history-header {
+            padding: 1rem 1.2rem;
+            background: #0f1222cc;
+            border-bottom: 1px solid #2a1f4a;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .history-header h3 {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #d9c8ff;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-header h3 span {
+            font-size: 1.2rem;
+        }
+
+        .clear-history-btn {
+            background: rgba(30, 20, 50, 0.8);
+            border: 1px solid #b19cd9;
+            color: #e0d6ff;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-family: monospace;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .clear-history-btn:hover {
+            background: #ea00ffaa;
+            border-color: #ffc0ff;
+            color: #010101;
+            box-shadow: 0 0 6px #b19cd9;
+        }
+
+        .history-list {
+            flex: 1;
+            padding: 0.8rem;
+            overflow-y: auto;
+            max-height: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .history-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .history-list::-webkit-scrollbar-track {
+            background: #151e2c;
+            border-radius: 8px;
+        }
+
+        .history-list::-webkit-scrollbar-thumb {
+            background: #b19cd9;
+            border-radius: 8px;
+        }
+
+        .history-item {
+            background: #0b0e1ad4;
+            border-left: 3px solid #b19cd9;
+            padding: 0.6rem 0.7rem;
+            border-radius: 1rem;
+            cursor: pointer;
+            transition: 0.1s linear;
+            backdrop-filter: blur(2px);
+            word-break: break-word;
+        }
+
+        .history-item:hover {
+            background: #1f1a3ccc;
+            transform: translateX(3px);
+            border-left-color: #ea00ff;
+        }
+
+        .history-item-label {
+            font-weight: bold;
+            color: #b9e2ff;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .history-item-label .label-name {
+            background: #1e1b3a;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            color: #d4bfff;
+        }
+
+        .history-item-path {
+            font-size: 0.7rem;
+            color: #8f8fbb;
+            margin-top: 4px;
+            font-family: monospace;
+            white-space: nowrap;
+            overflow-x: auto;
+            text-overflow: ellipsis;
+        }
+
+        .history-time {
+            font-size: 0.6rem;
+            color: #6a6e92;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        .empty-history {
+            color: #6a6e92;
+            text-align: center;
+            padding: 1.5rem;
+            font-style: italic;
+            font-size: 0.75rem;
+        }
+
+        /* Gravity zone unchanged */
+        .gravity-zone {
+            position: relative;
+            background: radial-gradient(ellipse at 50% 50%, #0b0e17, #010101);
+            margin: 1.5rem 1.5rem 0.5rem 1.5rem;
+            border-radius: 3rem;
+            height: 280px;
+            border: 1px solid #2a1f3f;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8), 0 6px 12px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        .blackhole-core {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0px;
+            height: 0px;
+            background: radial-gradient(circle, #000000, #1e0a2e);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 35px rgba(0, 0, 0, 0.9), inset 0 0 12px #b19cd9;
+            border: 1px solid rgba(177, 156, 217, 0.5);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .blackhole-core::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            opacity: 0.7;
+            color: #b19cd9;
+            text-shadow: 0 0 8px #ea00ff;
+        }
+
+        .bubble {
+            position: absolute;
+            width: 95px;
+            height: 95px;
+            background: rgba(20, 25, 45, 0.92);
+            backdrop-filter: blur(8px);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            border: 1px solid rgba(177, 156, 217, 0.8);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
+            transition: box-shadow 0.15s, background 0.2s;
+            will-change: left, top;
+            cursor: default;
+            font-family: monospace;
+        }
+
+        .bubble:hover {
+            background: rgba(177, 156, 217, 0.85);
+            border-color: #ea00ff;
+            box-shadow: 0 0 18px #b19cd9;
+        }
+
+        .bubble-emoji {
+            font-size: 2.3rem;
+            line-height: 1;
+            cursor: grab;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+            margin-bottom: 4px;
+            transition: transform 0.05s;
+        }
+
+        .bubble-emoji:active {
+            cursor: grabbing;
+            transform: scale(0.97);
+        }
+
+        .bubble-label {
+            font-size: 0.72rem;
+            font-weight: bold;
+            color: #f0eef7;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 3px 8px;
+            border-radius: 30px;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: 0.1s;
+            backdrop-filter: blur(2px);
+        }
+
+        .bubble-label:hover {
+            background: #ea00ffcc;
+            color: #010101;
+            text-shadow: 0 0 2px white;
+        }
+
+        .dragging-bubble {
+            opacity: 0.9;
+            transition: none;
+            cursor: grabbing;
+            filter: drop-shadow(0 0 12px rgba(177, 156, 217, 0.6));
+        }
+
+        /* Terminal window */
+        .terminal-window {
+            margin: 0 1.5rem 1.5rem 1.5rem;
+            background: #03060cee;
+            border-radius: 1.2rem;
+            border: 1px solid #2a2e45;
+            box-shadow: 0 8px 18px black;
+            backdrop-filter: blur(3px);
+        }
+
+        .terminal-header {
+            background: #11141f;
+            padding: 0.6rem 1rem;
+            border-top-left-radius: 1.2rem;
+            border-top-right-radius: 1.2rem;
+            display: flex;
+            gap: 0.6rem;
+            align-items: center;
+            border-bottom: 1px solid #2e2a4a;
+        }
+
+        .win-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff5f56;
+        }
+
+        .win-dot:nth-child(2) {
+            background: #ffbd2e;
+        }
+
+        .win-dot:nth-child(3) {
+            background: #27c93f;
+        }
+
+        .terminal-title {
+            color: #bfb5e6;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+            font-weight: 500;
+        }
+
+        .output-box {
+            height: 380px;
+            overflow-y: auto;
+            padding: 1rem 1.2rem;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #c0e0ff;
+            background: #010409;
+            scroll-behavior: smooth;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .output-box::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .output-box::-webkit-scrollbar-track {
+            background: #151e2c;
+        }
+
+        .output-box::-webkit-scrollbar-thumb {
+            background: #b19cd9;
+            border-radius: 8px;
+        }
+
+        .clickable-link {
+            color: #2ad4ff;
+            text-decoration: none;
+            border-bottom: 1px dashed #b19cd9;
+            transition: 0.1s;
+        }
+
+        .clickable-link:hover {
+            color: #ff90ff;
+            border-bottom-color: #ff90ff;
+        }
+
+        .boot-footer {
+            font-size: 0.7rem;
+            padding: 0.5rem 1.2rem;
+            background: #05080f;
+            border-top: 1px solid #1f1b32;
+            color: #6b6f8f;
+            text-align: right;
+            border-bottom-left-radius: 1.2rem;
+            border-bottom-right-radius: 1.2rem;
+        }
+
+        @keyframes blink {
+            0% {
+                opacity: 0.4;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .cursor-blink {
+            display: inline-block;
+            width: 8px;
+            height: 14px;
+            background: #b19cd9;
+            vertical-align: middle;
+            margin-left: 3px;
+            animation: blink 0.9s infinite;
+        }
+
+        .portal-toast {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            background: #0a0e1ae6;
+            backdrop-filter: blur(16px);
+            padding: 0.6rem 1.2rem;
+            border-radius: 2rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #d9c8ff;
+            border-left: 3px solid #b19cd9;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            pointer-events: none;
+            animation: fadeOut 2s ease forwards;
+        }
+
+        @keyframes fadeOut {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            70% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-12px);
+                visibility: hidden;
+            }
+        }
+
+        @media (max-width: 850px) {
+            body {
+                padding: 1rem;
+            }
+
+            .app-dashboard {
+                flex-direction: column;
+            }
+
+            .history-panel {
+                min-width: auto;
+            }
+
+            .history-list {
+                max-height: 220px;
+            }
+        }
+    </style>
 </head>
 
-<body class="index-page">
-    <div class="background-overlay"></div>
+<body>
 
-    <nav id="main-nav">
-        <div class="logo">
-            <a href="index.html" aria-label="Home page logo"><span class="neon-text-main">M</span>ichael <span
-                    class="neon-text-sub">T</span>en</a>
-        </div>
-        <button class="hamburger" aria-label="Toggle navigation menu">
-            <span class="bar"></span>
-            <span class="bar"></span>
-            <span class="bar"></span>
-        </button>
-        <ul class="nav-links">
+    <div class="app-dashboard">
+        <!-- MAIN LEFT SIDE: TERMINAL + BLACKHOLE BUBBLES -->
+        <div class="neo-container">
+            <div class="gravity-zone" id="gravityZone">
+                <div class="blackhole-core"></div>
+                <!-- bubbles injected by js -->
+            </div>
 
-            <li><a href="index.html" class="active">Home</a></li>
-            <li><a href="resources/experience.html" class="">Experience</a></li>
-            <li><a href="resources/education.html" class="">Education</a></li>
-            <li><a href="resources/skills.html" class="">Skills</a></li>
-            <li><a href="resources/extra.html" class="">Extra</a></li>
-            <li><a href="resources/sitemap.html" class="">Site Map</a></li>
-        </ul>
-    </nav>
-
-
-    <main id="index-content" class="fade-in">
-
-        <section class="hero content-box">
-            <div class="hero-text">
-                <h1><span class="neon-text-sub">Hello!</span> I'm Michael Ten</h1>
-                <p class="title">Technical Service Support based in Hong Kong</p>
-                <p>A passionate full-stack developer, automation expert, and technical service professional with a
-                    background in eSports and gaming content creation (Minecraft). Dedicated to clean code, efficient
-                    systems, and continuous learning.</p>
-                <div class="contact-info">
-                    <p><i class="fas fa-envelope icon"></i> <strong>Email:</strong> <a
-                            href="mailto:mic20010829@gmail.com">mic20010829@gmail.com</a></p>
-                    <p><i class="fab fa-discord icon"></i> <strong>Discord:</strong> ten_mic_10</p>
+            <div class="terminal-window">
+                <div class="terminal-header">
+                    <div class="win-dot"></div>
+                    <div class="win-dot"></div>
+                    <div class="win-dot"></div>
+                    <div class="terminal-title">MIC@TERMINAL:~/gravity-shell</div>
+                </div>
+                <div class="output-box" id="terminalOutput">
+                    <span id="dynamicArea"></span>
+                </div>
+                <div class="boot-footer">
+                    ⚡ interactive bubbles → drag by emoji | click label → launch resource + history
                 </div>
             </div>
-            <div class="hero-image">
-                <img src="resources/images/profile.png" alt="Profile image of Michael Ten" width="200" height="200">
+        </div>
+
+        <!-- RIGHT SIDE: HISTORY PANEL (LAST 10 CLICKED BUBBLES) -->
+        <div class="history-panel">
+            <div class="history-header">
+                <h3><span>📜</span> LINK HISTORY</h3>
+                <button class="clear-history-btn" id="clearHistoryBtn">🗑 CLEAR</button>
             </div>
-        </section>
-        <section class="mbti-section content-box">
-            <h2>Personality</h2>
-            <p class="mbti-badge neon-border">INTP-T - The Logician</p>
-            <p>As an INTP-T, I thrive on intellectual challenge, analysis, and problem-solving, making me highly
-                effective in technical and automation roles.</p>
-        </section>
-        <section class="social-section content-box">
-            <h2>Online Presence</h2>
-            <ul class="social-list">
-
-                <li>
-                    <i class="fab fa-modx icon"></i>
-                    <strong>Modrinth:</strong> <a href="https://modrinth.com/user/Ten_Mic_10" target="_blank"
-                        rel="noopener noreferrer">@Ten_Mic_10</a>
-                </li>
-                <li>
-                    <i class="fab fa-instagram icon"></i>
-                    <strong>Instagram:</strong> <a href="https://www.instagram.com/m_i_c_h_a_e_l_1_0/" target="_blank"
-                        rel="noopener noreferrer">@m_i_c_h_a_e_l_1_0</a>
-                </li>
-                <li>
-                    <i class="fab fa-youtube icon"></i>
-                    <strong>YouTube:</strong> <a href="https://www.youtube.com/@Michael10" target="_blank"
-                        rel="noopener noreferrer">@Michael10</a>
-                </li>
-                <li>
-                    <i class="fab fa-discord icon"></i>
-                    <strong>Discord:</strong> <a href="https://discord.com/invite/KuWNd8av4q" target="_blank"
-                        rel="noopener noreferrer">@ten_mic_10</a>
-                </li>
-            </ul>
-        </section>
-
-    </main>
-
-
-    <footer>
-        <div class="content-box">
-            <p>&copy; 2025 Michael Ten. All rights reserved.</p>
-            <div class="social-links">
-
-                <a href="https://modrinth.com/user/Ten_Mic_10" target="_blank" rel="noopener noreferrer"
-                    aria-label="Modrinth"><i class="fab fa-modx"></i></a>
-                <a href="https://www.instagram.com/m_i_c_h_a_e_l_1_0/" target="_blank" rel="noopener noreferrer"
-                    aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                <a href="https://www.youtube.com/@Michael10" target="_blank" rel="noopener noreferrer"
-                    aria-label="YouTube"><i class="fab fa-youtube"></i></a>
-                <a href="https://discord.com/invite/KuWNd8av4q" target="_blank" rel="noopener noreferrer"
-                    aria-label="Discord"><i class="fab fa-discord"></i></a>
+            <div class="history-list" id="historyList">
+                <div class="empty-history">✨ No history yet.<br>Click any bubble label → record appears here.</div>
             </div>
         </div>
-    </footer>
+    </div>
 
+    <script>
+        // ---------- HISTORY MANAGER (localStorage, max 10 entries) ----------
+        const STORAGE_KEY = "bubbleClickHistory";
 
-    <script src="resources/js/main.js"></script>
+        let historyEntries = []; // each: { label, link, timestamp, formattedTime }
+
+        function loadHistoryFromStorage() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    historyEntries = JSON.parse(stored);
+                    // ensure max 10 items (legacy safety)
+                    if (historyEntries.length > 10) historyEntries = historyEntries.slice(0, 10);
+                } catch (e) { historyEntries = []; }
+            } else {
+                historyEntries = [];
+            }
+        }
+
+        function saveHistoryToStorage() {
+            // store only last 10
+            const toStore = historyEntries.slice(0, 10);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
+        }
+
+        // helper: get relative time string (just hour:minute:second or short date)
+        function getTimeStamp() {
+            const now = new Date();
+            return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        // add new click entry
+        function addHistoryEntry(label, link) {
+            if (!label || !link) return;
+            const newEntry = {
+                label: label,
+                link: link,
+                timestamp: Date.now(),
+                formattedTime: getTimeStamp()
+            };
+            // add to front (most recent first)
+            historyEntries.unshift(newEntry);
+            // keep only last 10
+            if (historyEntries.length > 10) historyEntries.pop();
+            saveHistoryToStorage();
+            renderHistoryPanel();
+        }
+
+        function clearHistory() {
+            historyEntries = [];
+            saveHistoryToStorage();
+            renderHistoryPanel();
+            showPortalToast("🧹 History cleared.");
+        }
+
+        // render history list into DOM
+        function renderHistoryPanel() {
+            const historyContainer = document.getElementById("historyList");
+            if (!historyContainer) return;
+            if (historyEntries.length === 0) {
+                historyContainer.innerHTML = `<div class="empty-history">🌀 No links visited yet.<br>Click any bubble label → history appears here.</div>`;
+                return;
+            }
+            historyContainer.innerHTML = "";
+            historyEntries.forEach((entry, idx) => {
+                const itemDiv = document.createElement("div");
+                itemDiv.className = "history-item";
+                // format display time nicely
+                let timeString = entry.formattedTime || new Date(entry.timestamp).toLocaleTimeString();
+                itemDiv.innerHTML = `
+        <div class="history-item-label">
+          <span class="label-name">📌 ${escapeHtml(entry.label)}</span>
+        </div>
+        <div class="history-item-path">🔗 ${escapeHtml(entry.link)}</div>
+        <div class="history-time">⏱️ ${timeString}</div>
+      `;
+                // click on history item -> reopen the same link
+                itemDiv.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    if (entry.link) {
+                        window.open(entry.link, "_blank");
+                        showPortalToast(`🔁 Reopening: ${entry.label} → ${entry.link}`);
+                    } else {
+                        showPortalToast(`⚠️ Invalid link.`);
+                    }
+                });
+                historyContainer.appendChild(itemDiv);
+            });
+        }
+
+        // simple escape to avoid XSS
+        function escapeHtml(str) {
+            return str.replace(/[&<>]/g, function (m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        // ----- TERMINAL MESSAGES (FAST) -----
+        const originalMessages = [
+            { text: "\n", delay: 50 },
+            { text: "Initializing system... ", delay: 50 },
+            { text: "Loading profile data... ", delay: 50 },
+            { text: "█████ 100%", delay: 30, style: "color: #b19cd9" },
+            { text: "\n", delay: 200 },
+            { text: "> Welcome to Mic Terminal // ACCESS GRANTED", delay: 10, style: "color: #0f0; font-weight: bold" },
+            { text: "\n\n", delay: 100 },
+            { text: ">> SYSTEM USER PROFILE <<", delay: 10, style: "color: #b19cd9; text-decoration: underline" },
+            { text: "\n", delay: 100 },
+            { text: "> NAME: \t", delay: 20 },
+            { text: "Michael Ten", delay: 100, style: "color: #ea00ff; font-weight: bold" },
+            { text: "", delay: 100, style: "color: #0f0; font-weight: bold" },
+            { text: "\n", delay: 50 },
+            { text: "> TITLE: \t", delay: 20 },
+            { text: "Technical Service Support", delay: 50, style: "color: #0ff" },
+            { text: "\n", delay: 50 },
+            { text: "> LOCATION: \t", delay: 20 },
+            { text: "HONG KONG", delay: 70, style: "color: #ff5757" },
+            { text: "\n", delay: 50 },
+            { text: "> STATUS: \t", delay: 20 },
+            { text: "ACTIVE", delay: 50, style: "color: #0f0" },
+            { text: "LY POOR", delay: 10, style: "color: #4e2e52" },
+            { text: "\n", delay: 50 },
+            { text: "> MBTI: \t", delay: 20 },
+            { text: "INFP", delay: 50, style: "color: #ea00ff" },
+            { text: "\n\n", delay: 100 },
+            { text: ">> SKILL MATRIX <<", delay: 10, style: "color: #b19cd9; text-decoration: underline" },
+            { text: "\n", delay: 100 },
+            { text: "> MINECRAFT: \t", delay: 20 },
+            { text: " █████ 95%", delay: 30, style: "color: #b19cd9" },
+            { text: "\n", delay: 100 },
+            { text: "> PYTHON: \t", delay: 20 },
+            { text: " █████ 90%", delay: 30, style: "color: #b19cd9" },
+            { text: "\n", delay: 100 },
+            { text: "> PIANO: \t", delay: 20 },
+            { text: " █████ 90%", delay: 30, style: "color: #b19cd9" },
+            { text: "\n", delay: 100 },
+            { text: "> VIOLIN: \t", delay: 20 },
+            { text: " ████ 85%", delay: 30, style: "color: #b19cd9" },
+            { text: "\n", delay: 100 },
+            { text: "> TAE KWON-DO: \t", delay: 20 },
+            { text: " ████ 70%", delay: 30, style: "color: #b19cd9" },
+            { text: "\n", delay: 100 },
+            { text: "> UNITY: \t", delay: 20 },
+            { text: " ██ 50%", delay: 30, style: "color: #b19cd9" },
+            { text: "\n", delay: 100 },
+            { text: "> ROBLOX: \t", delay: 20 },
+            { text: " ██ 50%", delay: 30, style: "color: #b19cd9" },
+            { text: "\n", delay: 100 },
+            { text: "> SOCIAL: \t", delay: 20 },
+            { text: "█ -10%", delay: 30, style: "color: #b19cd9" },
+            { text: "\n\n", delay: 100 },
+            { text: ">> TITLE HISTORY <<", delay: 10, style: "color: #b19cd9; text-decoration: underline" },
+            { text: "\n", delay: 100 },
+            { text: "> [2024] TECHNICAL SERVICE SUPPORT", delay: 30 },
+            { text: "\n", delay: 100 },
+            { text: "> [2023] MINECRAFT TEACHER", delay: 30 },
+            { text: "\n", delay: 100 },
+            { text: "> [2022] ESPORT EVENT ASSISTANCE", delay: 30 },
+            { text: "\n", delay: 100 },
+            { text: "> [2020] CAJON TEACHER", delay: 30 },
+            { text: "\n", delay: 100 },
+            { text: "> [2019] TAE KWON-DO COACH", delay: 30 },
+            { text: "\n", delay: 100 },
+            { text: "> [2017] PIANO TEACHER", delay: 30 },
+            { text: "\n", delay: 100 },
+            { text: "> [2016] TAE KWON-DO ASSISTANCE", delay: 30 },
+            { text: "\n", delay: 100 },
+            { text: "> [2014] MINECRAFT CONTENT CREATOR", delay: 30 },
+            { text: "\n\n", delay: 100 },
+            { text: ">> EDUCATION HISTORY <<", delay: 10, style: "color: #b19cd9; text-decoration: underline" },
+            { text: "\n", delay: 100 },
+            { text: "> [2020-2021] University of Wollongong - Diploma in General Studies", delay: 30 },
+            { text: "\n", delay: 100 },
+            { text: "> [2021-2023] HKU SPACE Community College - Higher Diploma in eSports", delay: 30 },
+            { text: "\n", delay: 100 },
+            { text: "> [2025-Present] Saint Francis University - Bachelor of Science in Artificial Intelligence", delay: 30 },
+            { text: "\n\n", delay: 100 },
+            { text: ">> CONTACT POINTS <<", delay: 10, style: "color: #b19cd9; text-decoration: underline" },
+            { text: "\n", delay: 100 },
+            { text: "> EMAIL: \t", delay: 20 },
+            { text: "mic20010829@gmail.com", delay: 30, style: "color: #0ff" },
+            { text: "\n", delay: 50 },
+            { text: "> DISCORD: \t", delay: 20 },
+            { text: "ten_mic_10", delay: 30, style: "color: #0ff" },
+            { text: "\n\n", delay: 100 },
+            { text: ">> MEDIA <<", delay: 10, style: "color: #b19cd9; text-decoration: underline" },
+            { text: "\n", delay: 50 },
+            { text: "> MODRINTH: \t", delay: 20 },
+            { text: "@Ten_Mic_10", delay: 30, style: "color: #0ff" },
+            { text: "\n", delay: 50 },
+            { text: "> INSTAGRAM: \t", delay: 20 },
+            { text: "@m_i_c_h_a_e_l_1_0", delay: 30, style: "color: #0ff" },
+            { text: "\n", delay: 50 },
+            { text: "> YOUTUBE: \t", delay: 20 },
+            { text: "@Michael10", delay: 30, style: "color: #0ff" },
+        ];
+
+        const fastMessages = originalMessages.map(msg => ({
+            ...msg,
+            delay: Math.max(3, Math.floor((msg.delay || 20) / 6))
+        }));
+
+        const outputContainer = document.getElementById("terminalOutput");
+        const dynamicSpan = document.getElementById("dynamicArea");
+
+        function createFormattedFragment(textSegment, baseStyle = "") {
+            if (textSegment.includes("@Ten_Mic_10")) {
+                const link = document.createElement("a");
+                link.href = "https://modrinth.com/user/Ten_Mic_10";
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                link.textContent = "@Ten_Mic_10";
+                link.className = "clickable-link";
+                link.style.cssText = baseStyle;
+                const wrapper = document.createElement("span");
+                wrapper.style.cssText = baseStyle;
+                const beforeText = textSegment.replace(/@Ten_Mic_10/, "");
+                wrapper.appendChild(document.createTextNode(beforeText));
+                wrapper.appendChild(link);
+                return wrapper;
+            }
+            if (textSegment.includes("@m_i_c_h_a_e_l_1_0")) {
+                const link = document.createElement("a");
+                link.href = "https://www.instagram.com/m_i_c_h_a_e_l_1_0/";
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                link.textContent = "@m_i_c_h_a_e_l_1_0";
+                link.className = "clickable-link";
+                link.style.cssText = baseStyle;
+                const wrapper = document.createElement("span");
+                wrapper.style.cssText = baseStyle;
+                const beforeText = textSegment.replace(/@m_i_c_h_a_e_l_1_0/, "");
+                wrapper.appendChild(document.createTextNode(beforeText));
+                wrapper.appendChild(link);
+                return wrapper;
+            }
+            if (textSegment.includes("@Michael10")) {
+                const link = document.createElement("a");
+                link.href = "https://www.youtube.com/c/Michael10";
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                link.textContent = "@Michael10";
+                link.className = "clickable-link";
+                link.style.cssText = baseStyle;
+                const wrapper = document.createElement("span");
+                wrapper.style.cssText = baseStyle;
+                const beforeText = textSegment.replace(/@Michael10/, "");
+                wrapper.appendChild(document.createTextNode(beforeText));
+                wrapper.appendChild(link);
+                return wrapper;
+            }
+            const span = document.createElement("span");
+            span.style.cssText = baseStyle;
+            span.textContent = textSegment;
+            return span;
+        }
+
+        async function typeMessages() {
+            dynamicSpan.innerHTML = "";
+            for (let i = 0; i < fastMessages.length; i++) {
+                const msg = fastMessages[i];
+                await new Promise(r => setTimeout(r, msg.delay));
+                const text = msg.text;
+                const inlineStyle = msg.style || "";
+                if (text === "\n" || text === "\n\n") {
+                    const brSpan = document.createElement("span");
+                    brSpan.style.cssText = inlineStyle;
+                    brSpan.textContent = text;
+                    dynamicSpan.appendChild(brSpan);
+                } else {
+                    const fragment = createFormattedFragment(text, inlineStyle);
+                    dynamicSpan.appendChild(fragment);
+                }
+                outputContainer.scrollTop = outputContainer.scrollHeight;
+            }
+            const cursorSpan = document.createElement("span");
+            cursorSpan.className = "cursor-blink";
+            dynamicSpan.appendChild(cursorSpan);
+            outputContainer.scrollTop = outputContainer.scrollHeight;
+        }
+
+        // ---------- BUBBLE LOGIC (gravity, drag, repulsion) with HISTORY INTEGRATION ----------
+        const bubbleItems = [
+            {
+                emoji: "🟥",
+                label: "AutoTetris",
+                link: "resources/autotetris_source.html"
+            },
+            {
+                emoji: "🟧",
+                label: "AutoTetris VS",
+                link: "resources/autotetris_vs_source.html"
+            },
+            {
+                emoji: "📖",
+                label: "Bible Writing",
+                link: "resources/bible_writing.html"
+            },
+            {
+                emoji: "🕺",
+                label: "Draw Your Cloth",
+                link: "resources/bodydraw.html"
+            },
+            {
+                emoji: "📠",
+                label: "Chinese Type Train",
+                link: "resources/chinese_typeshooter_source.html"
+            },
+            {
+                emoji: "🚴",
+                label: "Ebike V2",
+                link: "resources/ebikedata_v2.html"
+            },
+            {
+                emoji: "➕",
+                label: "Math Palm",
+                link: "resources/mathpalm_source.html"
+            },
+            {
+                emoji: "➖",
+                label: "Math Slide",
+                link: "resources/mathslide_source.html"
+            },
+            {
+                emoji: "📤",
+                label: "MC Hit",
+                link: "resources/mc_hit_source.html"
+            },
+            {
+                emoji: "➕",
+                label: "Pylingo",
+                link: "resources/pylingo_source.html"
+            },
+            {
+                emoji: "🎶",
+                label: "Voxel Sheet",
+                link: "resources/voxel_sheet.html"
+            },
+            {
+                emoji: "📃",
+                label: "Get Booking",
+                link: "resources/get_booking.html"
+            },
+            {
+                emoji: "📃",
+                label: "YT mp3 Pitch",
+                link: "resources/music_download_pitch.html"
+            },
+            {
+                emoji: "🎤",
+                label: "VCR",
+                link: "resources/voice_cloning.html"
+            },
+        ];
+
+        let bubbles = [];
+        let animationFrame = null;
+        let zoneContainer = null;
+
+        function showPortalToast(message) {
+            const toast = document.createElement("div");
+            toast.className = "portal-toast";
+            toast.innerText = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+
+        function initBubbles() {
+            zoneContainer = document.getElementById("gravityZone");
+            if (!zoneContainer) return;
+            let core = zoneContainer.querySelector(".blackhole-core");
+            zoneContainer.innerHTML = '';
+            if (core) zoneContainer.appendChild(core);
+            else {
+                const newCore = document.createElement("div");
+                newCore.className = "blackhole-core";
+                zoneContainer.appendChild(newCore);
+            }
+            bubbles = [];
+            bubbleItems.forEach((item) => {
+                const bubbleDiv = document.createElement("div");
+                bubbleDiv.className = "bubble";
+                const emojiSpan = document.createElement("div");
+                emojiSpan.className = "bubble-emoji";
+                emojiSpan.textContent = item.emoji;
+                const labelSpan = document.createElement("div");
+                labelSpan.className = "bubble-label";
+                labelSpan.textContent = item.label;
+                bubbleDiv.appendChild(emojiSpan);
+                bubbleDiv.appendChild(labelSpan);
+                zoneContainer.appendChild(bubbleDiv);
+
+                const rect = bubbleDiv.getBoundingClientRect();
+                const radius = rect.width / 2;
+                const zoneRect = zoneContainer.getBoundingClientRect();
+                let randX = Math.min(Math.max(25, Math.random() * (zoneRect.width - radius * 2)), zoneRect.width - radius * 2 - 5);
+                let randY = Math.min(Math.max(25, Math.random() * (zoneRect.height - radius * 2)), zoneRect.height - radius * 2 - 5);
+                bubbleDiv.style.left = `${randX}px`;
+                bubbleDiv.style.top = `${randY}px`;
+
+                const bubbleObj = {
+                    el: bubbleDiv,
+                    x: randX,
+                    y: randY,
+                    vx: (Math.random() - 0.5) * 0.8,
+                    vy: (Math.random() - 0.5) * 0.8,
+                    radius: radius,
+                    dragActive: false,
+                    dragOffsetX: 0,
+                    dragOffsetY: 0,
+                    link: item.link,
+                    label: item.label,
+                    emojiElement: emojiSpan,
+                    labelElement: labelSpan
+                };
+
+                emojiSpan.addEventListener("mousedown", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const zoneRect = zoneContainer.getBoundingClientRect();
+                    const mouseX = e.clientX - zoneRect.left;
+                    const mouseY = e.clientY - zoneRect.top;
+                    bubbleObj.dragActive = true;
+                    bubbleObj.dragOffsetX = mouseX - bubbleObj.x;
+                    bubbleObj.dragOffsetY = mouseY - bubbleObj.y;
+                    bubbleObj.vx = 0;
+                    bubbleObj.vy = 0;
+                    bubbleDiv.classList.add("dragging-bubble");
+                });
+
+                // LABEL CLICK: open actual relative HTML + record in history
+                labelSpan.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (bubbleObj.dragActive) return;
+                    const targetPath = bubbleObj.link;
+                    if (targetPath) {
+                        window.open(targetPath, "_blank");
+                        showPortalToast(`🌀 Opening portal → ${targetPath}`);
+                        // === ADD TO HISTORY (persistent storage) ===
+                        addHistoryEntry(bubbleObj.label, targetPath);
+                    } else {
+                        showPortalToast(`⚠️ No resource linked.`);
+                    }
+                });
+
+                bubbles.push(bubbleObj);
+            });
+
+            document.addEventListener("mousemove", (e) => {
+                for (let b of bubbles) {
+                    if (b.dragActive) {
+                        e.preventDefault();
+                        const zoneRect = zoneContainer.getBoundingClientRect();
+                        let newX = e.clientX - zoneRect.left - b.dragOffsetX;
+                        let newY = e.clientY - zoneRect.top - b.dragOffsetY;
+                        newX = Math.min(Math.max(0, newX), zoneRect.width - b.radius * 2);
+                        newY = Math.min(Math.max(0, newY), zoneRect.height - b.radius * 2);
+                        b.x = newX;
+                        b.y = newY;
+                        b.el.style.left = `${b.x}px`;
+                        b.el.style.top = `${b.y}px`;
+                    }
+                }
+            });
+            document.addEventListener("mouseup", () => {
+                for (let b of bubbles) {
+                    if (b.dragActive) {
+                        b.dragActive = false;
+                        b.el.classList.remove("dragging-bubble");
+                    }
+                }
+            });
+            window.addEventListener("resize", () => enforceAllBounds());
+            startPhysicsLoop();
+        }
+
+        function enforceAllBounds() {
+            if (!zoneContainer) return;
+            const zoneRect = zoneContainer.getBoundingClientRect();
+            for (let b of bubbles) {
+                if (b.dragActive) continue;
+                let newX = Math.min(Math.max(0, b.x), zoneRect.width - b.radius * 2);
+                let newY = Math.min(Math.max(0, b.y), zoneRect.height - b.radius * 2);
+                if (newX !== b.x || newY !== b.y) {
+                    b.x = newX;
+                    b.y = newY;
+                    b.vx *= 0.5;
+                    b.vy *= 0.5;
+                    b.el.style.left = `${b.x}px`;
+                    b.el.style.top = `${b.y}px`;
+                }
+            }
+        }
+
+        function startPhysicsLoop() {
+            if (animationFrame) cancelAnimationFrame(animationFrame);
+            function updatePhysics() {
+                if (!zoneContainer) return;
+                const zoneRect = zoneContainer.getBoundingClientRect();
+                if (zoneRect.width === 0) {
+                    animationFrame = requestAnimationFrame(updatePhysics);
+                    return;
+                }
+                const centerX = zoneRect.width / 2;
+                const centerY = zoneRect.height / 2;
+                const GRAVITY_STRENGTH = 0.018;
+                const REPULSION_STRENGTH = 0.68;
+                const DAMP = 0.94;
+                const MAX_SPEED = 2.8;
+                for (let i = 0; i < bubbles.length; i++) {
+                    const b = bubbles[i];
+                    if (b.dragActive) continue;
+                    const bubbleCenterX = b.x + b.radius;
+                    const bubbleCenterY = b.y + b.radius;
+                    let dx = centerX - bubbleCenterX;
+                    let dy = centerY - bubbleCenterY;
+                    let dist = Math.hypot(dx, dy);
+                    if (dist < 0.3) dist = 0.3;
+                    let force = Math.min(0.24, GRAVITY_STRENGTH * (dist / 55));
+                    let accX = (dx / dist) * force;
+                    let accY = (dy / dist) * force;
+                    b.vx += accX;
+                    b.vy += accY;
+                    for (let j = 0; j < bubbles.length; j++) {
+                        if (i === j) continue;
+                        const other = bubbles[j];
+                        if (other.dragActive) continue;
+                        const otherCenterX = other.x + other.radius;
+                        const otherCenterY = other.y + other.radius;
+                        const deltaX = bubbleCenterX - otherCenterX;
+                        const deltaY = bubbleCenterY - otherCenterY;
+                        const distance = Math.hypot(deltaX, deltaY);
+                        const minDist = b.radius + other.radius + 10;
+                        if (distance < minDist) {
+                            const angle = Math.atan2(deltaY, deltaX);
+                            const overlap = minDist - distance;
+                            const push = REPULSION_STRENGTH * overlap * 0.12;
+                            const repX = Math.cos(angle) * push;
+                            const repY = Math.sin(angle) * push;
+                            b.vx += repX;
+                            b.vy += repY;
+                            other.vx -= repX * 0.65;
+                            other.vy -= repY * 0.65;
+                        }
+                    }
+                    b.vx = Math.min(MAX_SPEED, Math.max(-MAX_SPEED, b.vx));
+                    b.vy = Math.min(MAX_SPEED, Math.max(-MAX_SPEED, b.vy));
+                    b.vx *= DAMP;
+                    b.vy *= DAMP;
+                    b.x += b.vx;
+                    b.y += b.vy;
+                    if (b.x < 0) { b.x = 0; b.vx = -b.vx * 0.5; }
+                    if (b.y < 0) { b.y = 0; b.vy = -b.vy * 0.5; }
+                    if (b.x + b.radius * 2 > zoneRect.width) { b.x = zoneRect.width - b.radius * 2; b.vx = -b.vx * 0.5; }
+                    if (b.y + b.radius * 2 > zoneRect.height) { b.y = zoneRect.height - b.radius * 2; b.vy = -b.vy * 0.5; }
+                    b.el.style.left = `${b.x}px`;
+                    b.el.style.top = `${b.y}px`;
+                }
+                animationFrame = requestAnimationFrame(updatePhysics);
+            }
+            animationFrame = requestAnimationFrame(updatePhysics);
+        }
+
+        // ---------- BOOTSTRAP ----------
+        window.addEventListener("load", async () => {
+            loadHistoryFromStorage();
+            renderHistoryPanel();
+            initBubbles();
+            await new Promise(r => setTimeout(r, 200));
+            await typeMessages();
+            const clearBtn = document.getElementById("clearHistoryBtn");
+            if (clearBtn) clearBtn.addEventListener("click", () => clearHistory());
+        });
+    </script>
 </body>
 
 </html>

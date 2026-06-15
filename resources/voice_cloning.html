@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Voice Cloning Studio · STT + Qwen3-TTS</title>
+    <!-- Google Fonts & simple reset -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f6f9fc 0%, #eef2f5 100%);
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            padding: 2rem 1.5rem;
+            color: #1a2c3e;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #1F2A3E, #2C3E66);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+            margin-bottom: 0.3rem;
+        }
+
+        .sub {
+            color: #4a627a;
+            margin-bottom: 2rem;
+            font-weight: 400;
+            border-left: 3px solid #5e8ab2;
+            padding-left: 1rem;
+        }
+
+        .two-col {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            padding: 1.6rem 1.8rem;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.02);
+            transition: all 0.2s ease;
+            flex: 1;
+            min-width: 280px;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1f3b4c;
+        }
+
+        .card h2 i {
+            font-style: normal;
+            font-size: 1.6rem;
+        }
+
+        .audio-source-group {
+            background: #f8fafd;
+            border-radius: 1.2rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e2edf2;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.7rem;
+            margin: 0.8rem 0 0.5rem 0;
+        }
+
+        button {
+            background: #ecf3f9;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 2rem;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+            color: #1f3b4c;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+            border: 0.5px solid #cad9e6;
+        }
+
+        button.primary {
+            background: #2c5a7a;
+            color: white;
+            border: none;
+            box-shadow: 0 2px 6px rgba(44,90,122,0.2);
+        }
+        button.primary:hover { background: #1f4560; transform: translateY(-1px);}
+        button.secondary {
+            background: #e9ecef;
+            border: 1px solid #cbdde6;
+        }
+        button.secondary:hover { background: #dee5ec; }
+        button:active { transform: translateY(1px);}
+        button:disabled {
+            opacity: 0.5;
+            transform: none;
+            cursor: not-allowed;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            margin-top: 0.4rem;
+            margin-bottom: 0.8rem;
+            border-radius: 1.2rem;
+            border: 1px solid #cad9e6;
+            background: white;
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        label {
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: #2c4b66;
+            display: block;
+            margin-top: 0.4rem;
+        }
+        .lang-selector {
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+            margin: 0.5rem 0 0.8rem 0;
+        }
+        .lang-selector label {
+            margin: 0;
+        }
+        select {
+            width: auto;
+            flex: 1;
+            margin-top: 0;
+        }
+        .audio-preview {
+            background: #eef3f8;
+            border-radius: 1rem;
+            padding: 0.6rem;
+            margin: 0.5rem 0;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        audio {
+            max-width: 100%;
+            border-radius: 2rem;
+            outline: none;
+        }
+        .status {
+            font-size: 0.8rem;
+            margin-top: 0.8rem;
+            padding: 0.4rem 0;
+            color: #3e6b8c;
+        }
+        .error-text {
+            color: #c2410c;
+            background: #fff2ed;
+            padding: 0.4rem 0.8rem;
+            border-radius: 1rem;
+        }
+        hr {
+            margin: 1rem 0;
+            border: none;
+            border-top: 1px solid #cde0e8;
+        }
+        .output-area {
+            margin-top: 1.2rem;
+            background: #eef3f8;
+            border-radius: 1.5rem;
+            padding: 1rem;
+        }
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.75rem;
+            color: #6a7f96;
+        }
+        .badge {
+            background: #dfe9f0;
+            border-radius: 1rem;
+            padding: 0.2rem 0.7rem;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+        @media (max-width: 800px) {
+            body { padding: 1rem; }
+            .card { padding: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🎙️ Voice Cloning · Zero-shot TTS</h1>
+    <div class="sub">Clone any voice using 5~10 seconds reference audio · English / Chinese</div>
+
+    <div class="two-col">
+        <!-- LEFT: Reference Audio + STT -->
+        <div class="card">
+            <h2>📼 1. Reference audio + transcript</h2>
+            <div class="audio-source-group">
+                <div style="font-weight: 500; margin-bottom: 6px;">🎤 Source audio (voice to clone)</div>
+                <div class="btn-group">
+                    <button id="recordBtn" class="secondary">🎙️ Record</button>
+                    <button id="stopRecordBtn" disabled class="secondary">⏹️ Stop</button>
+                    <input type="file" id="uploadFile" accept="audio/*" style="display: none;" />
+                    <button id="uploadBtn" class="secondary">📁 Upload file</button>
+                    <button id="loadUrlBtn" class="secondary">🔗 Load from URL</button>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 5px;">
+                    <input type="text" id="audioUrlInput" placeholder="Paste direct audio URL (mp3, wav, m4a...)" style="flex:1; margin-bottom: 0;" />
+                </div>
+                <div id="refAudioPreview" class="audio-preview">
+                    <span>🎧 No reference audio loaded</span>
+                </div>
+            </div>
+
+            <label>📝 Reference text (what is spoken in the audio) — manual or auto‑transcribe</label>
+            <textarea id="refText" placeholder="After loading audio, click 'Auto transcribe' or type manually..."></textarea>
+            <div class="btn-group">
+                <button id="autoTranscribeBtn" class="primary">✨ Auto transcribe (Whisper STT)</button>
+            </div>
+            <div class="status" id="sttStatus"></div>
+        </div>
+
+        <!-- RIGHT: Target & Cloning -->
+        <div class="card">
+            <h2>🗣️ 2. Target text & voice generation</h2>
+            <label>🌐 Language of target text (must match target language)</label>
+            <div class="lang-selector">
+                <label style="display: flex; align-items:center; gap:8px;"><input type="radio" name="ttsLang" value="English" checked> 🇬🇧 English</label>
+                <label style="display: flex; align-items:center; gap:8px;"><input type="radio" name="ttsLang" value="Chinese"> 🇨🇳 Chinese</label>
+            </div>
+
+            <label>✍️ Target text (what you want the cloned voice to say)</label>
+            <textarea id="targetText" placeholder="Enter text in English or Chinese..."></textarea>
+
+            <button id="generateBtn" class="primary" style="width: 100%; padding: 0.8rem; font-size: 1rem; margin-top: 0.5rem;">🔊 Generate Cloned Voice</button>
+
+            <div class="output-area">
+                <div style="font-weight: 600; margin-bottom: 8px;">🎧 Generated audio</div>
+                <audio id="outputAudio" controls style="width: 100%;"></audio>
+                <div id="genStatus" class="status"></div>
+            </div>
+            <div class="badge" style="margin-top: 1rem; text-align: center;">⚡ Uses Qwen3-TTS + voice cloning | Whisper STT</div>
+        </div>
+    </div>
+    <footer>🎙️ Record, upload or paste audio link → Auto transcribe or manual ref text → Choose language & target text → Clone voice</footer>
+</div>
+
+<script type="importmap">
+    {
+        "imports": {
+            "@gradio/client": "https://cdn.jsdelivr.net/npm/@gradio/client@1.6.0/dist/index.min.js"
+        }
+    }
+</script>
+
+<script type="module">
+    import { Client } from "@gradio/client";
+
+    // DOM elements
+    const recordBtn = document.getElementById('recordBtn');
+    const stopRecordBtn = document.getElementById('stopRecordBtn');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadFileInput = document.getElementById('uploadFile');
+    const loadUrlBtn = document.getElementById('loadUrlBtn');
+    const audioUrlInput = document.getElementById('audioUrlInput');
+    const refAudioPreview = document.getElementById('refAudioPreview');
+    const refTextArea = document.getElementById('refText');
+    const autoTranscribeBtn = document.getElementById('autoTranscribeBtn');
+    const generateBtn = document.getElementById('generateBtn');
+    const outputAudio = document.getElementById('outputAudio');
+    const sttStatusDiv = document.getElementById('sttStatus');
+    const genStatusDiv = document.getElementById('genStatus');
+    const targetTextarea = document.getElementById('targetText');
+    
+    // language radio
+    const langRadios = document.querySelectorAll('input[name="ttsLang"]');
+    let selectedLanguage = "English";
+    langRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.checked) selectedLanguage = e.target.value;
+        });
+    });
+
+    // ---------- STATE ----------
+    let currentRefAudioFile = null;        // actual File/Blob object for reference audio
+    let currentRefAudioUrl = null;          // blob url for preview
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recordingActive = false;
+
+    // Gradio clients (lazy connect)
+    let whisperClient = null;
+    let ttsClient = null;
+
+    // helper: show preview element and update file
+    function updateRefAudioPreview(fileOrBlob, fileNameHint = "recording.webm") {
+        if (!fileOrBlob) {
+            refAudioPreview.innerHTML = `<span>🎧 No reference audio loaded</span>`;
+            if (currentRefAudioUrl) {
+                URL.revokeObjectURL(currentRefAudioUrl);
+                currentRefAudioUrl = null;
+            }
+            currentRefAudioFile = null;
+            return;
+        }
+        // revoke previous preview
+        if (currentRefAudioUrl) URL.revokeObjectURL(currentRefAudioUrl);
+        const blobUrl = URL.createObjectURL(fileOrBlob);
+        currentRefAudioUrl = blobUrl;
+        const fileSize = (fileOrBlob.size / 1024).toFixed(1);
+        const type = fileOrBlob.type || "audio";
+        refAudioPreview.innerHTML = `
+            <audio controls src="${blobUrl}" style="max-width: 180px; height: 40px;"></audio>
+            <span style="font-size:0.75rem;">📁 ${fileNameHint} (${fileSize}KB)</span>
+            <button id="clearRefAudioBtn" class="badge" style="background:#cbdde6;">✖️ clear</button>
+        `;
+        const clearBtn = document.getElementById('clearRefAudioBtn');
+        if (clearBtn) {
+            clearBtn.onclick = () => {
+                if (currentRefAudioUrl) URL.revokeObjectURL(currentRefAudioUrl);
+                currentRefAudioFile = null;
+                currentRefAudioUrl = null;
+                updateRefAudioPreview(null);
+                sttStatusDiv.innerHTML = "";
+                refTextArea.value = "";
+            };
+        }
+        currentRefAudioFile = fileOrBlob;
+    }
+
+    // set file from Blob/File
+    function setRefAudioFromBlob(blob, filename) {
+        const fileObj = new File([blob], filename, { type: blob.type || "audio/webm" });
+        updateRefAudioPreview(fileObj, filename);
+    }
+
+    // fetch from URL -> set as reference audio
+    async function loadAudioFromUrl(url) {
+        if (!url) throw new Error("URL is empty");
+        sttStatusDiv.innerHTML = "⏳ Downloading audio from URL...";
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const contentType = response.headers.get("content-type") || "audio/mpeg";
+        const blob = await response.blob();
+        if (blob.size === 0) throw new Error("Empty audio file");
+        let ext = "audio";
+        if (contentType.includes("wav")) ext = "recording.wav";
+        else if (contentType.includes("mp3")) ext = "audio.mp3";
+        else if (contentType.includes("webm")) ext = "audio.webm";
+        else if (contentType.includes("m4a")) ext = "audio.m4a";
+        else ext = "reference_audio." + (contentType.split('/')[1] || "bin");
+        setRefAudioFromBlob(blob, ext);
+        sttStatusDiv.innerHTML = "✅ Audio loaded from URL. Ready for STT or cloning.";
+        return true;
+    }
+
+    // recording logic
+    async function startRecording() {
+        if (recordingActive) return;
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        mediaRecorder.ondataavailable = (event) => { audioChunks.push(event.data); };
+        mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            setRefAudioFromBlob(audioBlob, "recorded_voice.webm");
+            sttStatusDiv.innerHTML = "🎤 Recording saved as reference audio.";
+            recordingActive = false;
+            stopRecordBtn.disabled = true;
+            recordBtn.disabled = false;
+            stream.getTracks().forEach(track => track.stop());
+        };
+        mediaRecorder.start();
+        recordingActive = true;
+        recordBtn.disabled = true;
+        stopRecordBtn.disabled = false;
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && recordingActive) {
+            mediaRecorder.stop();
+        }
+    }
+
+    // Connect to gradio spaces (one time)
+    async function getWhisperClient() {
+        if (whisperClient) return whisperClient;
+        whisperClient = await Client.connect("nckandrw/whisper-app");
+        return whisperClient;
+    }
+
+    async function getTTSClient() {
+        if (ttsClient) return ttsClient;
+        ttsClient = await Client.connect("Wordercom/Qwen3-TTS");
+        return ttsClient;
+    }
+
+    // STT: auto transcribe
+    async function autoTranscribeReference() {
+        if (!currentRefAudioFile) {
+            sttStatusDiv.innerHTML = "❌ No reference audio loaded. Please record/upload first.";
+            return;
+        }
+        sttStatusDiv.innerHTML = "🎙️ Transcribing with Whisper... (may take a few seconds)";
+        try {
+            const client = await getWhisperClient();
+            // Predict: /process_audio accepts [audio_filepath, task]
+            const task = "Transcribe (Keep Language)";
+            const result = await client.predict("/process_audio", [
+                currentRefAudioFile,
+                task
+            ]);
+            // result.data is array, first element transcript
+            let transcript = "";
+            if (result && result.data && result.data.length > 0) {
+                transcript = result.data[0];
+            } else if (typeof result === "string") {
+                transcript = result;
+            } else {
+                transcript = "Transcription failed.";
+            }
+            refTextArea.value = transcript;
+            sttStatusDiv.innerHTML = "✅ Transcription complete! Review/edit reference text if needed.";
+        } catch (err) {
+            console.error(err);
+            sttStatusDiv.innerHTML = `⚠️ STT error: ${err.message || "Check network or space availability"}`;
+        }
+    }
+
+    // Voice cloning call
+    async function generateClonedVoice() {
+        if (!currentRefAudioFile) {
+            genStatusDiv.innerHTML = "❌ Please load reference audio first (record/upload/link).";
+            return;
+        }
+        const refText = refTextArea.value.trim();
+        if (!refText) {
+            genStatusDiv.innerHTML = "❌ Reference text is required. Either type or click 'Auto transcribe'.";
+            return;
+        }
+        const targetText = targetTextarea.value.trim();
+        if (!targetText) {
+            genStatusDiv.innerHTML = "❌ Target text cannot be empty.";
+            return;
+        }
+
+        // quick heuristic: if language is Chinese, target should contain Chinese characters; but we just pass.
+        genStatusDiv.innerHTML = "⏳ Cloning voice via Qwen3-TTS ... (approx 10-30 sec)";
+        outputAudio.src = "";
+        try {
+            const tts = await getTTSClient();
+            // order: ref_audio, ref_text, target_text, language, use_xvector_only, model_size
+            const result = await tts.predict("/generate_voice_clone", [
+                currentRefAudioFile,
+                refText,
+                targetText,
+                selectedLanguage,
+                false,         // use_xvector_only = False (better clone)
+                "1.7B"         // model_size
+            ]);
+            // result.data[0] is generated audio file (object with url or path)
+            let audioOutput = null;
+            if (result && result.data && result.data.length > 0) {
+                audioOutput = result.data[0];
+            } else if (result && result.url) {
+                audioOutput = result;
+            } else {
+                throw new Error("No audio returned from TTS");
+            }
+            // audioOutput can be a blob, object with url, or direct url.
+            let audioUrl = null;
+            if (audioOutput && typeof audioOutput === 'object') {
+                if (audioOutput.url) audioUrl = audioOutput.url;
+                else if (audioOutput.blob) audioUrl = URL.createObjectURL(audioOutput.blob);
+                else if (audioOutput instanceof Blob) audioUrl = URL.createObjectURL(audioOutput);
+                else audioUrl = audioOutput;
+            } else if (typeof audioOutput === 'string') {
+                audioUrl = audioOutput;
+            }
+            if (!audioUrl) throw new Error("Could not extract audio URL from TTS result");
+            outputAudio.src = audioUrl;
+            outputAudio.play().catch(e=>console.warn("autoplay blocked", e));
+            genStatusDiv.innerHTML = "✅ Voice clone generated! Listen above. 🔥";
+        } catch (err) {
+            console.error(err);
+            genStatusDiv.innerHTML = `💥 Cloning error: ${err.message || "Check if audio/text valid & spaces online."}`;
+        }
+    }
+
+    // ---------- EVENT LISTENERS ----------
+    recordBtn.onclick = startRecording;
+    stopRecordBtn.onclick = stopRecording;
+    uploadBtn.onclick = () => { uploadFileInput.click(); };
+    uploadFileInput.onchange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            updateRefAudioPreview(file, file.name);
+            sttStatusDiv.innerHTML = "Audio file loaded.";
+        }
+        uploadFileInput.value = null;
+    };
+    loadUrlBtn.onclick = async () => {
+        let url = audioUrlInput.value.trim();
+        if (!url) {
+            sttStatusDiv.innerHTML = "⚠️ Please paste a valid audio URL.";
+            return;
+        }
+        try {
+            await loadAudioFromUrl(url);
+            audioUrlInput.value = "";
+        } catch (err) {
+            sttStatusDiv.innerHTML = `❌ Failed to load URL: ${err.message}`;
+        }
+    };
+    autoTranscribeBtn.onclick = autoTranscribeReference;
+    generateBtn.onclick = generateClonedVoice;
+
+    // optional: initial text example (helpful)
+    targetTextarea.placeholder = "E.g., Hello, this is my cloned voice speaking naturally!";
+    refTextArea.placeholder = "Reference transcript will appear here after auto-transcribe or manual entry.";
+
+    // friendly preload: init client connections on hover or idle but doesn't block UI
+    setTimeout(() => {
+        getWhisperClient().catch(e => console.warn("Whisper client pre-connect warning:", e));
+        getTTSClient().catch(e => console.warn("TTS client pre-connect warning:", e));
+    }, 1000);
+
+    // ----- Clear any dangling URL on page unload
+    window.addEventListener('beforeunload', () => {
+        if (currentRefAudioUrl) URL.revokeObjectURL(currentRefAudioUrl);
+    });
+
+    // small demo / instructions
+    console.log("Ready: record/upload/link audio -> STT -> set ref text -> choose language -> target text -> generate");
+</script>
+</body>
+</html>
