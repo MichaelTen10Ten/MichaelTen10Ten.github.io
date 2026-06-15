@@ -878,10 +878,10 @@ If user says 'My name is Alex', learned_fact: {'user_name': 'Alex'}.`
         thinkingMsg.style.display = 'inline';
 
         try {
-          const res = await fetch('https://api.poe.com/v1/chat/completions', {
+          const res = await fetch('https://integrate.api.nvidia.com/v1', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-            body: JSON.stringify({ model: 'gpt-5-mini', messages, stream: false })
+            body: JSON.stringify({ model: 'mistralai/mistral-medium-3.5-128b', messages, stream: false ,reasoning_effort:"none"})
           });
 
           const data = await res.json();
