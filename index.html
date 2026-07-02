@@ -461,26 +461,74 @@
             }
         }
 
-        /* Container to fix the Live2D canvas to the bottom right corner */
+
         #live2d-container {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            width: 150px;
-            /* Adjust width as needed */
-            height: 200px;
-            /* Adjust height as needed */
+            width: 180px;
+            height: 240px;
             z-index: 9999;
-            /* Ensures it stays on top of other content */
             pointer-events: none;
-            /* Allows clicking through transparent areas */
         }
 
         #live2d-canvas {
             width: 100%;
             height: 100%;
             pointer-events: auto;
-            /* Re-enables interaction like dragging/clicking the model */
+        }
+
+        /* Chat bubble – positioned above the container */
+        #chat-bubble {
+            position: fixed;
+            bottom: 230px;
+            /* above the container */
+            right: 20px;
+            max-width: 220px;
+            background: #ffffff;
+            color: #222;
+            padding: 12px 16px;
+            border-radius: 18px 18px 18px 18px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            z-index: 10000;
+            pointer-events: none;
+            /* allows clicking through to the model */
+            transition: opacity 0.3s ease;
+            opacity: 0;
+            /* hidden by default */
+            transform-origin: bottom right;
+        }
+
+        /* Small triangle pointing down */
+        #chat-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            right: 24px;
+            border-width: 12px 12px 0 12px;
+            border-style: solid;
+            border-color: #ffffff transparent transparent transparent;
+        }
+
+        /* Initial visible state with a welcome message */
+        #chat-bubble.show {
+            opacity: 1;
+        }
+
+        /* Optional: styling for the text */
+        #chat-bubble .quote {
+            margin: 0;
+        }
+
+        /* Small indicator for expression name (optional) */
+        #chat-bubble .expr-name {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 4px;
+            text-align: right;
         }
     </style>
     <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
@@ -526,48 +574,332 @@
         <div id="live2d-container">
             <canvas id="live2d-canvas"></canvas>
         </div>
+
+        <!-- Chat bubble -->
+        <div id="chat-bubble">
+            <div class="quote">👋 點我試下啦～</div>
+            <div class="expr-name">待機</div>
+        </div>
     </div>
 
     <script>
-
         const canvas = document.getElementById('live2d-canvas');
+        const bubble = document.getElementById('chat-bubble');
+        const quoteEl = bubble.querySelector('.quote');
+        const exprNameEl = bubble.querySelector('.expr-name');
 
-        // Initialize PixiJS Application
+        // ---- Quotes data ----
+        const QUOTES = {
+            "吸球": [
+                "嚟，放鬆啲，等我幫你回復番啲能量，撐住呀！",
+                "感受到呢股翠玉嘅力量未？吸一口氣，有我喺度，你安全㗎喇。",
+                "唔使夾硬頂住，交畀我，等我幫你條命仔補番爆！"
+            ],
+            "呆": [
+                "嗯……？唔好意思呀，我啱啱好似有少少放空咗。你頭先話……？",
+                "咦？Jett 佢哋啱啱係咪喺我面前飛過咗……啊，冇嘢，你繼續講。",
+                "吓？吓？！等等先，我好似突然之間轉唔到波……等我重整吓思緒。"
+            ],
+            "技能": [
+                "等我喺度起道冰牆先，咁樣你就可以安心休息一陣喇。",
+                "記住，我嘅力量係用嚟保護大家、恢復平衡嘅，只要有需要，我隨時準備好。",
+                "放慢腳步，等我放個緩速結界，等大家可以唞吓氣、搵回重心。"
+            ],
+            "枪": [
+                "雖然我係負責守護同治療，但真係要拿起槍嘅時候，我都絕對唔會手軟。",
+                "有我喺你後面做盾牌，放心開槍啦，我會睇住你個背脊！",
+                "拿，槍法要穩，最要緊係個心要靜。嚟，深呼吸，瞄準。"
+            ],
+            "汗": [
+                "呼……今日真係有少少吃力，搞到我都出晒汗。你冇事嘛？",
+                "Phoenix 嗰衰仔又喺度亂玩火，真係跟喺佢後面收尾都擦到一把汗……",
+                "哎呀，呢個局勢真係令人有啲緊張，連我都流晒冷汗，不過放心，我哋頂得住！"
+            ],
+            "泪": [
+                "見到你咁辛苦，我都覺得好心酸……想喊就喊出嚟啦，有我陪住你。",
+                "有時，睇住一啲無法挽回嘅過去，真係會忍不住流淚……但我哋一定要堅強。",
+                "唔好喊啦，睇到你眼濕濕，我心都痛埋。乖，抹乾眼淚，我哋一齊行落去。"
+            ],
+            "游戏": [
+                "今日玩得好開心！無論輸贏，最緊要係我哋可以一齊過得咁充實。",
+                "玩遊戲都要量力而為呀，攰就去唞吓，唔好夾硬頂，知道嗎？",
+                "嚟緊呢一局，等我哋發揮最強嘅默契，一齊拿下佢啦！"
+            ],
+            "滴泪": [
+                "睇到大家受傷，我呢粒眼淚……係因為心疼你哋呀。",
+                "唉，有時想做到完美真係好難，不過滴完呢一滴淚，我會更加堅強。",
+                "好啦，擦一擦眼角，就算面對再大嘅難關，我都會係你最堅固嘅後盾。"
+            ],
+            "生气": [
+                "我真係有少少嬲喇！點解你成日都唔識得好好照顧自己㗎？",
+                "對面班人真係太過分，完全破壞晒呢度嘅平衡，我真係忍無可忍！",
+                "（深呼吸）冷靜……我依家好嬲，但憤怒唔會解決到難題，等我起道牆隔開佢哋先。"
+            ],
+            "画画": [
+                "你睇，我用翠玉嘅光芒畫左個心送畀你，希望可以帶畀你少少溫暖。",
+                "畫畫同修行一樣，最緊要係內心嘅平靜。你今日想畫啲咩呀？",
+                "等我將大家一齊奮鬥嘅畫面畫低佢，呢啲都係我最珍貴嘅回憶。"
+            ],
+            "脸红": [
+                "呀……突然之間俾你咁樣讚，搞到我都有少少唔好意思、面都紅晒喇。",
+                "你、你突然靠得咁近，我……我差啲連咒語都唔記得點唸喇。",
+                "哎呀，做咩突然對我咁好啫？真係畀你搞到有啲手足無措……"
+            ],
+            "阴暗": [
+                "有時，睇住Viper同Omen，我都會諗……我嘅光芒，係咪真係可以照亮所有人嘅陰暗？",
+                "每個人心入面都有段沉重嘅過去，如果你想匿喺黑暗一陣，我會喺出面守護你。",
+                "就算四周再黑暗、再絕望，我都一定會為你帶嚟治癒嘅光芒。"
+            ]
+        };
+
+        // ---- Helper: show a random quote for a given expression ----
+        function showRandomQuote(exprName) {
+            const quotes = QUOTES[exprName];
+            if (quotes && quotes.length > 0) {
+                const randomIndex = Math.floor(Math.random() * quotes.length);
+                quoteEl.textContent = quotes[randomIndex];
+                exprNameEl.textContent = exprName;
+                bubble.classList.add('show');
+            } else {
+                // fallback
+                quoteEl.textContent = '😊 呢個表情冇對白～';
+                exprNameEl.textContent = exprName;
+                bubble.classList.add('show');
+            }
+        }
+
+        // ---- Show initial welcome message ----
+        // We'll show a default greeting after model loads.
+        // We'll set a flag to show it once.
+
+        // ---- PixiJS Application ----
         const app = new PIXI.Application({
             view: canvas,
             autoStart: true,
-            backgroundAlpha: 0, // Makes the canvas background transparent
+            backgroundAlpha: 0,
             resizeTo: document.getElementById('live2d-container')
         });
 
-        // Path to your model3.json file
+        // ---- All expression names ----
+        const EXPRESSION_NAMES = Object.keys(QUOTES);
+
+        // ---- Base path for expression files ----
+        const EXPRESSION_BASE = 'resources/source/sage_source/expressions/';
+
+        // ---- Cache for loaded expression data ----
+        const expressionCache = new Map();
+
+        // ---- Store base parameter values ----
+        let baseParameterValues = new Map();
+
+        // ---- Helper: apply expression with reset ----
+        function applyExpressionParameters(coreModel, params) {
+            if (!coreModel) return false;
+
+            // Reset all parameters to base
+            for (const [id, baseVal] of baseParameterValues) {
+                try {
+                    coreModel.setParameterValueById(id, baseVal);
+                } catch (e) { /* ignore */ }
+            }
+
+            // Apply new expression
+            for (const param of params) {
+                const id = param.Id;
+                const value = param.Value;
+                const blend = param.Blend || 'Overwrite';
+
+                let current = 0;
+                let min = 0;
+                let max = 1;
+                try {
+                    current = coreModel.getParameterValueById(id) || 0;
+                    try { min = coreModel.getParameterMinValueById(id) || 0; } catch (_) { }
+                    try { max = coreModel.getParameterMaxValueById(id) || 1; } catch (_) { }
+                } catch (e) {
+                    console.warn(`[Manual] Could not get bounds for ${id}:`, e);
+                }
+
+                let newVal;
+                switch (blend) {
+                    case 'Add':
+                        newVal = current + value;
+                        break;
+                    case 'Multiply':
+                        newVal = current * value;
+                        break;
+                    case 'Overwrite':
+                    default:
+                        newVal = value;
+                        break;
+                }
+                newVal = Math.min(Math.max(newVal, min), max);
+
+                try {
+                    coreModel.setParameterValueById(id, newVal);
+                } catch (e) {
+                    console.warn(`[Manual] Failed to set ${id}=${newVal}:`, e);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // ---- Load model ----
         const modelUrl = 'resources/source/sage_source/Q扁瓦奶妈.model3.json';
 
-        // Load and add the model to the stage
-        PIXI.live2d.Live2DModel.from(modelUrl).then(model => {
-            app.stage.addChild(model);
+        PIXI.live2d.Live2DModel.from(modelUrl)
+            .then(async model => {
+                app.stage.addChild(model);
 
-            // Scale and Position adjustments
-            // Live2D models can vary drastically in size, adjust these numbers if needed!
-            model.scale.set(0.25); // Adjust size (e.g., 0.1, 0.25)
+                model.scale.set(0.25);
+                model.x = app.screen.width / 2;
+                model.y = app.screen.height;
+                model.anchor.set(0.5, 0.9);
+                model.trackDirection = true;
 
-            // Center the model horizontally, and align it to the bottom
-            model.x = app.screen.width / 2;
-            model.y = app.screen.height;
-            model.anchor.set(0.5, 0.9);
+                model.interactive = true;
+                model.buttonMode = true;
 
-            // Optional: Enable tracking (model looks at the mouse cursor)
-            model.trackDirection = true;
+                // ---- Capture base parameter values ----
+                const core = model.internalModel?.coreModel;
+                if (core) {
+                    let paramCount = 0;
+                    try {
+                        paramCount = core.getParameterCount ? core.getParameterCount() : 0;
+                    } catch (_) { }
 
-            // Optional: Handle dragging/interaction if setup in your physics/json
-            model.on('hit', (hitAreas) => {
-                if (hitAreas.includes('body')) {
-                    model.motion('tap_body');
+                    if (paramCount > 0) {
+                        for (let i = 0; i < paramCount; i++) {
+                            try {
+                                let id = core.getParameterId ? core.getParameterId(i) : null;
+                                if (!id) continue;
+                                const val = core.getParameterValueById ? core.getParameterValueById(id) : 0;
+                                baseParameterValues.set(id, val);
+                            } catch (e) { /* ignore */ }
+                        }
+                    } else {
+                        // Fallback: try internal arrays
+                        const paramVals = model.internalModel?._parameterValues || model.internalModel?.parameterValues;
+                        const paramIds = model.internalModel?._parameterIds || model.internalModel?.parameterIds;
+                        if (paramVals && paramIds && paramVals.length === paramIds.length) {
+                            for (let i = 0; i < paramIds.length; i++) {
+                                baseParameterValues.set(paramIds[i], paramVals[i]);
+                            }
+                        } else {
+                            console.warn('[Model] Could not capture base parameter values. Using defaults.');
+                        }
+                    }
+                } else {
+                    console.warn('[Model] No coreModel found, cannot capture base values.');
                 }
+
+                console.log(`[Model] Captured ${baseParameterValues.size} base parameter values.`);
+
+                // ---- Helper: apply expression manually ----
+                async function applyExpressionManually(exprName) {
+                    const fileName = `${exprName}.exp3.json`;
+                    const url = `${EXPRESSION_BASE}${fileName}`;
+
+                    let expressionData;
+                    if (expressionCache.has(url)) {
+                        expressionData = expressionCache.get(url);
+                    } else {
+                        try {
+                            const response = await fetch(url);
+                            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                            expressionData = await response.json();
+                            expressionCache.set(url, expressionData);
+                        } catch (error) {
+                            console.error(`Failed to load expression "${exprName}" from ${url}:`, error);
+                            return false;
+                        }
+                    }
+
+                    const core = model.internalModel?.coreModel;
+                    if (!core) {
+                        console.warn('[Manual] No coreModel available.');
+                        return false;
+                    }
+
+                    const params = expressionData.Parameters || [];
+                    if (params.length === 0) {
+                        console.warn(`[Manual] Expression "${exprName}" has no parameters.`);
+                        return false;
+                    }
+
+                    // Capture base values for any new parameters
+                    for (const param of params) {
+                        const id = param.Id;
+                        if (!baseParameterValues.has(id)) {
+                            try {
+                                const val = core.getParameterValueById ? core.getParameterValueById(id) : 0;
+                                baseParameterValues.set(id, val);
+                                console.log(`[Model] Captured base value for ${id} = ${val}`);
+                            } catch (_) { }
+                        }
+                    }
+
+                    const success = applyExpressionParameters(core, params);
+                    if (success) {
+                        console.log(`[Manual] Applied expression "${exprName}" with ${params.length} parameters.`);
+                    } else {
+                        console.warn(`[Manual] Failed to apply expression "${exprName}".`);
+                    }
+                    return success;
+                }
+
+                // ---- Main expression application ----
+                async function applyExpression(exprName) {
+                    return await applyExpressionManually(exprName);
+                }
+
+                // ---- Click handler ----
+                model.on('pointerdown', async (event) => {
+                    const randomIndex = Math.floor(Math.random() * EXPRESSION_NAMES.length);
+                    const exprName = EXPRESSION_NAMES[randomIndex];
+
+                    console.log(`[Click] Trying to apply: "${exprName}"`);
+                    try {
+                        const success = await applyExpression(exprName);
+                        if (success) {
+                            // Show random quote in chat bubble
+                            showRandomQuote(exprName);
+                        } else {
+                            // Still show something
+                            quoteEl.textContent = '😅 表情切換失敗，再試一次？';
+                            exprNameEl.textContent = exprName;
+                            bubble.classList.add('show');
+                        }
+                    } catch (error) {
+                        console.error(`[Click] Error applying expression:`, error);
+                        quoteEl.textContent = '⚠️ 發生錯誤，請重試';
+                        exprNameEl.textContent = exprName;
+                        bubble.classList.add('show');
+                    }
+
+                    // Trigger tap motion
+                    try { model.motion('tap_body'); } catch (_) { }
+                });
+
+                // ---- No hover scaling ----
+
+                console.log('[Live2D] Model ready. Click the character to change expression.');
+                console.log(`[Live2D] Available expressions: ${EXPRESSION_NAMES.join(', ')}`);
+
+                // ---- Show initial welcome message after a short delay ----
+                setTimeout(() => {
+                    // Show a random quote from a default expression, e.g., first one
+                    const defaultExpr = EXPRESSION_NAMES[0] || '吸球';
+                    showRandomQuote(defaultExpr);
+                }, 800);
+            })
+            .catch(error => {
+                console.error('[Live2D] Failed to load model:', error);
+                quoteEl.textContent = '❌ 載入失敗';
+                exprNameEl.textContent = '錯誤';
+                bubble.classList.add('show');
             });
-        }).catch(error => {
-            console.error('Error loading Live2D model:', error);
-        });
         // ---------- HISTORY MANAGER (localStorage, max 10 entries) ----------
         const STORAGE_KEY = "bubbleClickHistory";
 

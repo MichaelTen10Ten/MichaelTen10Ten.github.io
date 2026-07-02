@@ -6,7 +6,57 @@
 			"Q扁瓦奶妈.1024/texture_00.png"
 		],
 		"Physics": "Q扁瓦奶妈.physics3.json",
-		"DisplayInfo": "Q扁瓦奶妈.cdi3.json"
+		"DisplayInfo": "Q扁瓦奶妈.cdi3.json",
+		"Expressions": [
+			{
+				"Name": "生气",
+				"File": "生气.exp3.json"
+			},
+			{
+				"Name": "吸球",
+				"File": "吸球.exp3.json"
+			},
+			{
+				"Name": "呆",
+				"File": "呆.exp3.json"
+			},
+			{
+				"Name": "技能",
+				"File": "技能.exp3.json"
+			},
+			{
+				"Name": "枪",
+				"File": "枪.exp3.json"
+			},
+			{
+				"Name": "汗",
+				"File": "汗.exp3.json"
+			},
+			{
+				"Name": "泪",
+				"File": "泪.exp3.json"
+			},
+			{
+				"Name": "游戏",
+				"File": "游戏.exp3.json"
+			},
+			{
+				"Name": "滴泪",
+				"File": "滴泪.exp3.json"
+			},
+			{
+				"Name": "画画",
+				"File": "画画.exp3.json"
+			},
+			{
+				"Name": "脸红",
+				"File": "脸红.exp3.json"
+			},
+			{
+				"Name": "阴暗",
+				"File": "阴暗.exp3.json"
+			}
+		]
 	},
 	"Groups": [
 		{
@@ -22,5 +72,6 @@
 				"ParamEyeROpen"
 			]
 		}
-	]
+	],
+	"HitAreas": []
 }
