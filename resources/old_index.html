@@ -1,114 +1,196 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Michael Ten | Home</title>
-    <link rel="icon" type="image/x-icon" href="resources/images/icon.ico">
-    <link rel="stylesheet" href="resources/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <title>Live2D Model Integration</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0; /* Change to your website's background */
+            font-family: Arial, sans-serif;
+        }
+
+        /* Container to fix the Live2D canvas to the bottom right corner */
+        #live2d-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 150px; /* Adjust width as needed */
+            height: 200px; /* Adjust height as needed */
+            z-index: 9999; /* Ensures it stays on top of other content */
+            pointer-events: none; /* Allows clicking through transparent areas */
+        }
+
+        #live2d-canvas {
+            width: 100%;
+            height: 100%;
+            pointer-events: auto; /* Re-enables interaction like dragging/clicking the model */
+            cursor: pointer;
+        }
+
+        /* Chat bubble styles */
+        #chat-bubble {
+            position: absolute;
+            bottom: 100%; /* Position it above the Live2D model container */
+            right: 0;
+            width: 180px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 14px;
+            line-height: 1.4;
+            color: #333;
+            pointer-events: auto; /* Allow text interaction if needed */
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+        }
+
+        /* Chat bubble arrow pointer */
+        #chat-bubble::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            right: 30px;
+            border-width: 8px;
+            border-style: solid;
+            border-color: white transparent transparent transparent;
+        }
+        #chat-bubble::before {
+            content: '';
+            position: absolute;
+            top: 100%;
+            right: 29px;
+            border-width: 9px;
+            border-style: solid;
+            border-color: #ccc transparent transparent transparent;
+            z-index: -1;
+        }
+    </style>
+
+    <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/RaSan147/pixi-live2d-display@v0.5.0-ls-8/dist/cubism4.min.js"></script>
 </head>
+<body>
 
-<body class="index-page">
-    <div class="background-overlay"></div>
+    <h1>Welcome to my website</h1>
 
-    <nav id="main-nav">
-        <div class="logo">
-            <a href="index.html" aria-label="Home page logo"><span class="neon-text-main">M</span>ichael <span
-                    class="neon-text-sub">T</span>en</a>
-        </div>
-        <button class="hamburger" aria-label="Toggle navigation menu">
-            <span class="bar"></span>
-            <span class="bar"></span>
-            <span class="bar"></span>
-        </button>
-        <ul class="nav-links">
+    <div id="live2d-container">
+        <div id="chat-bubble">你好！</div>
+        <canvas id="live2d-canvas"></canvas>
+    </div>
 
-            <li><a href="index.html" class="active">Home</a></li>
-            <li><a href="resources/experience.html" class="">Experience</a></li>
-            <li><a href="resources/education.html" class="">Education</a></li>
-            <li><a href="resources/skills.html" class="">Skills</a></li>
-            <li><a href="resources/extra.html" class="">Extra</a></li>
-            <li><a href="resources/sitemap.html" class="">Site Map</a></li>
-        </ul>
-    </nav>
+    <script>
+        const canvas = document.getElementById('live2d-canvas');
+        const chatBubble = document.getElementById('chat-bubble');
+        
+        // Generate a random unique session ID for the API
+        const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+        let bubbleTimeout;
 
+        // Initialize PixiJS Application
+        const app = new PIXI.Application({
+            view: canvas,
+            autoStart: true,
+            backgroundAlpha: 0, // Makes the canvas background transparent
+            resizeTo: document.getElementById('live2d-container')
+        });
 
-    <main id="index-content" class="fade-in">
+        // Path to your model3.json file
+        const modelUrl = 'source/sage_source/Q扁瓦奶妈.model3.json';
 
-        <section class="hero content-box">
-            <div class="hero-text">
-                <h1><span class="neon-text-sub">Hello!</span> I'm Michael Ten</h1>
-                <p class="title">Technical Service Support based in Hong Kong</p>
-                <p>A passionate full-stack developer, automation expert, and technical service professional with a
-                    background in eSports and gaming content creation (Minecraft). Dedicated to clean code, efficient
-                    systems, and continuous learning.</p>
-                <div class="contact-info">
-                    <p><i class="fas fa-envelope icon"></i> <strong>Email:</strong> <a
-                            href="mailto:mic20010829@gmail.com">mic20010829@gmail.com</a></p>
-                    <p><i class="fab fa-discord icon"></i> <strong>Discord:</strong> ten_mic_10</p>
-                </div>
-            </div>
-            <div class="hero-image">
-                <img src="resources/images/profile.png" alt="Profile image of Michael Ten" width="200" height="200">
-            </div>
-        </section>
-        <section class="mbti-section content-box">
-            <h2>Personality</h2>
-            <p class="mbti-badge neon-border">INTP-T - The Logician</p>
-            <p>As an INTP-T, I thrive on intellectual challenge, analysis, and problem-solving, making me highly
-                effective in technical and automation roles.</p>
-        </section>
-        <section class="social-section content-box">
-            <h2>Online Presence</h2>
-            <ul class="social-list">
+        // Helper function to show text in chat bubble
+        function showChatBubble(text) {
+            clearTimeout(bubbleTimeout);
+            chatBubble.innerText = text;
+            chatBubble.style.opacity = '1';
+            
+            // Automatically hide the bubble after 5 seconds
+            bubbleTimeout = setTimeout(() => {
+                chatBubble.style.opacity = '0';
+            }, 5000);
+        }
 
-                <li>
-                    <i class="fab fa-modx icon"></i>
-                    <strong>Modrinth:</strong> <a href="https://modrinth.com/user/Ten_Mic_10" target="_blank"
-                        rel="noopener noreferrer">@Ten_Mic_10</a>
-                </li>
-                <li>
-                    <i class="fab fa-instagram icon"></i>
-                    <strong>Instagram:</strong> <a href="https://www.instagram.com/m_i_c_h_a_e_l_1_0/" target="_blank"
-                        rel="noopener noreferrer">@m_i_c_h_a_e_l_1_0</a>
-                </li>
-                <li>
-                    <i class="fab fa-youtube icon"></i>
-                    <strong>YouTube:</strong> <a href="https://www.youtube.com/@Michael10" target="_blank"
-                        rel="noopener noreferrer">@Michael10</a>
-                </li>
-                <li>
-                    <i class="fab fa-discord icon"></i>
-                    <strong>Discord:</strong> <a href="https://discord.com/invite/KuWNd8av4q" target="_blank"
-                        rel="noopener noreferrer">@ten_mic_10</a>
-                </li>
-            </ul>
-        </section>
+        // Load and add the model to the stage
+        PIXI.live2d.Live2DModel.from(modelUrl).then(model => {
+            app.stage.addChild(model);
 
-    </main>
+            // Scale and Position adjustments
+            model.scale.set(0.25); // Adjust size (e.g., 0.1, 0.25)
 
+            // Center the model horizontally, and align it to the bottom
+            model.x = app.screen.width / 2;
+            model.y = app.screen.height;
+            model.anchor.set(0.5, 0.9);
 
-    <footer>
-        <div class="content-box">
-            <p>&copy; 2025 Michael Ten. All rights reserved.</p>
-            <div class="social-links">
+            // Optional: Enable tracking (model looks at the mouse cursor)
+            model.trackDirection = true;
 
-                <a href="https://modrinth.com/user/Ten_Mic_10" target="_blank" rel="noopener noreferrer"
-                    aria-label="Modrinth"><i class="fab fa-modx"></i></a>
-                <a href="https://www.instagram.com/m_i_c_h_a_e_l_1_0/" target="_blank" rel="noopener noreferrer"
-                    aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                <a href="https://www.youtube.com/@Michael10" target="_blank" rel="noopener noreferrer"
-                    aria-label="YouTube"><i class="fab fa-youtube"></i></a>
-                <a href="https://discord.com/invite/KuWNd8av4q" target="_blank" rel="noopener noreferrer"
-                    aria-label="Discord"><i class="fab fa-discord"></i></a>
-            </div>
-        </div>
-    </footer>
+            // Make the model interactive to listen for pointer events directly
+            model.interactive = true;
+            
+            // Trigger API chat and expressions when clicked
+            model.on('pointertap', async () => {
+                try {
+                    // Show a quick placeholder while waiting for the API
+                    showChatBubble("Thinking...");
 
+                    const response = await fetch('https://student.plkcastar.edu.hk:7861/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            "session_id": sessionId,
+                            "message": "你好" // You can change this or hook it up to an input field
+                        })
+                    });
 
-    <script src="resources/js/main.js"></script>
+                    const data = await response.json();
+                    let replyText = data.response;
+
+                    // Regex to find expression tags inside square brackets like [吸球]
+                    const expressionRegex = /\[([^\]]+)\]/;
+                    const match = replyText.match(expressionRegex);
+
+                    if (match) {
+                        const expressionName = match[1]; // Extracts "吸球"
+                        
+                        // 1. Clean the text by removing the bracket expression for the bubble
+                        replyText = replyText.replace(expressionRegex, '').trim();
+                        
+                        // 2. Play the matched Live2D expression
+                        // Note: Ensure your expression names in your model config exactly match these strings
+                        if (typeof model.expression === 'function') {
+                            model.expression(expressionName);
+                        }
+                    }
+
+                    // Display the cleaned response text in the bubble
+                    showChatBubble(replyText);
+
+                } catch (error) {
+                    console.error('Error fetching chat API:', error);
+                    showChatBubble("Error communicating with the model.");
+                }
+            });
+
+            // Keep your original custom hit area logic if needed
+            model.on('hit', (hitAreas) => {
+                if (hitAreas.includes('body')) {
+                    model.motion('tap_body');
+                }
+            });
+
+        }).catch(error => {
+            console.error('Error loading Live2D model:', error);
+        });
+    </script>
 </body>
-
 </html>

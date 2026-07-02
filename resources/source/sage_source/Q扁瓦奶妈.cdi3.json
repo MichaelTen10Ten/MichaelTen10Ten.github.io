@@ -1,0 +1,536 @@
+{
+	"Version": 3,
+	"Parameters": [
+		{
+			"Id": "ParamAngleX",
+			"GroupId": "",
+			"Name": "角度 X"
+		},
+		{
+			"Id": "ParamAngleY",
+			"GroupId": "",
+			"Name": "角度 Y"
+		},
+		{
+			"Id": "Param55",
+			"GroupId": "",
+			"Name": "头x"
+		},
+		{
+			"Id": "Param56",
+			"GroupId": "",
+			"Name": "头y"
+		},
+		{
+			"Id": "ParamAngleZ",
+			"GroupId": "",
+			"Name": "角度 Z"
+		},
+		{
+			"Id": "ParamEyeLOpen",
+			"GroupId": "",
+			"Name": "左眼 开闭"
+		},
+		{
+			"Id": "ParamEyeLSmile",
+			"GroupId": "",
+			"Name": "左眼 微笑"
+		},
+		{
+			"Id": "ParamEyeROpen",
+			"GroupId": "",
+			"Name": "右眼 开闭"
+		},
+		{
+			"Id": "ParamEyeRSmile",
+			"GroupId": "",
+			"Name": "右眼 微笑"
+		},
+		{
+			"Id": "ParamEyeBallX",
+			"GroupId": "",
+			"Name": "眼珠 X"
+		},
+		{
+			"Id": "ParamEyeBallY",
+			"GroupId": "",
+			"Name": "眼珠 Y"
+		},
+		{
+			"Id": "ParamMouthForm",
+			"GroupId": "",
+			"Name": "嘴 变形"
+		},
+		{
+			"Id": "ParamMouthOpenY",
+			"GroupId": "",
+			"Name": "嘴 开闭"
+		},
+		{
+			"Id": "ParamBreath",
+			"GroupId": "",
+			"Name": "呼吸"
+		},
+		{
+			"Id": "JawOpen",
+			"GroupId": "",
+			"Name": "下巴"
+		},
+		{
+			"Id": "MouthX",
+			"GroupId": "",
+			"Name": "歪嘴"
+		},
+		{
+			"Id": "MouthShrug",
+			"GroupId": "",
+			"Name": "噘嘴"
+		},
+		{
+			"Id": "CheekPuff",
+			"GroupId": "",
+			"Name": "鼓嘴"
+		},
+		{
+			"Id": "Param53",
+			"GroupId": "",
+			"Name": "身体x"
+		},
+		{
+			"Id": "Param54",
+			"GroupId": "",
+			"Name": "身体y"
+		},
+		{
+			"Id": "draw",
+			"GroupId": "ParamGroup",
+			"Name": "画画开关"
+		},
+		{
+			"Id": "drawX",
+			"GroupId": "ParamGroup",
+			"Name": "笔x"
+		},
+		{
+			"Id": "drawY",
+			"GroupId": "ParamGroup",
+			"Name": "笔y"
+		},
+		{
+			"Id": "game",
+			"GroupId": "ParamGroup",
+			"Name": "游戏"
+		},
+		{
+			"Id": "cry",
+			"GroupId": "ParamGroup",
+			"Name": "泪开关"
+		},
+		{
+			"Id": "sad",
+			"GroupId": "ParamGroup",
+			"Name": "滴泪"
+		},
+		{
+			"Id": "dai",
+			"GroupId": "ParamGroup",
+			"Name": "呆"
+		},
+		{
+			"Id": "han",
+			"GroupId": "ParamGroup",
+			"Name": "汗"
+		},
+		{
+			"Id": "yinan",
+			"GroupId": "ParamGroup",
+			"Name": "阴暗"
+		},
+		{
+			"Id": "angry",
+			"GroupId": "ParamGroup",
+			"Name": "生气"
+		},
+		{
+			"Id": "lianhong",
+			"GroupId": "ParamGroup",
+			"Name": "脸颊泛红"
+		},
+		{
+			"Id": "Param58",
+			"GroupId": "ParamGroup",
+			"Name": "正常右手"
+		},
+		{
+			"Id": "Param60",
+			"GroupId": "ParamGroup",
+			"Name": "正常左手"
+		},
+		{
+			"Id": "Param59",
+			"GroupId": "ParamGroup",
+			"Name": "枪手"
+		},
+		{
+			"Id": "Param61",
+			"GroupId": "ParamGroup",
+			"Name": "技能手"
+		},
+		{
+			"Id": "Param62",
+			"GroupId": "ParamGroup",
+			"Name": "吸球手"
+		},
+		{
+			"Id": "Param36",
+			"GroupId": "ParamGroup2",
+			"Name": "怒动画"
+		},
+		{
+			"Id": "Param42",
+			"GroupId": "ParamGroup2",
+			"Name": "泪动画1"
+		},
+		{
+			"Id": "Param43",
+			"GroupId": "ParamGroup2",
+			"Name": "泪动画2"
+		},
+		{
+			"Id": "Param37",
+			"GroupId": "ParamGroup2",
+			"Name": "气1"
+		},
+		{
+			"Id": "Param38",
+			"GroupId": "ParamGroup2",
+			"Name": "气2"
+		},
+		{
+			"Id": "Param39",
+			"GroupId": "ParamGroup2",
+			"Name": "气3"
+		},
+		{
+			"Id": "Param32",
+			"GroupId": "ParamGroup2",
+			"Name": "R滴泪动画"
+		},
+		{
+			"Id": "Param3",
+			"GroupId": "ParamGroup2",
+			"Name": "L滴泪动画"
+		},
+		{
+			"Id": "ParamAngleZ2",
+			"GroupId": "ParamGroup3",
+			"Name": "z物理"
+		},
+		{
+			"Id": "Param41",
+			"GroupId": "ParamGroup3",
+			"Name": "泪物理1"
+		},
+		{
+			"Id": "Param40",
+			"GroupId": "ParamGroup3",
+			"Name": "泪物理2"
+		},
+		{
+			"Id": "Param33",
+			"GroupId": "ParamGroup3",
+			"Name": "滴泪物理"
+		},
+		{
+			"Id": "Param34",
+			"GroupId": "ParamGroup3",
+			"Name": "滴泪物理2"
+		},
+		{
+			"Id": "Param66",
+			"GroupId": "ParamGroup3",
+			"Name": "右闭眼物理1"
+		},
+		{
+			"Id": "Param67",
+			"GroupId": "ParamGroup3",
+			"Name": "右闭眼物理2"
+		},
+		{
+			"Id": "Param69",
+			"GroupId": "ParamGroup3",
+			"Name": "左闭眼物理1"
+		},
+		{
+			"Id": "Param68",
+			"GroupId": "ParamGroup3",
+			"Name": "左闭眼物理2"
+		},
+		{
+			"Id": "Param2",
+			"GroupId": "ParamGroup3",
+			"Name": "右眼物理"
+		},
+		{
+			"Id": "Param",
+			"GroupId": "ParamGroup3",
+			"Name": "左眼物理"
+		},
+		{
+			"Id": "Param22",
+			"GroupId": "ParamGroup3",
+			"Name": "手臂x1"
+		},
+		{
+			"Id": "Param23",
+			"GroupId": "ParamGroup3",
+			"Name": "手臂x2"
+		},
+		{
+			"Id": "Param24",
+			"GroupId": "ParamGroup3",
+			"Name": "手臂y1"
+		},
+		{
+			"Id": "Param25",
+			"GroupId": "ParamGroup3",
+			"Name": "手臂y2"
+		},
+		{
+			"Id": "Param4",
+			"GroupId": "ParamGroup3",
+			"Name": "刘海x1"
+		},
+		{
+			"Id": "Param5",
+			"GroupId": "ParamGroup3",
+			"Name": "刘海x2"
+		},
+		{
+			"Id": "Param44",
+			"GroupId": "ParamGroup3",
+			"Name": "刘海y1"
+		},
+		{
+			"Id": "Param45",
+			"GroupId": "ParamGroup3",
+			"Name": "刘海y2"
+		},
+		{
+			"Id": "Param6",
+			"GroupId": "ParamGroup3",
+			"Name": "侧发x1"
+		},
+		{
+			"Id": "Param7",
+			"GroupId": "ParamGroup3",
+			"Name": "侧发x2"
+		},
+		{
+			"Id": "Param8",
+			"GroupId": "ParamGroup3",
+			"Name": "侧发x3"
+		},
+		{
+			"Id": "Param46",
+			"GroupId": "ParamGroup3",
+			"Name": "侧发y1"
+		},
+		{
+			"Id": "Param47",
+			"GroupId": "ParamGroup3",
+			"Name": "侧发y2"
+		},
+		{
+			"Id": "Param48",
+			"GroupId": "ParamGroup3",
+			"Name": "侧发y3"
+		},
+		{
+			"Id": "Param9",
+			"GroupId": "ParamGroup3",
+			"Name": "后发x1"
+		},
+		{
+			"Id": "Param10",
+			"GroupId": "ParamGroup3",
+			"Name": "后发x2"
+		},
+		{
+			"Id": "Param11",
+			"GroupId": "ParamGroup3",
+			"Name": "后发x3"
+		},
+		{
+			"Id": "Param49",
+			"GroupId": "ParamGroup3",
+			"Name": "后发y1"
+		},
+		{
+			"Id": "Param51",
+			"GroupId": "ParamGroup3",
+			"Name": "后发y2"
+		},
+		{
+			"Id": "Param50",
+			"GroupId": "ParamGroup3",
+			"Name": "后发y3"
+		},
+		{
+			"Id": "Param12",
+			"GroupId": "ParamGroup3",
+			"Name": "外套x1"
+		},
+		{
+			"Id": "Param13",
+			"GroupId": "ParamGroup3",
+			"Name": "外套x2"
+		},
+		{
+			"Id": "Param14",
+			"GroupId": "ParamGroup3",
+			"Name": "外套x3"
+		},
+		{
+			"Id": "Param15",
+			"GroupId": "ParamGroup3",
+			"Name": "外套y1"
+		},
+		{
+			"Id": "Param16",
+			"GroupId": "ParamGroup3",
+			"Name": "外套y2"
+		},
+		{
+			"Id": "Param17",
+			"GroupId": "ParamGroup3",
+			"Name": "外套y3"
+		},
+		{
+			"Id": "Param26",
+			"GroupId": "ParamGroup3",
+			"Name": "裙x1"
+		},
+		{
+			"Id": "Param27",
+			"GroupId": "ParamGroup3",
+			"Name": "裙x2"
+		},
+		{
+			"Id": "Param31",
+			"GroupId": "ParamGroup3",
+			"Name": "裙x3"
+		},
+		{
+			"Id": "Param28",
+			"GroupId": "ParamGroup3",
+			"Name": "裙y1"
+		},
+		{
+			"Id": "Param29",
+			"GroupId": "ParamGroup3",
+			"Name": "裙y2"
+		},
+		{
+			"Id": "Param30",
+			"GroupId": "ParamGroup3",
+			"Name": "裙y3"
+		},
+		{
+			"Id": "Param18",
+			"GroupId": "ParamGroup3",
+			"Name": "外套蝴蝶结x1"
+		},
+		{
+			"Id": "Param19",
+			"GroupId": "ParamGroup3",
+			"Name": "外套蝴蝶结x2"
+		},
+		{
+			"Id": "Param20",
+			"GroupId": "ParamGroup3",
+			"Name": "外套蝴蝶结y1"
+		},
+		{
+			"Id": "Param21",
+			"GroupId": "ParamGroup3",
+			"Name": "外套蝴蝶结y2"
+		},
+		{
+			"Id": "Param35",
+			"GroupId": "ParamGroup3",
+			"Name": "外套蝴蝶结y3"
+		},
+		{
+			"Id": "Param52",
+			"GroupId": "ParamGroup3",
+			"Name": "外套蝴蝶结y4"
+		},
+		{
+			"Id": "Param57",
+			"GroupId": "ParamGroup3",
+			"Name": "外套蝴蝶结y5"
+		}
+	],
+	"ParameterGroups": [
+		{
+			"Id": "ParamGroup",
+			"GroupId": "",
+			"Name": "表情"
+		},
+		{
+			"Id": "ParamGroup2",
+			"GroupId": "",
+			"Name": "动画"
+		},
+		{
+			"Id": "ParamGroup3",
+			"GroupId": "",
+			"Name": "物理"
+		}
+	],
+	"Parts": [
+		{
+			"Id": "Part9",
+			"Name": "吸球.psd"
+		},
+		{
+			"Id": "Part8",
+			"Name": "枪+技能手.psd"
+		},
+		{
+			"Id": "Part3",
+			"Name": "表情"
+		},
+		{
+			"Id": "Part5",
+			"Name": "发"
+		},
+		{
+			"Id": "Part6",
+			"Name": "头"
+		},
+		{
+			"Id": "Part7",
+			"Name": "体"
+		},
+		{
+			"Id": "Part",
+			"Name": "枪"
+		},
+		{
+			"Id": "Part2",
+			"Name": "技能"
+		},
+		{
+			"Id": "Part4",
+			"Name": "滴泪"
+		}
+	],
+	"CombinedParameters": [
+		[
+			"drawX",
+			"drawY"
+		]
+	]
+}
